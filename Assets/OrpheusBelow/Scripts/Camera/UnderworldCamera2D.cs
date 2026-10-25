@@ -1,35 +1,43 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace OrpheusBelow
 {
     /// <summary>
-    /// 2D Hades-style dynamic camera with asymmetric "Don't Look Back" framing
-    /// (keeps blurred Eurydice at the edge of your peripheral vision), chamber bounds,
-    /// dramatic zoom on [Q] Look-Back temptation, and heavy trauma shake on Hard Booms.
+    /// True 2.5D Isometric Hades Camera (Orthographic, Pitch 36°, Yaw 45°):
+    ///   - Provides exact screen-to-isometric WASD axes (W = screen-up, D = screen-right)
+    ///   - Raycasts mouse cursor cleanly onto the Y=0 chamber floor plane
+    ///   - Smoothly follows Orpheus with subtle aim/velocity look-ahead, chamber framing, & trauma shake
     /// </summary>
     public class UnderworldCamera2D : MonoBehaviour
     {
         public static UnderworldCamera2D Instance { get; private set; }
 
+        public static readonly Vector3 IsoRightXZ = new Vector3(0.70710678f, 0f, -0.70710678f);
+        public static readonly Vector3 IsoUpXZ = new Vector3(0.70710678f, 0f, 0.70710678f);
+
         [Header("Targets")]
         public Transform target;
         public Transform eurydiceTarget;
 
-        [Header("Framing & Follow")]
-        public float baseOrthoSize = 7.4f;
-        public Vector2 forwardOffset = new Vector2(2.3f, 1.15f);
-        public float smoothTime = 0.14f;
+        [Header("Isometric Framing")]
+        public float baseOrthoSize = 7.8f;
+        public float cameraDistance = 36f;
+        public float smoothTime = 0.11f;
+        public float aimLookAhead = 0.85f;
 
-        [Header("Chamber Bounds (Optional Lock)")]
-        public bool useBounds = true;
-        public Rect worldBounds = new Rect(-6f, -4f, 160f, 28f);
+        [Header("Active Chamber Leash")]
+        public Vector3 chamberCenter = Vector3.zero;
+        public float chamberCameraLeashRadius = 11f;
 
         private Camera _cam;
-        private Vector3 _vel;
+        private Vector3 _focusPoint;
+        private Vector3 _focusVel;
         private float _trauma;
         private float _lookBackBlend;
         private float _zoomOverride = -1f;
-        private Vector2? _arenaCenterOverride;
+
+        public Camera Cam => _cam;
 
         private void Awake()
         {
@@ -37,8 +45,51 @@ namespace OrpheusBelow
             _cam = GetComponent<Camera>();
             if (_cam == null) _cam = gameObject.AddComponent<Camera>();
 
-            RenderPipeline2DSetup.ConfigureCameraFor2D(_cam, new Color(0.045f, 0.022f, 0.065f, 1f));
+            RenderPipeline2DSetup.ConfigureCameraForIsometric25D(_cam, new Color(0.038f, 0.020f, 0.056f, 1f));
             _cam.orthographicSize = baseOrthoSize;
+        }
+
+        private void Start()
+        {
+            if (target != null) SnapToTargetNow();
+        }
+
+        public static Vector3 InputToIsoWorldDir(Vector2 input)
+        {
+            Vector3 world = IsoRightXZ * input.x + IsoUpXZ * input.y;
+            if (world.sqrMagnitude > 1f) world.Normalize();
+            return world;
+        }
+
+        public bool TryGetCursorGroundPoint(out Vector3 groundPoint)
+        {
+            groundPoint = target != null ? target.position : Vector3.zero;
+            if (_cam == null || Mouse.current == null) return false;
+
+            Vector2 mp = Mouse.current.position.ReadValue();
+            Ray ray = _cam.ScreenPointToRay(new Vector3(mp.x, mp.y, 0f));
+            Plane floorPlane = new Plane(Vector3.up, Vector3.zero);
+            if (floorPlane.Raycast(ray, out float enter))
+            {
+                groundPoint = ray.GetPoint(enter);
+                return true;
+            }
+            return false;
+        }
+
+        public void SetChamberBounds(Vector3 center, float leashRadius, float orthoOverride = -1f)
+        {
+            chamberCenter = center;
+            chamberCameraLeashRadius = leashRadius;
+            _zoomOverride = orthoOverride;
+        }
+
+        public void SnapToTargetNow()
+        {
+            if (target == null) return;
+            _focusPoint = target.position;
+            _focusVel = Vector3.zero;
+            ApplyCameraTransform(Vector3.zero);
         }
 
         public void AddShake(float amount)
@@ -51,74 +102,62 @@ namespace OrpheusBelow
             _lookBackBlend = Mathf.Clamp01(blend01);
         }
 
-        public void LockArena(Vector2 center, float orthoSize)
-        {
-            _arenaCenterOverride = center;
-            _zoomOverride = orthoSize;
-        }
-
-        public void UnlockArena()
-        {
-            _arenaCenterOverride = null;
-            _zoomOverride = -1f;
-        }
-
         private void LateUpdate()
         {
             if (target == null || _cam == null) return;
 
             float dt = Time.unscaledDeltaTime;
 
-            // Desired focus point: forward-biased normally, panning back toward Eurydice if holding [Q]!
-            Vector3 normalGoal = target.position + new Vector3(forwardOffset.x, forwardOffset.y, 0f);
-            if (_arenaCenterOverride.HasValue)
+            // Subtle Hades cursor/aim look-ahead on the XZ floor
+            Vector3 lead = Vector3.zero;
+            if (OrpheusPlayerController.Instance != null)
             {
-                Vector2 ac = _arenaCenterOverride.Value;
-                normalGoal = Vector3.Lerp(normalGoal, new Vector3(ac.x, ac.y, 0f), 0.72f);
+                lead = OrpheusPlayerController.Instance.AimDirectionXZ * aimLookAhead;
+            }
+
+            Vector3 normalGoal = target.position + lead;
+            normalGoal.y = 0.55f;
+
+            // Gently leash focus point inside the current chamber so void edges stay framed cleanly
+            Vector3 offsetFromChamber = normalGoal - new Vector3(chamberCenter.x, 0.55f, chamberCenter.z);
+            if (offsetFromChamber.magnitude > chamberCameraLeashRadius)
+            {
+                normalGoal = new Vector3(chamberCenter.x, 0.55f, chamberCenter.z)
+                           + offsetFromChamber.normalized * chamberCameraLeashRadius;
             }
 
             Vector3 lookBackGoal = normalGoal;
             if (eurydiceTarget != null)
             {
-                Vector3 mid = Vector3.Lerp(target.position, eurydiceTarget.position, 0.65f) + new Vector3(0f, 0.6f, 0f);
-                lookBackGoal = mid;
+                lookBackGoal = Vector3.Lerp(target.position, eurydiceTarget.position, 0.65f) + new Vector3(0f, 0.6f, 0f);
             }
 
-            Vector3 desired = Vector3.Lerp(normalGoal, lookBackGoal, _lookBackBlend);
-            desired.z = -10f;
+            Vector3 desiredFocus = Vector3.Lerp(normalGoal, lookBackGoal, _lookBackBlend);
+            _focusPoint = Vector3.SmoothDamp(_focusPoint, desiredFocus, ref _focusVel, smoothTime, Mathf.Infinity, dt);
 
-            // Zoom: tighten dramatically during [Q] temptation, or widen for Cerberus boss arena
             float targetZoom = _zoomOverride > 0f ? _zoomOverride : baseOrthoSize;
-            targetZoom = Mathf.Lerp(targetZoom, 4.9f, _lookBackBlend);
-            _cam.orthographicSize = Mathf.Lerp(_cam.orthographicSize, targetZoom, dt * 6f);
+            targetZoom = Mathf.Lerp(targetZoom, 5.2f, _lookBackBlend);
+            _cam.orthographicSize = Mathf.Lerp(_cam.orthographicSize, targetZoom, dt * 7f);
 
-            if (useBounds)
-            {
-                float halfH = _cam.orthographicSize;
-                float halfW = halfH * _cam.aspect;
-                if (worldBounds.width > halfW * 2f)
-                    desired.x = Mathf.Clamp(desired.x, worldBounds.xMin + halfW, worldBounds.xMax - halfW);
-                if (worldBounds.height > halfH * 2f)
-                    desired.y = Mathf.Clamp(desired.y, worldBounds.yMin + halfH, worldBounds.yMax - halfH);
-            }
-
-            Vector3 smoothed = Vector3.SmoothDamp(transform.position, desired, ref _vel, smoothTime, Mathf.Infinity, dt);
-
-            // Trauma-squared screen shake for punchy Hard Booms!
-            Vector3 shakeOffset = Vector3.zero;
-            float rotZ = 0f;
+            // Screen-plane Perlin trauma shake
+            Vector3 shakeWorld = Vector3.zero;
             if (_trauma > 0.001f)
             {
                 float shake = _trauma * _trauma;
-                float t = Time.unscaledTime * 42f;
-                shakeOffset.x = (Mathf.PerlinNoise(t, 1.3f) * 2f - 1f) * 0.65f * shake;
-                shakeOffset.y = (Mathf.PerlinNoise(2.7f, t) * 2f - 1f) * 0.65f * shake;
-                rotZ = (Mathf.PerlinNoise(t, t * 0.5f) * 2f - 1f) * 2.2f * shake;
-                _trauma = Mathf.MoveTowards(_trauma, 0f, dt * 2.3f);
+                float t = Time.unscaledTime * 44f;
+                float sx = (Mathf.PerlinNoise(t, 1.3f) * 2f - 1f) * 0.58f * shake;
+                float sy = (Mathf.PerlinNoise(2.7f, t) * 2f - 1f) * 0.58f * shake;
+                shakeWorld = transform.right * sx + transform.up * sy;
+                _trauma = Mathf.MoveTowards(_trauma, 0f, dt * 2.5f);
             }
 
-            transform.position = smoothed + shakeOffset;
-            transform.rotation = Quaternion.Euler(0f, 0f, rotZ);
+            ApplyCameraTransform(shakeWorld);
+        }
+
+        private void ApplyCameraTransform(Vector3 shakeOffset)
+        {
+            transform.rotation = RenderPipeline2DSetup.IsoCameraRotation;
+            transform.position = _focusPoint - (transform.forward * cameraDistance) + shakeOffset;
         }
     }
 }
