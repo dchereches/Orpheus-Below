@@ -5,10 +5,10 @@ using UnityEngine;
 namespace OrpheusBelow
 {
     /// <summary>
-    /// Orchestrates the 2.5D Isometric HADES Chamber-Crawler loop:
-    ///   - Tracks active enemies per chamber, spawns multi-wave reinforcements via glowing Hades Summon Runes
-    ///   - Drops Olympian Boon rewards & unlocks the NE Isometric Exit Archway on "CHAMBER CLEAR!"
-    ///   - Smoothly fades & transitions Orpheus + Blurred Eurydice + Camera into the next diamond chamber
+    /// Orchestrates the Dual-Perspective Chamber-Crawler Loop (No Boons!):
+    ///   1) Harder Multi-Wave 2.5D Isometric Shade Brawls
+    ///   2) Seamless Shift into 2D Multi-Layer Parallax Rhythm Duel against each Chamber's Guardian Mini-Boss!
+    ///   3) Smooth Return to 2.5D Isometric View & Exit Archway Unlock upon Guardian Defeat
     /// </summary>
     public class HadesChamberDirector : MonoBehaviour
     {
@@ -27,15 +27,18 @@ namespace OrpheusBelow
             public string chamberTitle;
             public Vector3 centerWorld;
             public Vector3 playerSpawnWorld;
-            public float cameraLeashRadius = 9.5f;
+            public float cameraLeashRadius = 9.0f;
             public float cameraOrthoOverride = -1f;
             public ChamberExitDoor exitDoor;
-            public bool dropApolloBoonOnClear;
-            public CerberusRhythmBoss boss;
+            public CerberusRhythmBoss guardianBoss;
+            public Transform interiorObstaclesRoot;
             public List<WaveSpawnSpec> wave1 = new List<WaveSpawnSpec>();
             public List<WaveSpawnSpec> wave2 = new List<WaveSpawnSpec>();
         }
 
+        public const int PrototypeBuildVersion = 4;
+
+        public int buildVersion = PrototypeBuildVersion;
         public List<ChamberRuntimeData> chambers = new List<ChamberRuntimeData>();
         public int CurrentChamberIndex { get; private set; }
         public int ActiveEnemyCount => _aliveShades.Count;
@@ -44,6 +47,7 @@ namespace OrpheusBelow
         private readonly List<ShadeEnemy> _aliveShades = new List<ShadeEnemy>();
         private int _currentWaveIndex;
         private bool _spawningWave;
+        private bool _bossPhaseStarted;
         private bool _chamberCleared;
         private bool _transitioning;
 
@@ -66,7 +70,7 @@ namespace OrpheusBelow
             {
                 return chambers[CurrentChamberIndex].chamberTitle;
             }
-            return "TARTARUS";
+            return "Tartarus";
         }
 
         public void TransitionToChamber(int nextIndex)
@@ -78,10 +82,9 @@ namespace OrpheusBelow
         private IEnumerator TransitionRoutine(int nextIndex)
         {
             _transitioning = true;
-            // Crisp Hades 0.22s dark wipe
             while (ScreenFadeAlpha < 1f)
             {
-                ScreenFadeAlpha = Mathf.MoveTowards(ScreenFadeAlpha, 1f, Time.unscaledDeltaTime * 5.0f);
+                ScreenFadeAlpha = Mathf.MoveTowards(ScreenFadeAlpha, 1f, Time.unscaledDeltaTime * 4.8f);
                 yield return null;
             }
 
@@ -90,7 +93,7 @@ namespace OrpheusBelow
 
             while (ScreenFadeAlpha > 0f)
             {
-                ScreenFadeAlpha = Mathf.MoveTowards(ScreenFadeAlpha, 0f, Time.unscaledDeltaTime * 4.2f);
+                ScreenFadeAlpha = Mathf.MoveTowards(ScreenFadeAlpha, 0f, Time.unscaledDeltaTime * 3.8f);
                 yield return null;
             }
             _transitioning = false;
@@ -100,16 +103,17 @@ namespace OrpheusBelow
         {
             CurrentChamberIndex = index;
             _chamberCleared = false;
+            _bossPhaseStarted = false;
             _currentWaveIndex = 0;
             _aliveShades.Clear();
 
-            // Clear stray enemy orbs between rooms
             foreach (StygianOrbProjectile orb in Object.FindObjectsByType<StygianOrbProjectile>(FindObjectsSortMode.None))
             {
                 Destroy(orb.gameObject);
             }
 
             ChamberRuntimeData ch = chambers[index];
+            if (ch.interiorObstaclesRoot != null) ch.interiorObstaclesRoot.gameObject.SetActive(true);
 
             OrpheusPlayerController player = OrpheusPlayerController.Instance;
             if (player != null)
@@ -132,20 +136,15 @@ namespace OrpheusBelow
 
             if (ch.exitDoor != null) ch.exitDoor.SetUnlocked(false);
 
-            OrpheusHud.Instance?.ShowBanner(ch.chamberTitle, 3.0f);
+            OrpheusHud.Instance?.ShowBanner(ch.chamberTitle, 2.8f);
 
-            if (ch.boss != null)
-            {
-                ch.boss.OnCerberusDefeated += HandleChamberCleared;
-                ch.boss.ActivateGuardianDuel();
-            }
-            else if (ch.wave1.Count > 0)
+            if (ch.wave1.Count > 0)
             {
                 StartCoroutine(SpawnWaveWithRunesRoutine(ch, ch.wave1, 0.35f));
             }
             else
             {
-                HandleChamberCleared();
+                BeginChamberBossShowdown(ch);
             }
         }
 
@@ -166,7 +165,7 @@ namespace OrpheusBelow
             }
 
             ProceduralLyreAudio.Instance?.PlayRhythmBeat(false);
-            yield return new WaitForSeconds(0.55f);
+            yield return new WaitForSeconds(0.50f);
 
             for (int i = 0; i < specs.Count; i++)
             {
@@ -191,7 +190,7 @@ namespace OrpheusBelow
         private void OnShadeKilled(ShadeEnemy slain)
         {
             _aliveShades.Remove(slain);
-            if (_spawningWave || _chamberCleared) return;
+            if (_spawningWave || _chamberCleared || _bossPhaseStarted) return;
 
             if (_aliveShades.Count == 0)
             {
@@ -199,13 +198,41 @@ namespace OrpheusBelow
                 if (_currentWaveIndex == 0 && ch.wave2 != null && ch.wave2.Count > 0)
                 {
                     _currentWaveIndex = 1;
-                    OrpheusHud.Instance?.ShowBanner("SHADE REINFORCEMENTS SUMMONED!", 2.2f);
-                    StartCoroutine(SpawnWaveWithRunesRoutine(ch, ch.wave2, 0.30f));
+                    OrpheusHud.Instance?.ShowSubtleCallout("Second Wave");
+                    StartCoroutine(SpawnWaveWithRunesRoutine(ch, ch.wave2, 0.28f));
                 }
                 else
                 {
-                    HandleChamberCleared();
+                    BeginChamberBossShowdown(ch);
                 }
+            }
+        }
+
+        private void BeginChamberBossShowdown(ChamberRuntimeData ch)
+        {
+            if (_bossPhaseStarted) return;
+            _bossPhaseStarted = true;
+
+            foreach (StygianOrbProjectile orb in Object.FindObjectsByType<StygianOrbProjectile>(FindObjectsSortMode.None))
+            {
+                Destroy(orb.gameObject);
+            }
+
+            if (ch.guardianBoss != null)
+            {
+                // Retract interior 3D obstacles so the 2D Side-View Rhythm Stage is 100% clean & unobstructed!
+                if (ch.interiorObstaclesRoot != null) ch.interiorObstaclesRoot.gameObject.SetActive(false);
+
+                ch.guardianBoss.OnCerberusDefeated += () =>
+                {
+                    if (ch.interiorObstaclesRoot != null) ch.interiorObstaclesRoot.gameObject.SetActive(true);
+                    HandleChamberCleared();
+                };
+                ch.guardianBoss.ActivateGuardianDuel();
+            }
+            else
+            {
+                HandleChamberCleared();
             }
         }
 
@@ -215,13 +242,7 @@ namespace OrpheusBelow
             _chamberCleared = true;
 
             ChamberRuntimeData ch = chambers[CurrentChamberIndex];
-            ProceduralLyreAudio.Instance?.PlaySoftAttack(0.85f);
-
-            if (ch.dropApolloBoonOnClear)
-            {
-                HarmonicBoonShrine.SpawnAt(transform, ch.centerWorld + new Vector3(1.5f, 0f, 1.5f),
-                    "BOON OF APOLLO CLAIMED: +22% Boom Radius, +15% Strike Damage & +35 Vitality!");
-            }
+            ProceduralLyreAudio.Instance?.PlayCadenceComplete();
 
             if (ch.exitDoor != null)
             {
@@ -229,23 +250,51 @@ namespace OrpheusBelow
                 GroundShockwaveRing.Spawn(ch.exitDoor.transform.position + new Vector3(0f, 0.06f, 0f), 4.2f, new Color(0.5f, 2.6f, 1.5f, 1f), 0.45f);
             }
 
-            if (ch.boss == null)
+            // Deterministic Mythic Cadence Progression (Zero RNG Stat Boons!)
+            OrpheusLyreCombat combat = OrpheusLyreCombat.Instance;
+            string clearBanner;
+
+            if (ch.exitDoor != null && ch.exitDoor.isFinalSunlightExit)
             {
-                OrpheusHud.Instance?.ShowBanner("CHAMBER CLEAR!  Exit Archway Unlocked (North-East)", 3.4f);
+                clearBanner = "Cerberus Charmed into Slumber  —  Ascend into the Sun";
             }
+            else if (CurrentChamberIndex == 0 && combat != null && combat.UnlockedCadenceTier < 2)
+            {
+                combat.UnlockedCadenceTier = 2;
+                combat.RefreshCadenceDisplay();
+                clearBanner = "Guardian Pacified  —  Learned Cadence: Sanctuary of Eurydice (B - S)";
+                OrpheusHud.Instance?.ShowCadenceUnlockCeremony(
+                    "Sanctuary of Eurydice",
+                    "[ B ]  —  [ S ]",
+                    "Surround Eurydice in a Golden Aegis, repelling abductors and hearing her reassuring hum.");
+            }
+            else if (CurrentChamberIndex == 1 && combat != null && combat.UnlockedCadenceTier < 3)
+            {
+                combat.UnlockedCadenceTier = 3;
+                combat.RefreshCadenceDisplay();
+                clearBanner = "Guardian Pacified  —  Learned Cadence: Siren's Convergence (S - B - S)";
+                OrpheusHud.Instance?.ShowCadenceUnlockCeremony(
+                    "Siren's Convergence",
+                    "[ S ]  —  [ B ]  —  [ S ]",
+                    "Conjure an inward-pulling harmonic vortex that cracks Grief-Armor and draws all Shades together.");
+            }
+            else
+            {
+                clearBanner = "Guardian Lulled to Slumber  —  Passage Unlocked";
+            }
+
+            OrpheusHud.Instance?.ShowBanner(clearBanner, 3.8f);
         }
     }
 
-    /// <summary>
-    /// Builds the 4-Chamber 2.5D Isometric HADES Chamber-Crawler prototype.
-    /// Automatically upgrades any empty or older 2D scene when Play is pressed!
-    /// </summary>
     public static class OrpheusPrototypeBuilder
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoBootstrapIfNeeded()
         {
-            if (Object.FindFirstObjectByType<HadesChamberDirector>() != null)
+            // Auto-upgrade if empty scene OR if an older prototype build version is open in the Editor!
+            HadesChamberDirector existing = Object.FindFirstObjectByType<HadesChamberDirector>();
+            if (existing != null && existing.buildVersion >= HadesChamberDirector.PrototypeBuildVersion)
             {
                 return;
             }
@@ -276,20 +325,21 @@ namespace OrpheusBelow
 
             HadesChamberDirector director = root.AddComponent<HadesChamberDirector>();
 
-            // --- 2. ORPHEUS & BLURRED EURYDICE (2.5D ISOMETRIC) ---
+            // --- 2. ORPHEUS & BLURRED EURYDICE ---
             GameObject orpheusGo = new GameObject("Orpheus_Player25D");
             orpheusGo.transform.SetParent(root.transform, false);
-            orpheusGo.transform.position = new Vector3(-5.5f, 0f, -5.5f);
+            orpheusGo.transform.position = new Vector3(-6.2f, 0f, -6.2f);
             OrpheusPlayerController player = orpheusGo.AddComponent<OrpheusPlayerController>();
             orpheusGo.AddComponent<OrpheusLyreCombat>();
+            orpheusGo.AddComponent<OrpheusFluteChannel>();
 
             GameObject eurydiceGo = new GameObject("Eurydice_BlurredCompanion25D");
             eurydiceGo.transform.SetParent(root.transform, false);
-            eurydiceGo.transform.position = new Vector3(-7.2f, 0f, -7.2f);
+            eurydiceGo.transform.position = new Vector3(-8.0f, 0f, -8.0f);
             BlurredEurydice eurydice = eurydiceGo.AddComponent<BlurredEurydice>();
             eurydice.orpheus = orpheusGo.transform;
 
-            // --- 3. 2.5D ISOMETRIC CAMERA ---
+            // --- 3. DUAL-PERSPECTIVE CAMERA (2.5D Isometric <-> 2D Parallax Boss Stage) ---
             Camera mainCam = Camera.main ?? Object.FindFirstObjectByType<Camera>();
             if (mainCam == null)
             {
@@ -298,141 +348,47 @@ namespace OrpheusBelow
                 mainCam = camGo.AddComponent<Camera>();
                 camGo.AddComponent<AudioListener>();
             }
-            // Remove any leftover 2D components if upgrading an older scene
             UnderworldCamera2D camIso = mainCam.GetComponent<UnderworldCamera2D>();
             if (camIso == null) camIso = mainCam.gameObject.AddComponent<UnderworldCamera2D>();
             camIso.target = player.transform;
             camIso.eurydiceTarget = eurydice.transform;
 
-            Transform chambersRoot = new GameObject("Isometric_Chambers_25D").transform;
+            Transform chambersRoot = new GameObject("Chambers_25D_And_Parallax2D").transform;
             chambersRoot.SetParent(root.transform, false);
 
-            // =========================================================================
-            // CHAMBER 01: COURTYARD OF ASPHODEL (Center: 0, 0, 0 | Size: 18 x 18)
-            // Warm-up Hades diamond room: Pillars, Cracked Obelisk, & 3 Wretch Lungers
-            // =========================================================================
-            Vector3 c1 = new Vector3(0f, 0f, 0f);
-            ChamberExitDoor door1 = BuildDiamondChamberShell(chambersRoot, "Chamber01_Asphodel", c1, 18f, 18f, targetChamber: 1, finalExit: false);
-            CreateIsoPillar(chambersRoot, c1 + new Vector3(-3.8f, 0f,  1.2f));
-            CreateIsoPillar(chambersRoot, c1 + new Vector3( 1.2f, 0f, -3.8f));
-            CreateCrackedObelisk(chambersRoot, c1 + new Vector3(0f, 0f, 0f));
-
-            director.chambers.Add(new HadesChamberDirector.ChamberRuntimeData
+            const int totalChambers = 8;
+            for (int i = 0; i < totalChambers; i++)
             {
-                chamberTitle = "CHAMBER I — COURTYARD OF ASPHODEL",
-                centerWorld = c1,
-                playerSpawnWorld = c1 + new Vector3(-6.2f, 0f, -6.2f),
-                cameraLeashRadius = 6.5f,
-                exitDoor = door1,
-                dropApolloBoonOnClear = false,
-                wave1 = new List<HadesChamberDirector.WaveSpawnSpec>
-                {
-                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger, localOffsetXZ = new Vector2( 2.8f,  1.5f) },
-                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger, localOffsetXZ = new Vector2(-1.5f,  3.2f) },
-                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger, localOffsetXZ = new Vector2( 3.8f, -1.2f) }
-                }
-            });
-
-            // =========================================================================
-            // CHAMBER 02: HALL OF PILLARS (Center: 80, 0, 80 | Size: 22 x 22)
-            // 2-Wave Hades brawl: Wall-Slam pillars, Brimstone Casters, Armored Warden, & Boon Reward!
-            // =========================================================================
-            Vector3 c2 = new Vector3(80f, 0f, 80f);
-            ChamberExitDoor door2 = BuildDiamondChamberShell(chambersRoot, "Chamber02_Pillars", c2, 22f, 22f, targetChamber: 2, finalExit: false);
-            CreateIsoPillar(chambersRoot, c2 + new Vector3(-4.2f, 0f, -1.0f));
-            CreateIsoPillar(chambersRoot, c2 + new Vector3(-1.0f, 0f, -4.2f));
-            CreateIsoPillar(chambersRoot, c2 + new Vector3( 4.2f, 0f,  1.0f));
-            CreateIsoPillar(chambersRoot, c2 + new Vector3( 1.0f, 0f,  4.2f));
-            CreateCrackedObelisk(chambersRoot, c2 + new Vector3(-2.5f, 0f, 2.5f));
-            CreateCrackedObelisk(chambersRoot, c2 + new Vector3( 2.5f, 0f, -2.5f));
-
-            director.chambers.Add(new HadesChamberDirector.ChamberRuntimeData
-            {
-                chamberTitle = "CHAMBER II — HALL OF TARTARUS PILLARS",
-                centerWorld = c2,
-                playerSpawnWorld = c2 + new Vector3(-8.0f, 0f, -8.0f),
-                cameraLeashRadius = 8.5f,
-                exitDoor = door2,
-                dropApolloBoonOnClear = true,
-                wave1 = new List<HadesChamberDirector.WaveSpawnSpec>
-                {
-                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,    localOffsetXZ = new Vector2(-1.5f,  2.0f) },
-                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,    localOffsetXZ = new Vector2( 2.2f, -1.2f) },
-                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster, localOffsetXZ = new Vector2( 4.5f,  4.5f) }
-                },
-                wave2 = new List<HadesChamberDirector.WaveSpawnSpec>
-                {
-                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.ArmoredWarden,   localOffsetXZ = new Vector2( 1.8f,  1.8f) },
-                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster, localOffsetXZ = new Vector2(-4.5f,  4.0f) },
-                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster, localOffsetXZ = new Vector2( 4.0f, -4.5f) }
-                }
-            });
-
-            // =========================================================================
-            // CHAMBER 03: CHASMS OF STYX (Center: 160, 0, 160 | Size: 24 x 24)
-            // Dash across glowing Stygian Chasms ([Space] vaults right over!) + Eurydice Mist Whisper
-            // =========================================================================
-            Vector3 c3 = new Vector3(160f, 0f, 160f);
-            ChamberExitDoor door3 = BuildDiamondChamberShell(chambersRoot, "Chamber03_StyxChasms", c3, 24f, 24f, targetChamber: 3, finalExit: false);
-
-            // Two dashable Stygian Lava Chasm trenches cutting across the room (2.4m wide — crisp Spacebar Dash!)
-            CreateDashableStyxChasm(chambersRoot, c3 + new Vector3(-2.6f, 0f,  2.2f), new Vector3(9.5f, 1.0f, 2.3f));
-            CreateDashableStyxChasm(chambersRoot, c3 + new Vector3( 3.2f, 0f, -2.4f), new Vector3(2.3f, 1.0f, 9.5f));
-            CreateIsoPillar(chambersRoot, c3 + new Vector3(0f, 0f, 0f));
-            CreateTemptationMistZone(chambersRoot, c3 + new Vector3(5.5f, 0f, 5.5f), new Vector3(7f, 3f, 7f),
-                "...Across the roaring Styx chasm, you cannot hear Eurydice's footsteps...   [Hold Q to Look Back]");
-
-            director.chambers.Add(new HadesChamberDirector.ChamberRuntimeData
-            {
-                chamberTitle = "CHAMBER III — CHASMS OF THE STYX  ([Space] Dash Over Pits!)",
-                centerWorld = c3,
-                playerSpawnWorld = c3 + new Vector3(-8.8f, 0f, -8.8f),
-                cameraLeashRadius = 9.5f,
-                exitDoor = door3,
-                dropApolloBoonOnClear = true,
-                wave1 = new List<HadesChamberDirector.WaveSpawnSpec>
-                {
-                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster, localOffsetXZ = new Vector2(-4.5f,  5.8f) },
-                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster, localOffsetXZ = new Vector2( 6.0f, -4.2f) },
-                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,    localOffsetXZ = new Vector2( 1.8f,  2.2f) }
-                },
-                wave2 = new List<HadesChamberDirector.WaveSpawnSpec>
-                {
-                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.ArmoredWarden,   localOffsetXZ = new Vector2( 4.2f,  4.2f) },
-                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,    localOffsetXZ = new Vector2(-2.2f, -1.8f) },
-                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,    localOffsetXZ = new Vector2( 5.5f,  1.5f) }
-                }
-            });
-
-            // =========================================================================
-            // CHAMBER 04: SANCTUARY OF CERBERUS (Center: 240, 0, 240 | Size: 26 x 26)
-            // 2.5D Isometric Boss Sanctuary + Final Sunlight Threshold!
-            // =========================================================================
-            Vector3 c4 = new Vector3(240f, 0f, 240f);
-            ChamberExitDoor door4 = BuildDiamondChamberShell(chambersRoot, "Chamber04_CerberusSanctuary", c4, 26f, 26f, targetChamber: 4, finalExit: true);
-            CreateIsoPillar(chambersRoot, c4 + new Vector3(-6.0f, 0f,  0.5f));
-            CreateIsoPillar(chambersRoot, c4 + new Vector3( 0.5f, 0f, -6.0f));
-
-            GameObject bossGo = new GameObject("Cerberus_Guardian25D");
-            bossGo.transform.SetParent(chambersRoot, false);
-            bossGo.transform.position = c4 + new Vector3(5.2f, 0f, 5.2f);
-            CerberusRhythmBoss cerberus = bossGo.AddComponent<CerberusRhythmBoss>();
-
-            CreateTemptationMistZone(chambersRoot, c4 + new Vector3(8.8f, 0f, 8.8f), new Vector3(6f, 3f, 6f),
-                "\"Orpheus... wait... one glance before the blinding upper sun...\"   [Hold Q to Look Back — or Walk into Sunlight]");
-
-            director.chambers.Add(new HadesChamberDirector.ChamberRuntimeData
-            {
-                chamberTitle = "CHAMBER IV — GATES OF STYX: CERBERUS",
-                centerWorld = c4,
-                playerSpawnWorld = c4 + new Vector3(-9.2f, 0f, -9.2f),
-                cameraLeashRadius = 9.0f,
-                cameraOrthoOverride = 9.0f,
-                exitDoor = door4,
-                boss = cerberus
-            });
+                Vector3 center = new Vector3(i * 90f, 0f, i * 90f);
+                var chamberData = ProceduralChamberGenerator.GenerateChamber(chambersRoot, i, totalChambers, center);
+                director.chambers.Add(chamberData);
+            }
 
             return root;
+        }
+
+        private static Transform CreateObstaclesContainer(Transform parent, string name)
+        {
+            GameObject go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            return go.transform;
+        }
+
+        private static void CreateParallaxRig(Transform parent, string name, Vector3 stageCenter, Color glow, Color arch, Color fire)
+        {
+            GameObject go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            UnderworldParallaxRig rig = go.AddComponent<UnderworldParallaxRig>();
+            rig.Initialize(stageCenter, glow, arch, fire);
+        }
+
+        private static CerberusRhythmBoss CreateGuardian(Transform parent, string name, BossIdentity id, Vector3 stageCenter)
+        {
+            GameObject go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            CerberusRhythmBoss b = go.AddComponent<CerberusRhythmBoss>();
+            b.ConfigureBoss(id, stageCenter);
+            return b;
         }
 
         private static ChamberExitDoor BuildDiamondChamberShell(
@@ -442,17 +398,15 @@ namespace OrpheusBelow
             room.SetParent(parent, false);
             room.position = center;
 
-            Color floorTop   = new Color(0.14f, 0.10f, 0.20f, 1f);
+            Color floorTop   = new Color(0.13f, 0.09f, 0.19f, 1f);
             Color floorLeft  = new Color(0.08f, 0.05f, 0.12f, 1f);
             Color floorRight = new Color(0.05f, 0.03f, 0.08f, 1f);
 
-            // Main 3D Isometric Stone Slab (top surface at Y = 0)
             RenderPipeline2DSetup.CreateIsoBlock(room, "MainFloorSlab",
                 new Vector3(0f, -0.75f, 0f), new Vector3(sizeX, 1.5f, sizeZ),
                 floorTop, floorLeft, floorRight, addSolidWallCollider: false);
 
-            // Subtle Hades mosaic floor tiles so 360° movement & dash speed read crystal-clearly!
-            Color tileAccent = new Color(0.22f, 0.15f, 0.31f, 0.55f);
+            Color tileAccent = new Color(0.20f, 0.14f, 0.29f, 0.50f);
             int gx = Mathf.FloorToInt(sizeX / 4f);
             int gz = Mathf.FloorToInt(sizeZ / 4f);
             for (int ix = -gx / 2; ix <= gx / 2; ix++)
@@ -468,30 +422,25 @@ namespace OrpheusBelow
                 }
             }
 
-            // 4 Perimeter 2.5D Walls (Back-Left -X, Back-Right +Z, Front-Left -Z, Front-Right +X)
-            // Back walls (+X, +Z) are tall grand Hades architecture; front walls (-X, -Z) are low parapets so camera never gets blocked!
-            Color wallTop   = new Color(0.28f, 0.17f, 0.34f, 1f);
-            Color wallLeft  = new Color(0.17f, 0.09f, 0.22f, 1f);
+            Color wallTop   = new Color(0.26f, 0.16f, 0.33f, 1f);
+            Color wallLeft  = new Color(0.16f, 0.09f, 0.21f, 1f);
             Color wallRight = new Color(0.10f, 0.05f, 0.14f, 1f);
 
             float hx = sizeX * 0.5f;
             float hz = sizeZ * 0.5f;
 
-            // Upper-Left Wall (+Z)
             RenderPipeline2DSetup.CreateIsoBlock(room, "Wall_NorthWest_PlusZ",
                 new Vector3(-1.8f, 1.4f, hz + 0.6f), new Vector3(sizeX - 3.6f, 2.8f, 1.2f),
                 wallTop, wallLeft, wallRight, addSolidWallCollider: true);
 
-            // Upper-Right Wall (+X)
             RenderPipeline2DSetup.CreateIsoBlock(room, "Wall_NorthEast_PlusX",
                 new Vector3(hx + 0.6f, 1.4f, -1.8f), new Vector3(1.2f, 2.8f, sizeZ - 3.6f),
                 wallTop, wallLeft, wallRight, addSolidWallCollider: true);
 
-            // Lower Parapet Walls (-Z and -X: short visual curb + tall invisible collider)
-            CreateInvisibleRimWall(room, "Wall_SouthWest_MinusZ", new Vector3(0f, 0.35f, -hz - 0.5f), new Vector3(sizeX + 1.2f, 0.7f, 1.0f), wallTop, wallLeft, wallRight);
-            CreateInvisibleRimWall(room, "Wall_SouthEast_MinusX", new Vector3(-hx - 0.5f, 0.35f, 0f), new Vector3(1.0f, 0.7f, sizeZ + 1.2f), wallTop, wallLeft, wallRight);
+            // Low 0.28m front trim so even at 4.5° Side-2D pitch the camera has an unobstructed sightline to Orpheus's feet!
+            CreateInvisibleRimWall(room, "Wall_SouthWest_MinusZ", new Vector3(0f, 0.14f, -hz - 0.5f), new Vector3(sizeX + 1.2f, 0.28f, 1.0f), wallTop, wallLeft, wallRight);
+            CreateInvisibleRimWall(room, "Wall_SouthEast_MinusX", new Vector3(-hx - 0.5f, 0.14f, 0f), new Vector3(1.0f, 0.28f, sizeZ + 1.2f), wallTop, wallLeft, wallRight);
 
-            // NE Corner Exit Archway (+hx - 1.2, +hz - 1.2) — right at the top apex of the diamond chamber!
             Vector3 doorPos = new Vector3(hx - 1.1f, 0f, hz - 1.1f);
             RenderPipeline2DSetup.CreateIsoBlock(room, "ExitGatePillarL",
                 doorPos + new Vector3(-1.8f, 1.8f, 0.6f), new Vector3(1.1f, 3.6f, 1.1f),
@@ -499,7 +448,6 @@ namespace OrpheusBelow
             RenderPipeline2DSetup.CreateIsoBlock(room, "ExitGatePillarR",
                 doorPos + new Vector3(0.6f, 1.8f, -1.8f), new Vector3(1.1f, 3.6f, 1.1f),
                 new Color(0.45f, 0.32f, 0.20f, 1f), wallLeft, wallRight, addSolidWallCollider: true);
-            // Solid backstop behind doorway so player can't walk into void when locked
             RenderPipeline2DSetup.CreateIsoBlock(room, "ExitBackstop",
                 doorPos + new Vector3(1.5f, 1.5f, 1.5f), new Vector3(4.5f, 3.0f, 4.5f),
                 wallTop, wallLeft, wallRight, addSolidWallCollider: true);
@@ -530,7 +478,6 @@ namespace OrpheusBelow
             exitComp.isFinalSunlightExit = finalExit;
             exitComp.SetupVisuals(portalSr, beaconSr);
 
-            // Atmospheric Braziers at corners
             CreateHadesBrazier(room, new Vector3(-hx + 1.8f, 0f,  hz - 1.8f));
             CreateHadesBrazier(room, new Vector3( hx - 1.8f, 0f, -hz + 1.8f));
 
@@ -548,7 +495,6 @@ namespace OrpheusBelow
 
         private static void CreateIsoPillar(Transform parent, Vector3 worldPos)
         {
-            // Tall 2.5D Isometric Pillar (occludes sprites behind it via ZWrite On + triggers Hades WALL-SLAMS!)
             RenderPipeline2DSetup.CreateIsoBlock(parent, "TartarusStonePillar",
                 worldPos + new Vector3(0f, 1.55f, 0f), new Vector3(1.45f, 3.1f, 1.45f),
                 new Color(0.34f, 0.24f, 0.42f, 1f),
@@ -580,7 +526,6 @@ namespace OrpheusBelow
             chasm.transform.SetParent(parent, false);
             chasm.transform.position = worldPos;
 
-            // Dark sunken pit decal + glowing emerald-turquoise Styx magma core on the floor!
             GameObject darkPit = new GameObject("AbyssPit");
             darkPit.transform.SetParent(chasm.transform, false);
             darkPit.transform.localPosition = new Vector3(0f, 0.015f, 0f);

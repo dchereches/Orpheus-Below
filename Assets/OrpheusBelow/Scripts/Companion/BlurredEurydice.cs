@@ -1,12 +1,15 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace OrpheusBelow
 {
     /// <summary>
-    /// 2.5D Isometric Blurred Eurydice companion:
-    /// Drifts softly behind Orpheus along the XZ chamber floor as an 8-layer out-of-focus ghostly aura.
-    /// Never blocks movement or combat, and ONLY sharpens into crystal focus if you hold [Q] to break your vow.
+    /// Blurred Eurydice — Active Psychological & Escort Mechanic:
+    ///   - Connected to Orpheus by a delicate Soul Tether thread (shimmers pale silver-gold normally;
+    ///     turns jagged crimson when Mourning Abductor Shades latch onto her and drag her into the abyss!)
+    ///   - Answers nearby Soft Lyre notes (or the B-S Sanctuary Cadence) with a rising musical hum + moonlit ripple
+    ///     so you can verify the REAL Eurydice vs Underworld Mirage Decoys without ever pressing [Hold Q]!
     /// </summary>
     public class BlurredEurydice : MonoBehaviour
     {
@@ -17,8 +20,12 @@ namespace OrpheusBelow
         public bool IsVanished { get; private set; }
         public bool InTemptationZone { get; private set; }
         public string ActiveWhisper { get; private set; } = "";
+        public float AbductionDanger01 { get; private set; }
+        public bool HasSanctuaryShield => _sanctuaryTimer > 0f;
+        public bool IsBeingAbducted => _activeAbductors.Count > 0;
 
         private readonly Queue<Vector3> _breadcrumbs = new Queue<Vector3>();
+        private readonly HashSet<ShadeEnemy> _activeAbductors = new HashSet<ShadeEnemy>();
         private Vector3 _lastRecordedPos;
         private Vector3 _desiredPos;
 
@@ -27,12 +34,17 @@ namespace OrpheusBelow
         private SpriteRenderer[] _blurRenderers;
         private SpriteRenderer _sharpCoreHead;
         private SpriteRenderer _sharpCoreRobe;
+        private SpriteRenderer _sanctuaryRingSr;
+        private LineRenderer _tetherLine;
 
         private float _focus01;
+        private float _sanctuaryTimer;
+        private float _replyCooldown;
 
         private void Start()
         {
             BuildBlurredVisualStack();
+            BuildSoulTetherLine();
             if (orpheus != null)
             {
                 SnapBehindOrpheus(orpheus.position - UnderworldCamera2D.IsoUpXZ * followLagDistance);
@@ -42,10 +54,25 @@ namespace OrpheusBelow
         public void SnapBehindOrpheus(Vector3 worldPos)
         {
             _breadcrumbs.Clear();
+            _activeAbductors.Clear();
+            AbductionDanger01 = 0f;
             worldPos.y = 0f;
             transform.position = worldPos;
             _desiredPos = worldPos;
             if (orpheus != null) _lastRecordedPos = orpheus.position;
+        }
+
+        private void BuildSoulTetherLine()
+        {
+            GameObject tetherGo = new GameObject("SoulTetherThread");
+            tetherGo.transform.SetParent(transform, false);
+            _tetherLine = tetherGo.AddComponent<LineRenderer>();
+            _tetherLine.positionCount = 12;
+            _tetherLine.useWorldSpace = true;
+            _tetherLine.startWidth = 0.032f;
+            _tetherLine.endWidth = 0.022f;
+            _tetherLine.sharedMaterial = RenderPipeline2DSetup.Get2DSpriteMaterial();
+            _tetherLine.sortingOrder = 5;
         }
 
         private void BuildBlurredVisualStack()
@@ -55,6 +82,12 @@ namespace OrpheusBelow
             shadow.transform.localPosition = new Vector3(0f, 0.02f, 0f);
             shadow.transform.localScale = new Vector3(1.6f, 1.6f, 1f);
             RenderPipeline2DSetup.AttachGroundDecal(shadow, RenderPipeline2DSetup.SoftGlowSprite, new Color(0.35f, 0.75f, 1.0f, 0.25f), 1);
+
+            GameObject sancGo = new GameObject("SanctuaryAegisRing");
+            sancGo.transform.SetParent(transform, false);
+            sancGo.transform.localPosition = new Vector3(0f, 0.05f, 0f);
+            sancGo.transform.localScale = new Vector3(3.6f, 3.6f, 1f);
+            _sanctuaryRingSr = RenderPipeline2DSetup.AttachGroundDecal(sancGo, RenderPipeline2DSetup.RingSprite, new Color(2.6f, 2.1f, 0.55f, 0f), 6);
 
             _billboardRoot = new GameObject("EurydiceBillboard25D").transform;
             _billboardRoot.SetParent(transform, false);
@@ -80,7 +113,6 @@ namespace OrpheusBelow
                 _blurLayers[i] = layerGo.transform;
             }
 
-            // Sharp core figure — invisible during normal play, revealed only during fatal [Hold Q] look-back!
             GameObject robeGo = new GameObject("EurydiceSharpRobe");
             robeGo.transform.SetParent(_billboardRoot, false);
             robeGo.transform.localPosition = new Vector3(0f, -0.12f, 0f);
@@ -92,6 +124,55 @@ namespace OrpheusBelow
             headGo.transform.localPosition = new Vector3(0f, 0.68f, -0.01f);
             headGo.transform.localScale = new Vector3(0.42f, 0.42f, 1f);
             _sharpCoreHead = RenderPipeline2DSetup.AttachSprite(headGo, RenderPipeline2DSetup.CircleSprite, new Color(1.2f, 1.05f, 0.92f, 0f), 9);
+        }
+
+        public void RegisterAbductor(ShadeEnemy shade)
+        {
+            if (shade != null && _sanctuaryTimer <= 0f)
+            {
+                _activeAbductors.Add(shade);
+            }
+        }
+
+        public void UnregisterAbductor(ShadeEnemy shade)
+        {
+            _activeAbductors.Remove(shade);
+        }
+
+        /// <summary>
+        /// Triggered when Orpheus plays a Soft Ping near her or executes the B-S Sanctuary Cadence!
+        /// </summary>
+        public void TriggerAcousticReply(bool grantSanctuaryShield)
+        {
+            if (IsVanished) return;
+
+            if (grantSanctuaryShield)
+            {
+                _sanctuaryTimer = 4.5f;
+                AbductionDanger01 = 0f;
+                // Repel & pacify-damage any Abductor Shades clinging to Eurydice!
+                List<ShadeEnemy> copy = new List<ShadeEnemy>(_activeAbductors);
+                _activeAbductors.Clear();
+                foreach (ShadeEnemy ab in copy)
+                {
+                    if (ab != null) ab.OnOrphicHit(55f, 0.85f, true, transform.position);
+                }
+                GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.06f, 0f), 5.0f, new Color(2.6f, 2.15f, 0.60f, 1f), 0.38f);
+            }
+
+            if (_replyCooldown <= 0f)
+            {
+                _replyCooldown = 0.9f;
+                StartCoroutine(HumReplyRoutine());
+            }
+        }
+
+        private IEnumerator HumReplyRoutine()
+        {
+            yield return new WaitForSeconds(0.20f);
+            if (IsVanished) yield break;
+            ProceduralLyreAudio.Instance?.PlayEurydiceHumReply();
+            GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.05f, 0f), 3.2f, new Color(0.75f, 1.85f, 2.4f, 0.90f), 0.42f);
         }
 
         public void SetLookBackFocus(float focus01)
@@ -110,10 +191,11 @@ namespace OrpheusBelow
             if (IsVanished) return;
             IsVanished = true;
             _focus01 = 1f;
+            if (_tetherLine != null) _tetherLine.enabled = false;
             StartCoroutine(ShatterRoutine());
         }
 
-        private System.Collections.IEnumerator ShatterRoutine()
+        private IEnumerator ShatterRoutine()
         {
             UpdateBlurVisuals();
             yield return new WaitForSecondsRealtime(1.0f);
@@ -137,28 +219,102 @@ namespace OrpheusBelow
         private void Update()
         {
             if (IsVanished) return;
-            if (_billboardRoot != null) _billboardRoot.rotation = RenderPipeline2DSetup.IsoCameraRotation;
+            if (_billboardRoot != null) _billboardRoot.rotation = UnderworldCamera2D.CurrentBillboardRotation;
+
+            float dt = Time.deltaTime;
+            if (_replyCooldown > 0f) _replyCooldown -= dt;
+            if (_sanctuaryTimer > 0f) _sanctuaryTimer -= dt;
+
+            if (_sanctuaryRingSr != null)
+            {
+                Color sc = _sanctuaryRingSr.color;
+                sc.a = _sanctuaryTimer > 0f ? (0.55f + Mathf.Sin(Time.time * 8f) * 0.18f) : 0f;
+                _sanctuaryRingSr.color = sc;
+            }
+
+            // Prune destroyed abductors
+            _activeAbductors.RemoveWhere(a => a == null);
 
             if (orpheus != null)
             {
-                if (Vector3.Distance(orpheus.position, _lastRecordedPos) > 0.35f)
+                OrpheusPlayerController pc = OrpheusPlayerController.Instance;
+                if (pc != null && pc.IsIn2DBossStage)
                 {
-                    _breadcrumbs.Enqueue(orpheus.position);
-                    _lastRecordedPos = orpheus.position;
+                    _activeAbductors.Clear();
+                    AbductionDanger01 = 0f;
+                    Vector3 stageLeftBg = orpheus.position
+                                        - UnderworldCamera2D.IsoRightXZ * 3.1f
+                                        + UnderworldCamera2D.IsoUpXZ * 2.2f;
+                    float bob2D = Mathf.Sin(Time.time * 2.1f) * 0.12f;
+                    transform.position = Vector3.Lerp(transform.position, new Vector3(stageLeftBg.x, bob2D, stageLeftBg.z), Time.unscaledDeltaTime * 3.5f);
+                }
+                else if (_activeAbductors.Count > 0 && _sanctuaryTimer <= 0f)
+                {
+                    // Being dragged backward toward the SW abyss by Mourning Abductors!
+                    Vector3 dragDir = -UnderworldCamera2D.IsoUpXZ;
+                    transform.position += dragDir * (1.55f * dt);
+                    AbductionDanger01 = Mathf.MoveTowards(AbductionDanger01, 1f, dt / 6.8f);
+
+                    if (AbductionDanger01 >= 1f && pc != null && !pc.IsGameOver)
+                    {
+                        ShatterIntoAsh();
+                        pc.TriggerEurydiceAbductedLoss();
+                        return;
+                    }
+                }
+                else
+                {
+                    AbductionDanger01 = Mathf.MoveTowards(AbductionDanger01, 0f, dt * 0.45f);
+
+                    if (Vector3.Distance(orpheus.position, _lastRecordedPos) > 0.35f)
+                    {
+                        _breadcrumbs.Enqueue(orpheus.position);
+                        _lastRecordedPos = orpheus.position;
+                    }
+
+                    float targetLag = InTemptationZone ? followLagDistance + 1.4f : followLagDistance;
+                    while (_breadcrumbs.Count > 1 && Vector3.Distance(_breadcrumbs.Peek(), orpheus.position) > targetLag)
+                    {
+                        _desiredPos = _breadcrumbs.Dequeue();
+                    }
+
+                    float bob = Mathf.Sin(Time.time * 2.3f) * 0.08f;
+                    Vector3 goal = new Vector3(_desiredPos.x, bob, _desiredPos.z);
+                    transform.position = Vector3.Lerp(transform.position, goal, Time.unscaledDeltaTime * smoothSpeed);
                 }
 
-                float targetLag = InTemptationZone ? followLagDistance + 1.4f : followLagDistance;
-                while (_breadcrumbs.Count > 1 && Vector3.Distance(_breadcrumbs.Peek(), orpheus.position) > targetLag)
-                {
-                    _desiredPos = _breadcrumbs.Dequeue();
-                }
-
-                float bob = Mathf.Sin(Time.time * 2.3f) * 0.08f;
-                Vector3 goal = new Vector3(_desiredPos.x, bob, _desiredPos.z);
-                transform.position = Vector3.Lerp(transform.position, goal, Time.unscaledDeltaTime * smoothSpeed);
+                UpdateSoulTetherVisual();
             }
 
             UpdateBlurVisuals();
+        }
+
+        private void UpdateSoulTetherVisual()
+        {
+            if (_tetherLine == null || orpheus == null) return;
+
+            Vector3 a = orpheus.position + new Vector3(0f, 0.72f, 0f);
+            Vector3 b = transform.position + new Vector3(0f, 0.78f, 0f);
+
+            Color col = IsBeingAbducted
+                ? Color.Lerp(new Color(2.4f, 0.25f, 0.35f, 0.65f), new Color(2.9f, 0.55f, 0.20f, 0.90f), Mathf.PingPong(Time.time * 6f, 1f))
+                : (_sanctuaryTimer > 0f
+                    ? new Color(2.2f, 1.85f, 0.55f, 0.48f)
+                    : new Color(0.75f, 0.92f, 1.15f, 0.18f));
+
+            _tetherLine.startColor = col;
+            _tetherLine.endColor = new Color(col.r, col.g, col.b, col.a * 0.55f);
+
+            int n = _tetherLine.positionCount;
+            for (int i = 0; i < n; i++)
+            {
+                float u = i / (float)(n - 1);
+                Vector3 pt = Vector3.Lerp(a, b, u);
+                float sag = Mathf.Sin(u * Mathf.PI) * (IsBeingAbducted ? 0.04f : -0.22f);
+                float jitter = IsBeingAbducted ? Mathf.Sin(Time.time * 38f + i * 2.1f) * 0.09f : 0f;
+                pt.y += sag + jitter;
+                _tetherLine.SetPosition(i, pt);
+            }
         }
 
         private void UpdateBlurVisuals()
@@ -192,6 +348,66 @@ namespace OrpheusBelow
                 hc.a = sharpAlpha;
                 _sharpCoreHead.color = hc;
             }
+        }
+    }
+
+    /// <summary>
+    /// Deceptive Underworld Mirage: mimics Blurred Eurydice's silhouette off to the side to bait [Hold Q]!
+    /// Hit it with any Lyre note to expose & shatter the illusion without looking back.
+    /// </summary>
+    public class EurydiceMirageDecoy : MonoBehaviour, IOrphicTarget
+    {
+        private Transform _billboardRoot;
+        private readonly List<Transform> _layers = new List<Transform>();
+
+        public static void Spawn(Transform parent, Vector3 worldPos)
+        {
+            GameObject go = new GameObject("Eurydice_DeceptiveMirage");
+            if (parent != null) go.transform.SetParent(parent, false);
+            go.transform.position = worldPos;
+
+            SphereCollider sc = go.AddComponent<SphereCollider>();
+            sc.isTrigger = true;
+            sc.radius = 0.85f;
+            sc.center = new Vector3(0f, 0.85f, 0f);
+
+            EurydiceMirageDecoy m = go.AddComponent<EurydiceMirageDecoy>();
+            m.BuildMirage();
+        }
+
+        private void BuildMirage()
+        {
+            _billboardRoot = new GameObject("MirageBillboard").transform;
+            _billboardRoot.SetParent(transform, false);
+            _billboardRoot.localPosition = new Vector3(0f, 0.85f, 0f);
+
+            for (int i = 0; i < 5; i++)
+            {
+                GameObject l = new GameObject("MirageBlur_" + i);
+                l.transform.SetParent(_billboardRoot, false);
+                l.transform.localScale = new Vector3(1.3f + i * 0.14f, 2.0f + i * 0.12f, 1f);
+                RenderPipeline2DSetup.AttachSprite(l, RenderPipeline2DSetup.SoftGlowSprite, new Color(0.58f, 0.82f, 1.10f, 0.17f), 6);
+                _layers.Add(l.transform);
+            }
+        }
+
+        private void Update()
+        {
+            if (_billboardRoot != null) _billboardRoot.rotation = UnderworldCamera2D.CurrentBillboardRotation;
+            float t = Time.time;
+            for (int i = 0; i < _layers.Count; i++)
+            {
+                float a = t * (1.2f + i * 0.3f) + i;
+                _layers[i].localPosition = new Vector3(Mathf.Cos(a) * 0.35f, Mathf.Sin(a * 1.4f) * 0.28f, 0f);
+            }
+        }
+
+        public void OnOrphicHit(float damage, float intensity, bool isHardBoom, Vector3 hitOrigin)
+        {
+            // Shatter crimson — exposing the Underworld's lie!
+            GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.06f, 0f), 2.8f, new Color(2.6f, 0.22f, 0.45f, 0.95f), 0.30f);
+            OrpheusHud.Instance?.ShowSubtleCallout("Mirage Dispelled");
+            Destroy(gameObject);
         }
     }
 

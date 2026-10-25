@@ -1,32 +1,75 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 namespace OrpheusBelow
 {
     /// <summary>
-    /// 2.5D Isometric HADES HUD & Chamber Transition Overlay:
-    ///   - Vitality Bar + Double-Dash Charge Diamonds (◆◆)
-    ///   - Live Piezo / Breath / Mouse Charge Meter with 60% HARD BOOM marker
-    ///   - Active Isometric Chamber Title + Remaining Shades Counter / Cerberus Boss Bar
-    ///   - Smooth Hades Black-Fade between chambers + Game Over / Sunlight Victory screens
+    /// Subtle, literary ScreenSpaceOverlay UGUI HUD for Orpheus Below.
+    /// Uses classical Windows serif typography (Palatino Linotype / Georgia) + ultra-thin geometric bars
+    /// instead of legacy OnGUI, rendering razor-sharp in HDRP without cluttering the artwork.
     /// </summary>
     public class OrpheusHud : MonoBehaviour
     {
         public static OrpheusHud Instance { get; private set; }
 
-        public bool showControlsHelp = true;
+        public bool showControlsHelp;
 
-        private Texture2D _flatTex;
-        private string _bannerText = "";
-        private float _bannerTimer;
+        private Font _serifFont;
         private BlurredEurydice _eurydice;
 
-        private GUIStyle _titleStyle;
-        private GUIStyle _labelStyle;
-        private GUIStyle _centerBannerStyle;
-        private GUIStyle _whisperStyle;
-        private GUIStyle _bigOverlayTitle;
-        private GUIStyle _bigOverlaySub;
+        // Bottom-left minimal bars + Cadence trail
+        private RectTransform _hpFill;
+        private Image[] _dashGems;
+        private RectTransform _pulseFill;
+        private Image _pulseFillImg;
+        private Text _cadenceLabel;
+        private Text _sensorModeLabel;
+
+        // Top-center subtle banners & Guardian Rhythm bar
+        private CanvasGroup _bannerGroup;
+        private Text _bannerTitleText;
+        private float _bannerTimer;
+
+        private Text _calloutText;
+        private float _calloutTimer;
+
+        private GameObject _bossBarRoot;
+        private Text _bossNameText;
+        private RectTransform _bossHpFill;
+        private Text _bossJudgementText;
+
+        // Bottom Eurydice Soul-Tether Abduction, Whisper & Look-back
+        private GameObject _abductionRoot;
+        private Text _abductionWarnText;
+        private RectTransform _abductionFill;
+
+        private Text _whisperText;
+        private GameObject _lookBackRoot;
+        private RectTransform _lookBackFill;
+
+        // Optional [H] controls card
+        private GameObject _controlsCard;
+        private Text _controlsHintCorner;
+
+        // Cadence Unlock Ceremony Overlay
+        private GameObject _cadenceUnlockRoot;
+        private CanvasGroup _cadenceUnlockGroup;
+        private Text _cadenceUnlockTitle;
+        private Text _cadenceUnlockName;
+        private Text _cadenceUnlockFormula;
+        private Text _cadenceUnlockDesc;
+        private float _cadenceUnlockTimer;
+
+        // Screen wipe & End screen
+        private Image _fadeOverlay;
+        private GameObject _endScreenRoot;
+        private Image _endScreenBg;
+        private Text _endTitleText;
+        private Text _endBodyText;
+
+        private const float BarWidth = 240f;
+        private const float BossBarWidth = 460f;
 
         private void Awake()
         {
@@ -37,9 +80,8 @@ namespace OrpheusBelow
             }
             Instance = this;
 
-            _flatTex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-            _flatTex.SetPixel(0, 0, Color.white);
-            _flatTex.Apply();
+            _serifFont = LoadClassicalFont();
+            BuildMinimalCanvas();
         }
 
         private void Start()
@@ -47,245 +89,454 @@ namespace OrpheusBelow
             _eurydice = Object.FindFirstObjectByType<BlurredEurydice>();
         }
 
+        private static Font LoadClassicalFont()
+        {
+            Font f = Font.CreateDynamicFontFromOSFont(
+                new[] { "Palatino Linotype", "Georgia", "Book Antiqua", "Times New Roman", "Segoe UI" }, 28);
+            if (f == null)
+            {
+                f = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            }
+            return f;
+        }
+
+        public void ShowBanner(string text, float duration = 2.8f)
+        {
+            if (_bannerTitleText != null) _bannerTitleText.text = text;
+            _bannerTimer = duration;
+        }
+
+        public void ShowSubtleCallout(string text, float duration = 1.35f)
+        {
+            if (_calloutText != null) _calloutText.text = text;
+            _calloutTimer = duration;
+        }
+
+        public void ShowCadenceUnlockCeremony(string cadenceName, string chordFormula, string description, float duration = 4.2f)
+        {
+            if (_cadenceUnlockRoot != null)
+            {
+                _cadenceUnlockRoot.SetActive(true);
+                if (_cadenceUnlockName != null) _cadenceUnlockName.text = cadenceName;
+                if (_cadenceUnlockFormula != null) _cadenceUnlockFormula.text = chordFormula;
+                if (_cadenceUnlockDesc != null) _cadenceUnlockDesc.text = description;
+                _cadenceUnlockTimer = duration;
+                if (_cadenceUnlockGroup != null) _cadenceUnlockGroup.alpha = 0f;
+            }
+
+            ProceduralLyreAudio.Instance?.PlayCadenceUnlockFanfare();
+            if (OrpheusPlayerController.Instance != null)
+            {
+                GroundShockwaveRing.Spawn(OrpheusPlayerController.Instance.transform.position + new Vector3(0f, 0.08f, 0f), 7.5f,
+                    new Color(2.8f, 2.2f, 0.55f, 1f), 0.55f);
+            }
+        }
+
+        private void BuildMinimalCanvas()
+        {
+            GameObject canvasGo = new GameObject("OrpheusMinimalCanvas_UGUI");
+            canvasGo.transform.SetParent(transform, false);
+
+            Canvas canvas = canvasGo.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 100;
+
+            CanvasScaler scaler = canvasGo.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            RectTransform root = canvas.GetComponent<RectTransform>();
+
+            // --- 1. BOTTOM-LEFT: VITALITY, DASH GEMS, SENSOR PULSE & PHYSICAL CADENCES ---
+            RectTransform bl = CreateRect("BottomLeftCluster", root, Vector2.zero, Vector2.zero, Vector2.zero, new Vector2(42f, 30f), new Vector2(480f, 114f));
+
+            // Vitality hairline
+            CreateBarBg(bl, new Vector2(0f, 78f), new Vector2(BarWidth, 5f), new Color(0.18f, 0.06f, 0.10f, 0.72f));
+            _hpFill = CreateBarFill(bl, "HpFill", new Vector2(0f, 78f), new Vector2(BarWidth, 5f), new Color(0.86f, 0.22f, 0.30f, 0.90f), out _);
+
+            // Two rotated 45 deg Dash Gems next to Vitality
+            _dashGems = new Image[2];
+            for (int i = 0; i < 2; i++)
+            {
+                RectTransform gem = CreateRect("DashGem_" + i, bl, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(BarWidth + 22f + i * 20f, 80.5f), new Vector2(9f, 9f));
+                gem.localRotation = Quaternion.Euler(0f, 0f, 45f);
+                _dashGems[i] = gem.gameObject.AddComponent<Image>();
+            }
+
+            // Sensor / Piezo / Breath hairline + 60% Boom tick
+            CreateBarBg(bl, new Vector2(0f, 58f), new Vector2(BarWidth, 4f), new Color(0.12f, 0.10f, 0.18f, 0.68f));
+            _pulseFill = CreateBarFill(bl, "PulseFill", new Vector2(0f, 58f), new Vector2(0f, 4f), new Color(0.95f, 0.78f, 0.36f, 0.88f), out _pulseFillImg);
+
+            RectTransform boomTick = CreateRect("BoomThresholdTick", bl, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(BarWidth * 0.60f, 60f), new Vector2(2f, 10f));
+            boomTick.gameObject.AddComponent<Image>().color = new Color(0.95f, 0.90f, 0.80f, 0.75f);
+
+            // Physical S / B Chord Cadence Line
+            _cadenceLabel = CreateSerifText("CadenceText", bl, new Vector2(0f, 24f), new Vector2(520f, 24f),
+                15, FontStyle.Italic, TextAnchor.LowerLeft, new Color(0.94f, 0.86f, 0.64f, 0.76f));
+
+            _sensorModeLabel = CreateSerifText("SensorModeText", bl, new Vector2(0f, 0f), new Vector2(420f, 22f),
+                13, FontStyle.Italic, TextAnchor.LowerLeft, new Color(0.84f, 0.80f, 0.74f, 0.50f));
+
+            // --- 2. TOP-CENTER: FADING LITERARY CHAMBER TITLE & GUARDIAN RHYTHM BAR ---
+            RectTransform bannerRt = CreateRect("TopChamberBanner", root, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -44f), new Vector2(1040f, 48f));
+            _bannerGroup = bannerRt.gameObject.AddComponent<CanvasGroup>();
+            _bannerGroup.alpha = 0f;
+            _bannerTitleText = CreateSerifText("BannerText", bannerRt, Vector2.zero, new Vector2(1040f, 48f),
+                25, FontStyle.Italic, TextAnchor.MiddleCenter, new Color(0.93f, 0.86f, 0.70f, 0.88f));
+
+            _calloutText = CreateSerifText("SubtleCallout", root, new Vector2(0f, -96f), new Vector2(680f, 32f),
+                18, FontStyle.Italic, TextAnchor.MiddleCenter, new Color(0.95f, 0.84f, 0.58f, 0f),
+                anchorMin: new Vector2(0.5f, 1f), anchorMax: new Vector2(0.5f, 1f), pivot: new Vector2(0.5f, 1f));
+
+            // Guardian Boss Thin Discord/Catharsis Bar (active only in 2D Rhythm Showdown!)
+            RectTransform bossRt = CreateRect("GuardianBarCluster", root, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -34f), new Vector2(BossBarWidth, 72f));
+            _bossBarRoot = bossRt.gameObject;
+            _bossNameText = CreateSerifText("GuardianName", bossRt, new Vector2(0f, -2f), new Vector2(BossBarWidth, 28f),
+                20, FontStyle.Normal, TextAnchor.UpperCenter, new Color(0.94f, 0.88f, 0.76f, 0.86f),
+                anchorMin: new Vector2(0.5f, 1f), anchorMax: new Vector2(0.5f, 1f), pivot: new Vector2(0.5f, 1f));
+
+            CreateBarBg(bossRt, new Vector2(0f, 36f), new Vector2(BossBarWidth, 4f), new Color(0.16f, 0.08f, 0.14f, 0.75f));
+            _bossHpFill = CreateBarFill(bossRt, "BossHpFill", new Vector2(0f, 36f), new Vector2(BossBarWidth, 4f), new Color(0.94f, 0.78f, 0.42f, 0.90f), out _);
+
+            _bossJudgementText = CreateSerifText("RhythmJudgement", bossRt, new Vector2(0f, -44f), new Vector2(640f, 26f),
+                16, FontStyle.Italic, TextAnchor.UpperCenter, new Color(0.96f, 0.86f, 0.55f, 0.78f),
+                anchorMin: new Vector2(0.5f, 1f), anchorMax: new Vector2(0.5f, 1f), pivot: new Vector2(0.5f, 1f));
+            _bossBarRoot.SetActive(false);
+
+            // --- 3. BOTTOM-CENTER: SOUL TETHER ABDUCTION WARNING, WHISPER & [HOLD Q] ---
+            RectTransform abRt = CreateRect("TetherAbductionCluster", root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 102f), new Vector2(640f, 34f));
+            _abductionRoot = abRt.gameObject;
+            _abductionWarnText = CreateSerifText("AbductionWarnText", abRt, new Vector2(0f, 10f), new Vector2(640f, 24f),
+                16, FontStyle.Italic, TextAnchor.MiddleCenter, new Color(1.0f, 0.44f, 0.52f, 0.92f));
+            _abductionWarnText.text = "Mourning Shades are dragging Eurydice back!   [Strike Them or Play B - S]";
+            CreateBarBg(abRt, new Vector2(140f, 2f), new Vector2(360f, 3f), new Color(0.20f, 0.04f, 0.08f, 0.75f));
+            _abductionFill = CreateBarFill(abRt, "AbductionFill", new Vector2(140f, 2f), new Vector2(0f, 3f), new Color(1.0f, 0.25f, 0.38f, 0.95f), out _);
+            _abductionRoot.SetActive(false);
+
+            _whisperText = CreateSerifText("EurydiceWhisper", root, new Vector2(0f, 64f), new Vector2(1040f, 34f),
+                17, FontStyle.Italic, TextAnchor.MiddleCenter, new Color(0.78f, 0.90f, 0.98f, 0f),
+                anchorMin: new Vector2(0.5f, 0f), anchorMax: new Vector2(0.5f, 0f), pivot: new Vector2(0.5f, 0f));
+
+            RectTransform lbRt = CreateRect("LookBackCluster", root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 28f), new Vector2(320f, 28f));
+            _lookBackRoot = lbRt.gameObject;
+            Text lbWarn = CreateSerifText("LookBackWarn", lbRt, new Vector2(0f, 10f), new Vector2(320f, 22f),
+                15, FontStyle.Italic, TextAnchor.MiddleCenter, new Color(0.98f, 0.55f, 0.68f, 0.90f));
+            lbWarn.text = "Do not turn back...";
+            CreateBarBg(lbRt, new Vector2(0f, 2f), new Vector2(320f, 3f), new Color(0.18f, 0.04f, 0.08f, 0.7f));
+            _lookBackFill = CreateBarFill(lbRt, "LookBackFill", new Vector2(0f, 2f), new Vector2(0f, 3f), new Color(0.98f, 0.28f, 0.46f, 0.95f), out _);
+            _lookBackRoot.SetActive(false);
+
+            // --- 4. BOTTOM-RIGHT: DISCREET [H] CONTROLS TOGGLE ---
+            _controlsHintCorner = CreateSerifText("ControlsCornerHint", root, new Vector2(-38f, 30f), new Vector2(260f, 24f),
+                14, FontStyle.Italic, TextAnchor.LowerRight, new Color(0.82f, 0.78f, 0.72f, 0.42f),
+                anchorMin: new Vector2(1f, 0f), anchorMax: new Vector2(1f, 0f), pivot: new Vector2(1f, 0f));
+            _controlsHintCorner.text = "[H] Controls & Cadences";
+
+            RectTransform cardRt = CreateRect("ControlsCard", root, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-38f, 62f), new Vector2(405f, 210f));
+            cardRt.gameObject.AddComponent<Image>().color = new Color(0.04f, 0.02f, 0.07f, 0.78f);
+            Text cardTxt = CreateSerifText("ControlsBody", cardRt, new Vector2(16f, 12f), new Vector2(374f, 186f),
+                13, FontStyle.Normal, TextAnchor.MiddleLeft, new Color(0.88f, 0.84f, 0.78f, 0.88f));
+            cardTxt.text =
+                "W A S D  —  Move (A / D in 2D Rhythm Duel)\n" +
+                "Space / Shift  —  Double-Dash (Crosses Chasms)\n" +
+                "F  —  Flute (Aulos) Stance  ·  Pacifies Weakened Shades\n" +
+                "Tap LMB / J  —  Soft Note ('S', < 60%  ·  Eurydice Hums Back)\n" +
+                "RMB / K / Hold LMB  —  Hard Boom ('B', >= 60%)\n" +
+                "Cadence [S - S - B]  —  Hymn of Dawn (Piercing Beam)\n" +
+                "Cadence [B - S]  —  Sanctuary of Eurydice (Ch. I Reward)\n" +
+                "Cadence [S - B - S]  —  Siren's Convergence (Ch. II Reward)\n" +
+                "Tab  —  Cycle Mic / ESP32   ·   Hold Q  —  Look Back   ·   R  —  Restart";
+            _controlsCard = cardRt.gameObject;
+            _controlsCard.SetActive(showControlsHelp);
+
+            // --- 5. CADENCE UNLOCK CEREMONY OVERLAY ---
+            RectTransform unlockRt = CreateRect("CadenceUnlockOverlay", root, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            _cadenceUnlockRoot = unlockRt.gameObject;
+            _cadenceUnlockGroup = unlockRt.gameObject.AddComponent<CanvasGroup>();
+            _cadenceUnlockGroup.alpha = 0f;
+
+            Image unlockBg = unlockRt.gameObject.AddComponent<Image>();
+            unlockBg.color = new Color(0.04f, 0.02f, 0.08f, 0.78f);
+            unlockBg.raycastTarget = false;
+
+            _cadenceUnlockTitle = CreateSerifText("UnlockHeader", unlockRt, new Vector2(0f, 110f), new Vector2(800f, 32f),
+                20, FontStyle.Italic, TextAnchor.MiddleCenter, new Color(0.95f, 0.85f, 0.55f, 0.85f),
+                anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
+            _cadenceUnlockTitle.text = "—  Cadence Unlocked  —";
+
+            _cadenceUnlockName = CreateSerifText("UnlockName", unlockRt, new Vector2(0f, 52f), new Vector2(900f, 58f),
+                38, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(2.8f, 2.3f, 0.95f, 1f),
+                anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
+
+            _cadenceUnlockFormula = CreateSerifText("UnlockFormula", unlockRt, new Vector2(0f, -12f), new Vector2(800f, 42f),
+                24, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(2.6f, 1.95f, 0.45f, 0.98f),
+                anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
+
+            _cadenceUnlockDesc = CreateSerifText("UnlockDesc", unlockRt, new Vector2(0f, -74f), new Vector2(760f, 65f),
+                18, FontStyle.Italic, TextAnchor.MiddleCenter, new Color(0.90f, 0.86f, 0.80f, 0.88f),
+                anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
+
+            _cadenceUnlockRoot.SetActive(false);
+
+            // --- 6. CHAMBER TRANSITION FADE & END OVERLAY ---
+            RectTransform fadeRt = CreateRect("ChamberWipeFade", root, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            _fadeOverlay = fadeRt.gameObject.AddComponent<Image>();
+            _fadeOverlay.color = new Color(0.02f, 0.01f, 0.04f, 0f);
+            _fadeOverlay.raycastTarget = false;
+
+            RectTransform endRt = CreateRect("EndOverlay", root, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            _endScreenBg = endRt.gameObject.AddComponent<Image>();
+            _endScreenBg.color = new Color(0.03f, 0.01f, 0.05f, 0.82f);
+
+            _endTitleText = CreateSerifText("EndTitle", endRt, new Vector2(0f, 64f), new Vector2(900f, 64f),
+                42, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.95f, 0.86f, 0.68f, 0.95f),
+                anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
+
+            _endBodyText = CreateSerifText("EndBody", endRt, new Vector2(0f, -36f), new Vector2(820f, 130f),
+                19, FontStyle.Italic, TextAnchor.MiddleCenter, new Color(0.86f, 0.82f, 0.78f, 0.85f),
+                anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
+
+            _endScreenRoot = endRt.gameObject;
+            _endScreenRoot.SetActive(false);
+        }
+
         private void Update()
         {
-            if (_bannerTimer > 0f) _bannerTimer -= Time.unscaledDeltaTime;
-
             Keyboard kb = Keyboard.current;
             if (kb != null && kb.hKey.wasPressedThisFrame)
             {
                 showControlsHelp = !showControlsHelp;
+                if (_controlsCard != null) _controlsCard.SetActive(showControlsHelp);
             }
-        }
 
-        public void ShowBanner(string text, float duration = 3.0f)
-        {
-            _bannerText = text;
-            _bannerTimer = duration;
-        }
-
-        private void EnsureStyles()
-        {
-            if (_titleStyle != null) return;
-
-            _titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold, richText = true };
-            _titleStyle.normal.textColor = new Color(0.98f, 0.88f, 0.62f, 1f);
-
-            _labelStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, richText = true };
-            _labelStyle.normal.textColor = new Color(0.92f, 0.90f, 0.95f, 1f);
-
-            _centerBannerStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 17,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter,
-                richText = true
-            };
-            _centerBannerStyle.normal.textColor = new Color(1.0f, 0.88f, 0.48f, 1f);
-
-            _whisperStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 16,
-                fontStyle = FontStyle.Italic,
-                alignment = TextAnchor.MiddleCenter,
-                richText = true
-            };
-            _whisperStyle.normal.textColor = new Color(0.76f, 0.93f, 1.0f, 1f);
-
-            _bigOverlayTitle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 38,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter,
-                richText = true
-            };
-
-            _bigOverlaySub = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 19,
-                alignment = TextAnchor.MiddleCenter,
-                wordWrap = true,
-                richText = true
-            };
-            _bigOverlaySub.normal.textColor = new Color(0.92f, 0.89f, 0.94f, 1f);
-        }
-
-        private void DrawRect(Rect r, Color col)
-        {
-            Color prev = GUI.color;
-            GUI.color = col;
-            GUI.DrawTexture(r, _flatTex);
-            GUI.color = prev;
-        }
-
-        private void OnGUI()
-        {
-            EnsureStyles();
-
+            float dt = Time.unscaledDeltaTime;
             OrpheusPlayerController player = OrpheusPlayerController.Instance;
+            OrpheusLyreCombat combat = OrpheusLyreCombat.Instance;
             SensorPulseInput sensor = SensorPulseInput.Instance;
             HadesChamberDirector dir = HadesChamberDirector.Instance;
             if (_eurydice == null) _eurydice = Object.FindFirstObjectByType<BlurredEurydice>();
 
-            float sw = Screen.width;
-            float sh = Screen.height;
-
-            // --- 1. TOP-LEFT: VITALITY, HADES DASH CHARGES, & PIEZO/BREATH METER ---
-            DrawRect(new Rect(18, 16, 364, 158), new Color(0.05f, 0.02f, 0.08f, 0.86f));
-            DrawRect(new Rect(18, 16, 364, 2), new Color(0.92f, 0.72f, 0.28f, 0.9f));
-
-            float hpPct = player != null ? Mathf.Clamp01(player.CurrentHealth / Mathf.Max(1f, player.maxHealth)) : 1f;
-            GUI.Label(new Rect(30, 21, 340, 22), $"ORPHEUS VITALITY   {(player != null ? Mathf.CeilToInt(player.CurrentHealth) : 100)} / {(player != null ? Mathf.CeilToInt(player.maxHealth) : 100)}", _titleStyle);
-            DrawRect(new Rect(30, 43, 336, 13), new Color(0.18f, 0.06f, 0.10f, 1f));
-            DrawRect(new Rect(30, 43, 336 * hpPct, 13), new Color(0.92f, 0.18f, 0.28f, 1f));
-
-            // Hades Double-Dash Charges pip readout
-            int charges = player != null ? player.CurrentDashCharges : 2;
-            int maxCharges = player != null ? player.maxDashCharges : 2;
-            string pips = "";
-            for (int i = 0; i < maxCharges; i++)
+            // 1. Update Vitality & Dash Gems
+            if (player != null && _hpFill != null)
             {
-                pips += i < charges ? "<color=#55FFBB>◆</color> " : "<color=#554466>◇</color> ";
-            }
-            GUI.Label(new Rect(30, 61, 340, 22), $"HADES DASH <b>[Space]</b> :  {pips}", _labelStyle);
+                float hpPct = Mathf.Clamp01(player.CurrentHealth / Mathf.Max(1f, player.maxHealth));
+                _hpFill.sizeDelta = new Vector2(BarWidth * hpPct, 5f);
 
-            // Piezo / Breath Live Meter
-            float live = sensor != null ? Mathf.Clamp01(sensor.CurrentLiveLevel) : 0f;
-            float boomThresh = sensor != null ? sensor.hardBoomThreshold : 0.60f;
-            float pulseAge = sensor != null ? (Time.unscaledTime - sensor.LastPulseTime) : 99f;
-            float displayBar = pulseAge < 0.22f ? Mathf.Max(live, sensor.LastPulseIntensity) : live;
-
-            string lastBadge = "";
-            if (pulseAge < 0.75f && sensor != null)
-            {
-                lastBadge = sensor.LastPulseWasBoom
-                    ? $"  <color=#FF5844><b>[BOOM! {Mathf.RoundToInt(sensor.LastPulseIntensity * 100f)}%]</b></color>"
-                    : $"  <color=#FFE066>[STRIKE {Mathf.RoundToInt(sensor.LastPulseIntensity * 100f)}%]</color>";
-            }
-
-            GUI.Label(new Rect(30, 86, 340, 22), $"PIEZO / BREATH PULSE{lastBadge}", _labelStyle);
-            Rect meterBg = new Rect(30, 108, 336, 15);
-            DrawRect(meterBg, new Color(0.12f, 0.10f, 0.18f, 1f));
-
-            Color meterCol = displayBar >= boomThresh
-                ? new Color(1.0f, 0.30f, 0.22f, 1f)
-                : new Color(0.98f, 0.80f, 0.30f, 1f);
-            DrawRect(new Rect(meterBg.x, meterBg.y, meterBg.width * displayBar, meterBg.height), meterCol);
-            DrawRect(new Rect(meterBg.x + meterBg.width * boomThresh - 1f, meterBg.y - 3f, 3f, meterBg.height + 6f), Color.white);
-
-            string modeStr = "Keyboard / Mouse";
-            if (sensor != null)
-            {
-                if (sensor.sourceMode == SensorSourceMode.KeyboardPlusPCMicrophone)
-                    modeStr = "KB/Mouse + <color=#7CFC9A>PC Mic (Tap/Blow!)</color>";
-                else if (sensor.sourceMode == SensorSourceMode.KeyboardPlusESP32Serial)
-                    modeStr = sensor.SerialConnected
-                        ? $"KB/Mouse + <color=#7CFC9A>ESP32 {sensor.serialPortName} LIVE</color>"
-                        : $"KB/Mouse + <color=#FF9966>ESP32 {sensor.serialPortName} (Waiting)</color>";
-            }
-            GUI.Label(new Rect(30, 130, 340, 22), $"Input <b>[Tab]</b>: {modeStr}", _labelStyle);
-
-            // --- 2. TOP-CENTER: CHAMBER STATUS OR CERBERUS BOSS BAR ---
-            CerberusRhythmBoss boss = CerberusRhythmBoss.ActiveBoss;
-            if (boss != null && boss.IsBattleActive && !boss.IsDefeated)
-            {
-                float bw = 490f;
-                float bx = (sw - bw) * 0.5f;
-                DrawRect(new Rect(bx - 14f, 16f, bw + 28f, 84f), new Color(0.08f, 0.02f, 0.06f, 0.88f));
-                GUI.Label(new Rect(bx, 20f, bw, 24f), "CERBERUS, GUARDIAN OF STYX", _centerBannerStyle);
-
-                float bhp = Mathf.Clamp01(boss.CurrentHealth / Mathf.Max(1f, boss.maxHealth));
-                DrawRect(new Rect(bx, 48f, bw, 16f), new Color(0.20f, 0.05f, 0.08f, 1f));
-                DrawRect(new Rect(bx, 48f, bw * bhp, 16f), new Color(0.96f, 0.22f, 0.20f, 1f));
-
-                if (!string.IsNullOrEmpty(boss.LastJudgement))
+                for (int i = 0; i < _dashGems.Length; i++)
                 {
-                    GUI.Label(new Rect(bx - 40f, 68f, bw + 80f, 26f), boss.LastJudgement, _centerBannerStyle);
+                    _dashGems[i].color = i < player.CurrentDashCharges
+                        ? new Color(0.94f, 0.82f, 0.48f, 0.88f)
+                        : new Color(0.28f, 0.22f, 0.34f, 0.35f);
                 }
             }
-            else if (dir != null)
+
+            // 2. Update Sensor / Pulse Bar & Physical Cadence Readout
+            if (combat != null && _cadenceLabel != null)
             {
-                string enemiesTag = dir.ActiveEnemyCount > 0
-                    ? $"   <color=#FF7788>[Shades: {dir.ActiveEnemyCount}]</color>"
-                    : "   <color=#66FFAA>[EXIT OPEN ↗]</color>";
-                DrawRect(new Rect((sw - 490f) * 0.5f, 16f, 490f, 34f), new Color(0.05f, 0.02f, 0.08f, 0.80f));
-                GUI.Label(new Rect((sw - 490f) * 0.5f, 20f, 490f, 26f), dir.GetCurrentChamberTitle() + enemiesTag, _centerBannerStyle);
+                _cadenceLabel.text = combat.CurrentCadenceDisplay;
+                bool activePhrase = combat.CurrentCadenceDisplay.StartsWith("Cadence:");
+                _cadenceLabel.color = activePhrase
+                    ? new Color(0.98f, 0.90f, 0.58f, 0.94f)
+                    : new Color(0.88f, 0.82f, 0.68f, 0.62f);
             }
 
-            if (_bannerTimer > 0f && !string.IsNullOrEmpty(_bannerText))
+            if (sensor != null && _pulseFill != null)
             {
-                float alpha = Mathf.Clamp01(_bannerTimer * 1.5f);
-                DrawRect(new Rect((sw - 680f) * 0.5f, 108f, 680f, 36f), new Color(0.07f, 0.03f, 0.11f, 0.85f * alpha));
-                Color prev = GUI.color;
-                GUI.color = new Color(1f, 1f, 1f, alpha);
-                GUI.Label(new Rect((sw - 680f) * 0.5f, 112f, 680f, 28f), _bannerText, _centerBannerStyle);
-                GUI.color = prev;
+                float pulseAge = Time.unscaledTime - sensor.LastPulseTime;
+                float val = pulseAge < 0.20f ? Mathf.Max(sensor.CurrentLiveLevel, sensor.LastPulseIntensity) : sensor.CurrentLiveLevel;
+                val = Mathf.Clamp01(val);
+                _pulseFill.sizeDelta = new Vector2(BarWidth * val, 4f);
+                _pulseFillImg.color = val >= sensor.hardBoomThreshold
+                    ? new Color(0.96f, 0.32f, 0.26f, 0.92f)
+                    : new Color(0.95f, 0.80f, 0.42f, 0.85f);
+
+                string mode = "Lyre Input [Tab]: Keyboard & Mouse";
+                if (sensor.sourceMode == SensorSourceMode.KeyboardPlusPCMicrophone)
+                    mode = "Lyre Input [Tab]: Microphone Active";
+                else if (sensor.sourceMode == SensorSourceMode.KeyboardPlusESP32Serial)
+                    mode = sensor.SerialConnected
+                        ? "Lyre Input [Tab]: ESP32 Connected (" + sensor.serialPortName + ")"
+                        : "Lyre Input [Tab]: ESP32 Waiting (" + sensor.serialPortName + ")";
+                _sensorModeLabel.text = mode;
             }
 
-            // --- 3. TOP-RIGHT: HADES 2.5D CONTROLS LEGEND ([H] TOGGLE) ---
-            if (showControlsHelp)
+            // 3. Guardian Rhythm Bar vs Subtle Chamber Banner
+            CerberusRhythmBoss boss = CerberusRhythmBoss.ActiveBoss;
+            bool bossActive = boss != null && boss.IsBattleActive && !boss.IsDefeated;
+            if (_bossBarRoot != null) _bossBarRoot.SetActive(bossActive);
+
+            if (bossActive)
             {
-                float hw = 315f;
-                float hx = sw - hw - 18f;
-                DrawRect(new Rect(hx, 16f, hw, 158f), new Color(0.05f, 0.02f, 0.08f, 0.82f));
-                GUI.Label(new Rect(hx + 12f, 20f, hw - 20f, 22f), "HADES 2.5D CONTROLS  <color=#AAAAAA>[H] Hide</color>", _titleStyle);
-                GUI.Label(new Rect(hx + 12f, 44f, hw - 20f, 126f),
-                    "<b>W / A / S / D</b> : 360° Isometric Run\n" +
-                    "<b>Space / Shift</b> : Double-Dash (Crosses Pits!)\n" +
-                    "<b>Tap LMB / J</b> : <color=#FFE066>3-Hit Combo / Dash-Strike</color>\n" +
-                    "<b>RMB / K / Hold LMB</b> : <color=#FF5844>ORPHIC BOOM!</color>\n" +
-                    "<b>Tab</b> : Switch KB / PC Mic / ESP32\n" +
-                    "<b>Hold Q</b> : <color=#FF77AA>Look Back</color>  |  <b>R</b> : Restart",
-                    _labelStyle);
+                _bossNameText.text = boss.bossDisplayName;
+                float bpct = Mathf.Clamp01(boss.CurrentHealth / Mathf.Max(1f, boss.maxHealth));
+                _bossHpFill.sizeDelta = new Vector2(BossBarWidth * bpct, 4f);
+                _bossJudgementText.text = boss.LastJudgement;
+                if (_bannerGroup != null) _bannerGroup.alpha = 0f;
+            }
+            else if (_bannerGroup != null)
+            {
+                if (_bannerTimer > 0f)
+                {
+                    _bannerTimer -= dt;
+                    _bannerGroup.alpha = Mathf.MoveTowards(_bannerGroup.alpha, Mathf.Clamp01(_bannerTimer * 1.4f), dt * 3f);
+                }
+                else
+                {
+                    _bannerGroup.alpha = Mathf.MoveTowards(_bannerGroup.alpha, 0f, dt * 2f);
+                }
             }
 
-            // --- 4. BOTTOM: EURYDICE WHISPERS & LOOK-BACK BAR ---
-            if (_eurydice != null && _eurydice.InTemptationZone && player != null && !player.IsGameOver && !player.IsVictory)
+            if (_calloutText != null)
             {
-                DrawRect(new Rect((sw - 680f) * 0.5f, sh - 108f, 680f, 38f), new Color(0.04f, 0.08f, 0.14f, 0.82f));
-                GUI.Label(new Rect((sw - 680f) * 0.5f, sh - 104f, 680f, 30f), _eurydice.ActiveWhisper, _whisperStyle);
+                if (_calloutTimer > 0f) _calloutTimer -= dt;
+                Color cc = _calloutText.color;
+                cc.a = Mathf.Clamp01(_calloutTimer * 1.6f) * 0.84f;
+                _calloutText.color = cc;
             }
 
-            if (player != null && player.LookBackProgress01 > 0.01f && !player.IsGameOver)
+            // 4. Eurydice Soul-Tether Abduction Danger, Whisper & Look-Back
+            if (_abductionRoot != null && _eurydice != null && player != null)
             {
-                float p = player.LookBackProgress01;
-                float ww = 420f;
-                float wx = (sw - ww) * 0.5f;
-                float wy = sh - 62f;
-                DrawRect(new Rect(wx - 10f, wy - 26f, ww + 20f, 50f), new Color(0.18f, 0.02f, 0.08f, 0.90f));
-                GUI.Label(new Rect(wx, wy - 24f, ww, 24f), "<color=#FF6688>DO NOT LOOK BACK! EURYDICE IS SHARPENING...</color>", _centerBannerStyle);
-                DrawRect(new Rect(wx, wy + 2f, ww, 12f), new Color(0.12f, 0.04f, 0.08f, 1f));
-                DrawRect(new Rect(wx, wy + 2f, ww * p, 12f), new Color(1.0f, 0.20f, 0.42f, 1f));
+                bool showAbduct = (_eurydice.IsBeingAbducted || _eurydice.AbductionDanger01 > 0.02f) && !player.IsGameOver && !player.IsVictory;
+                _abductionRoot.SetActive(showAbduct);
+                if (showAbduct)
+                {
+                    _abductionFill.sizeDelta = new Vector2(360f * Mathf.Clamp01(_eurydice.AbductionDanger01), 3f);
+                    float pulse = 0.72f + Mathf.PingPong(Time.unscaledTime * 3.5f, 0.28f);
+                    _abductionWarnText.color = new Color(1.0f, 0.42f, 0.50f, pulse);
+                }
             }
 
-            // --- 5. HADES CHAMBER WIPE FADE ---
-            if (dir != null && dir.ScreenFadeAlpha > 0.005f)
+            if (_whisperText != null)
             {
-                DrawRect(new Rect(0, 0, sw, sh), new Color(0.02f, 0.01f, 0.04f, dir.ScreenFadeAlpha));
+                bool showWhisper = _eurydice != null && _eurydice.InTemptationZone && player != null && !player.IsGameOver && !player.IsVictory;
+                if (showWhisper) _whisperText.text = _eurydice.ActiveWhisper;
+                Color wc = _whisperText.color;
+                wc.a = Mathf.MoveTowards(wc.a, showWhisper ? 0.78f : 0f, dt * 2.5f);
+                _whisperText.color = wc;
             }
 
-            // --- 6. END-OF-RUN OVERLAYS ---
-            if (player != null && player.IsGameOver)
+            if (_lookBackRoot != null && player != null)
             {
-                bool lookedBack = player.GameOverReason.StartsWith("YOU LOOKED BACK");
-                DrawRect(new Rect(0, 0, sw, sh), lookedBack ? new Color(0.04f, 0.02f, 0.07f, 0.74f) : new Color(0.12f, 0.01f, 0.03f, 0.78f));
+                bool looking = player.LookBackProgress01 > 0.01f && !player.IsGameOver;
+                _lookBackRoot.SetActive(looking);
+                if (looking) _lookBackFill.sizeDelta = new Vector2(320f * player.LookBackProgress01, 3f);
+            }
 
-                _bigOverlayTitle.normal.textColor = lookedBack ? new Color(0.85f, 0.92f, 1.0f, 1f) : new Color(1.0f, 0.28f, 0.32f, 1f);
-                GUI.Label(new Rect(0, sh * 0.34f, sw, 56f), lookedBack ? "VOW BROKEN" : "THERE IS NO ESCAPE", _bigOverlayTitle);
-                GUI.Label(new Rect((sw - 680f) * 0.5f, sh * 0.44f, 680f, 90f),
-                    $"{player.GameOverReason}\n\n<color=#FFE066>Press <b>[R]</b> to fight out of Tartarus again.</color>",
-                    _bigOverlaySub);
-            }
-            else if (player != null && player.IsVictory)
+            // 5. Cadence Unlock Ceremony & Screen Wipe & End Screen
+            if (_cadenceUnlockRoot != null && _cadenceUnlockGroup != null)
             {
-                DrawRect(new Rect(0, 0, sw, sh), new Color(0.14f, 0.10f, 0.03f, 0.80f));
-                _bigOverlayTitle.normal.textColor = new Color(1.0f, 0.88f, 0.42f, 1f);
-                GUI.Label(new Rect(0, sh * 0.33f, sw, 56f), "INTO THE SUNLIGHT", _bigOverlayTitle);
-                GUI.Label(new Rect((sw - 700f) * 0.5f, sh * 0.43f, 700f, 110f),
-                    "You fought through the chambers of Tartarus, lulled Cerberus to sleep, and crossed into daylight without ever looking back.\n\n" +
-                    "<color=#FFE066>Press <b>[R]</b> to run the chambers again.</color>",
-                    _bigOverlaySub);
+                if (_cadenceUnlockTimer > 0f)
+                {
+                    _cadenceUnlockTimer -= dt;
+                    _cadenceUnlockGroup.alpha = Mathf.MoveTowards(_cadenceUnlockGroup.alpha, 1f, dt * 4f);
+                }
+                else if (_cadenceUnlockGroup.alpha > 0f)
+                {
+                    _cadenceUnlockGroup.alpha = Mathf.MoveTowards(_cadenceUnlockGroup.alpha, 0f, dt * 2.5f);
+                    if (_cadenceUnlockGroup.alpha <= 0.01f)
+                    {
+                        _cadenceUnlockRoot.SetActive(false);
+                    }
+                }
             }
+
+            if (_fadeOverlay != null && dir != null)
+            {
+                _fadeOverlay.color = new Color(0.02f, 0.01f, 0.04f, dir.ScreenFadeAlpha);
+            }
+
+            if (_endScreenRoot != null && player != null)
+            {
+                if (player.IsGameOver)
+                {
+                    _endScreenRoot.SetActive(true);
+                    bool looked = player.GameOverReason.StartsWith("You turned back");
+                    bool abducted = player.GameOverReason.StartsWith("Mourning Shades");
+
+                    _endScreenBg.color = (looked || abducted)
+                        ? new Color(0.03f, 0.02f, 0.06f, 0.82f)
+                        : new Color(0.08f, 0.01f, 0.03f, 0.82f);
+
+                    _endTitleText.text = looked ? "Vow Broken" : (abducted ? "Tether Severed" : "Silenced in Tartarus");
+                    _endBodyText.text = player.GameOverReason + "\n\nPress [R] to descend anew.";
+                }
+                else if (player.IsVictory)
+                {
+                    _endScreenRoot.SetActive(true);
+                    _endScreenBg.color = new Color(0.10f, 0.08f, 0.03f, 0.82f);
+                    _endTitleText.text = "Into the Upper Light";
+                    _endBodyText.text = "Every tormented Shade found peace, every Guardian was lulled into golden slumber,\nand you trusted her voice behind you without ever looking back.\nIn the warm light of day, Eurydice steps beside you — whole and alive.\n\nPress [R] to play again.";
+                }
+            }
+        }
+
+        private static RectTransform CreateRect(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 anchoredPos, Vector2 sizeDelta)
+        {
+            GameObject go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            RectTransform rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
+            rt.pivot = pivot;
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = sizeDelta;
+            return rt;
+        }
+
+        private static void CreateBarBg(RectTransform parent, Vector2 pos, Vector2 size, Color col)
+        {
+            RectTransform rt = CreateRect("BarBg", parent, Vector2.zero, Vector2.zero, Vector2.zero, pos, size);
+            Image img = rt.gameObject.AddComponent<Image>();
+            img.color = col;
+            img.raycastTarget = false;
+        }
+
+        private static RectTransform CreateBarFill(RectTransform parent, string name, Vector2 pos, Vector2 size, Color col, out Image img)
+        {
+            RectTransform rt = CreateRect(name, parent, Vector2.zero, Vector2.zero, Vector2.zero, pos, size);
+            img = rt.gameObject.AddComponent<Image>();
+            img.color = col;
+            img.raycastTarget = false;
+            return rt;
+        }
+
+        private Text CreateSerifText(
+            string name,
+            RectTransform parent,
+            Vector2 pos,
+            Vector2 size,
+            int fontSize,
+            FontStyle style,
+            TextAnchor align,
+            Color col,
+            Vector2? anchorMin = null,
+            Vector2? anchorMax = null,
+            Vector2? pivot = null)
+        {
+            RectTransform rt = CreateRect(
+                name, parent,
+                anchorMin ?? Vector2.zero,
+                anchorMax ?? Vector2.zero,
+                pivot ?? Vector2.zero,
+                pos, size);
+
+            Text txt = rt.gameObject.AddComponent<Text>();
+            txt.font = _serifFont;
+            txt.fontSize = fontSize;
+            txt.fontStyle = style;
+            txt.alignment = align;
+            txt.color = col;
+            txt.horizontalOverflow = HorizontalWrapMode.Wrap;
+            txt.verticalOverflow = VerticalWrapMode.Overflow;
+            txt.raycastTarget = false;
+
+            Shadow sh = rt.gameObject.AddComponent<Shadow>();
+            sh.effectColor = new Color(0f, 0f, 0f, 0.72f);
+            sh.effectDistance = new Vector2(1.2f, -1.2f);
+
+            return txt;
         }
     }
 }
