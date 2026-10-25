@@ -5,6 +5,7 @@
 - **GitHub Remote:** `https://github.com/dchereches/Orpheus-Below.git` (`main` branch)
 - **Engine & Version:** Unity 6 (`6000.3.10f1`), High Definition Render Pipeline (HDRP `17.3.0`), New Input System (`1.18.0`), `.NET Standard 2.1`.
 - **Core Premise:** A distinctive mythic Hellenic chamber-crawler based on **sound, breath, and grief**. Orpheus descends into the Underworld with his Lyre and Flute (Aulos) to lead Eurydice to the upper light. Features a dual-perspective camera system, zero RNG stat boons, procedural 2.5D background-plate chamber generation, and deterministic musical progression.
+- **Current Build Version:** `HadesChamberDirector.PrototypeBuildVersion = 5` (auto-upgrades scenes on Play mode).
 
 ---
 
@@ -49,11 +50,13 @@ Sequences of Soft (`S`) and Hard Boom (`B`) notes woven within `1.35s` trigger m
 
 ---
 
-## 5. Procedural Chamber Generation (`ProceduralChamberGenerator.cs`)
-Implements **Approach A5**: 2D painted background plates tilted at the 2.5D isometric pitch (`36°`) with procedurally stamped colliders, props, hazards, and encounters.
-- **Background Plate Loading:** Checks `Resources/ChamberBackgrounds/Chamber_{index}` or custom registered textures. If absent, dynamically renders rich procedural multi-toned stone mosaic slabs with biome accents.
-- **Underworld Biomes (8+ Chambers):**
-  1. *Asphodel Threshold* (Mini-Boss: Cantor of Fury)
+## 5. Procedural Chamber Generation & Asphodel Viaduct Integration (`ProceduralChamberGenerator.cs`)
+
+### A. General Procedural Biome Pipeline
+Implements **Approach A5**: 2D painted background plates aligned with the 2.5D isometric pitch (`36°`, `45°`) with procedurally stamped colliders, props, hazards, and encounters.
+- **Automatic Upgrades:** `HadesChamberDirector.PrototypeBuildVersion = 5`. Pressing **Play** in Unity automatically rebuilds and upgrades any older scene in the hierarchy.
+- **8 Underworld Biomes:**
+  1. *Asphodel Viaduct* (Mini-Boss: Cantor of Fury) — **Active Painted Artwork!**
   2. *Vault of the Ferryman* (Heavy Abductor & Caster crossfire)
   3. *Chasms of Acheron* (Mini-Boss: Warden of the Oar + Dashable Chasms)
   4. *Phlegethon Lava Vaults* (Magma hazards + Obelisks)
@@ -61,7 +64,32 @@ Implements **Approach A5**: 2D painted background plates tilted at the 2.5D isom
   6. *Cocytus Frozen Tarn* (Frost chasms + Weeping Shades)
   7. *Lethe Oblivion Gate* (Elite Wardens + Abductor nests)
   8. *The Gates of Styx* (Final Boss: 3-Headed Cerberus)
-- **Automatic Upgrades:** `HadesChamberDirector.PrototypeBuildVersion = 4`. Pressing **Play** in Unity automatically rebuilds and upgrades any older scene in the hierarchy.
+
+### B. Chamber 0: Asphodel Viaduct Integration Details
+The user-provided painted artwork (`Chamber_00.png` / `Chamber_00.jpg`) is fully integrated into the game world:
+- **Camera-Facing 2.5D Vista Quad:**
+  - Placed at `position = centerWorld + (0, 0.45, 0) - camForward * 5.0f` with exact rotation `Euler(36°, 45°, 0°)`.
+  - Dimensions: `30.2f x 17.0f` (16:9 aspect ratio, orthographic size `8.5f`, `sortingOrder = -50`).
+  - Because it matches the camera angle, upright painted columns, balustrades, and waterfalls render with 100% pixel fidelity without double-foreshortening distortion.
+- **Walkable Corridor & Colliders:**
+  - Bridge length runs along the `Z` axis (`-11.5m` to `+11.5m`), width along `X` (`-4.3m` to `+4.3m`).
+  - Stone floor backing slab at `y = -0.6m`, size `(9.2m, 1.2m, 24.5m)` for physics raycasts and ground decals.
+  - West balustrade collider at `x = -4.6m`, East balustrade collider at `x = +4.6m`.
+  - South archway rim collider at `z = -12.5m`, North archway rim collider at `z = +12.5m`.
+- **Combat Props & Hazards:**
+  - Four stone pillars at `(±4.2m, 0, ±4.0m)` for Wall-Slam knockback combos (`+32` damage).
+  - Destructible cracked obelisk at `(0, 0, 0.2m)` in bridge center.
+  - Flanking abyss drop zones (`IsoObstacleKind.DashableChasm`) at `x = ±7.2m` where waterfalls plunge into Tartarus.
+- **Spawn & Exit:**
+  - Player Spawn: `(0, 0, -9.5m)` emerging through the bottom-right arched portal.
+  - Chamber Exit Door: `(0, 0, +10.4m)` framed by the top-left distant arched portal.
+- **Dual-Perspective Parallax Rig Binding:**
+  - `rig.farAbyssSkySprite = vistaSprite`. When transitioning to the 2D Boss Duel (`Cantor of Fury`), the painted Asphodel Viaduct seamlessly shifts into the backdrop behind the musical stave.
+- **Multi-Tier Asset Loading Pipeline:**
+  - `ProceduralChamberGenerator.LoadChamberTexture(int chamberIndex)`:
+    1. Checks runtime registered dictionary (`CustomPlates[chamberIndex]`).
+    2. Checks `Resources.Load<Texture2D>("ChamberBackgrounds/Chamber_XX")`.
+    3. Direct disk byte-fallback (`Application.dataPath + "/OrpheusBelow/Resources/ChamberBackgrounds/Chamber_XX.png"` / `.jpg` via `Texture2D.LoadImage`). This guarantees instant zero-delay loading even before Unity generates `.meta` files.
 
 ---
 
@@ -75,13 +103,16 @@ Implements **Approach A5**: 2D painted background plates tilted at the 2.5D isom
 
 ## 7. Asset Checklist Needed from AI Art Generator / User
 
-To replace procedural fallback blocks with custom painted artwork, generate the following assets and drop them into the project:
+To replace procedural fallback blocks across other chambers with custom painted artwork:
 
 ### A. Tilted 2.5D Background Plates
 - **Target Folder:** `Assets/OrpheusBelow/Resources/ChamberBackgrounds/`
 - **Naming:** `Chamber_00.png` through `Chamber_07.png`
-- **Resolution:** `2048 x 2048` or `1920 x 1080` PNG (no alpha for ground plates)
-- **Perspective:** Top-down angled isometric floor (`36°` tilt). Dark Underworld tones, mosaic stone tiles, lava veins, or river edges.
+- **Current Status:**
+  - `Chamber_00.png` / `Chamber_00.jpg` (**Asphodel Viaduct**) — **ACTIVE & INTEGRATED!**
+  - `Chamber_01` to `Chamber_07` — Awaiting user paintings; currently use procedural stone mosaic fallbacks.
+- **Resolution:** `2048 x 2048` or `1920 x 1080` / `1024 x 576` PNG/JPG.
+- **Perspective:** Top-down angled isometric floor (`36°` tilt, `45°` yaw).
 
 ### B. 2D Parallax Boss Duel Backdrops
 - **Dimensions:** `1920 x 1080` PNG with transparency.
@@ -125,6 +156,7 @@ To replace procedural fallback blocks with custom painted artwork, generate the 
 ---
 
 ## 9. Next Steps for Incoming Developer / AI
-1. When custom PNGs are added to `Resources/ChamberBackgrounds/`, test them by hitting **Play** in Unity.
-2. Consider adding sprite animator controllers to swap procedural Diamond/Circle geometry with the user's generated sprite sheets.
-3. If hardware sensor input is connected (Piezo / BMP280 via ESP32), set COM port in `SensorPulseInput` inspector.
+1. When custom PNGs/JPGs are added to `Resources/ChamberBackgrounds/Chamber_XX.png`, they are picked up automatically by `ProceduralChamberGenerator.LoadChamberTexture(int chamberIndex)`.
+2. To customize collider footprints for new chambers, add a dedicated method in `ProceduralChamberGenerator.cs` (patterned after `BuildAsphodelBridgeChamber`).
+3. Press **Play** in the Unity Editor (`SampleScene`) to verify and test gameplay directly — all bootstrap logic runs automatically via `HadesChamberDirector.AutoBootstrapIfNeeded()`.
+4. If hardware sensor input is connected (Piezo / BMP280 via ESP32), select the active COM port in `SensorPulseInput` inspector.

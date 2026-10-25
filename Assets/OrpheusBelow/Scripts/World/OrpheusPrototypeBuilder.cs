@@ -36,7 +36,7 @@ namespace OrpheusBelow
             public List<WaveSpawnSpec> wave2 = new List<WaveSpawnSpec>();
         }
 
-        public const int PrototypeBuildVersion = 4;
+        public const int PrototypeBuildVersion = 5;
 
         public int buildVersion = PrototypeBuildVersion;
         public List<ChamberRuntimeData> chambers = new List<ChamberRuntimeData>();

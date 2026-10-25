@@ -104,6 +104,50 @@ namespace OrpheusBelow
             }
         }
 
+        public static Texture2D LoadChamberTexture(int chamberIndex)
+        {
+            if (CustomPlates.TryGetValue(chamberIndex, out Texture2D cached) && cached != null)
+            {
+                return cached;
+            }
+
+            Texture2D tex = Resources.Load<Texture2D>($"ChamberBackgrounds/Chamber_{chamberIndex:D2}")
+                         ?? Resources.Load<Texture2D>($"ChamberBackgrounds/Chamber_{chamberIndex}")
+                         ?? Resources.Load<Texture2D>("ChamberBackgrounds/Asphodel_Viaduct");
+
+            if (tex == null)
+            {
+                // Immediate file-system fallback (loads before Unity creates meta)
+                string basePath = Application.dataPath + "/OrpheusBelow/Resources/ChamberBackgrounds/";
+                string[] candidates = new[]
+                {
+                    basePath + $"Chamber_{chamberIndex:D2}.png",
+                    basePath + $"Chamber_{chamberIndex:D2}.jpg",
+                    basePath + $"Chamber_{chamberIndex}.png",
+                    basePath + $"Chamber_{chamberIndex}.jpg"
+                };
+
+                foreach (string path in candidates)
+                {
+                    if (System.IO.File.Exists(path))
+                    {
+                        byte[] bytes = System.IO.File.ReadAllBytes(path);
+                        tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                        tex.LoadImage(bytes);
+                        tex.name = $"Chamber_{chamberIndex:D2}_Loaded";
+                        break;
+                    }
+                }
+            }
+
+            if (tex != null)
+            {
+                CustomPlates[chamberIndex] = tex;
+            }
+
+            return tex;
+        }
+
         public static HadesChamberDirector.ChamberRuntimeData GenerateChamber(
             Transform parent,
             int chamberIndex,
@@ -112,6 +156,16 @@ namespace OrpheusBelow
         {
             int biomeIdx = Mathf.Clamp(chamberIndex * Biomes.Length / Mathf.Max(1, totalChambers), 0, Biomes.Length - 1);
             BiomeTheme theme = Biomes[biomeIdx];
+
+            // Dedicated Asphodel Viaduct Bridge environment from user artwork
+            if (chamberIndex == 0)
+            {
+                Texture2D asphodelTex = LoadChamberTexture(0);
+                if (asphodelTex != null)
+                {
+                    return BuildAsphodelBridgeChamber(parent, chamberIndex, centerWorld, theme, asphodelTex);
+                }
+            }
 
             float sizeX = 22f + (chamberIndex % 3) * 2.5f;
             float sizeZ = 22f + (chamberIndex % 3) * 2.5f;
@@ -175,15 +229,151 @@ namespace OrpheusBelow
             };
         }
 
+        private static HadesChamberDirector.ChamberRuntimeData BuildAsphodelBridgeChamber(
+            Transform parent,
+            int chamberIndex,
+            Vector3 centerWorld,
+            BiomeTheme theme,
+            Texture2D asphodelTex)
+        {
+            Transform chamberRoot = new GameObject("ProceduralChamber_00_Asphodel_Viaduct").transform;
+            chamberRoot.SetParent(parent, false);
+            chamberRoot.position = centerWorld;
+
+            // 1. Camera-Facing 2.5D Painted Vista Quad (matches 16:9 ratio with orthographic size 8.5)
+            const float quadWidth = 30.2f;
+            const float quadHeight = 17.0f;
+
+            GameObject vistaGo = new GameObject("AsphodelPaintedVista_25D");
+            vistaGo.transform.SetParent(chamberRoot, false);
+            Vector3 camBack = -(RenderPipeline2DSetup.IsoCameraRotation * Vector3.forward);
+            vistaGo.transform.position = centerWorld + new Vector3(0f, 0.45f, 0f) + camBack * 5.0f;
+            vistaGo.transform.rotation = RenderPipeline2DSetup.IsoCameraRotation;
+
+            Sprite vistaSprite = Sprite.Create(
+                asphodelTex,
+                new Rect(0, 0, asphodelTex.width, asphodelTex.height),
+                new Vector2(0.5f, 0.5f),
+                100f);
+
+            SpriteRenderer vistaSr = vistaGo.AddComponent<SpriteRenderer>();
+            vistaSr.sprite = vistaSprite;
+            vistaSr.sharedMaterial = RenderPipeline2DSetup.Get2DSpriteMaterial();
+            vistaSr.sortingOrder = -50;
+            vistaGo.transform.localScale = new Vector3(quadWidth / (asphodelTex.width / 100f), quadHeight / (asphodelTex.height / 100f), 1f);
+
+            // Floor backing slab for physics raycasts & ground shadow decals
+            RenderPipeline2DSetup.CreateIsoBlock(chamberRoot, "BridgeWalkableSlab",
+                new Vector3(0f, -0.6f, 0f), new Vector3(9.2f, 1.2f, 24.5f),
+                theme.floorTop, theme.floorLeft, theme.floorRight, addSolidWallCollider: false);
+
+            Color wallLeft = new Color(theme.wallTop.r * 0.6f, theme.wallTop.g * 0.6f, theme.wallTop.b * 0.6f, 1f);
+            Color wallRight = new Color(theme.wallTop.r * 0.35f, theme.wallTop.g * 0.35f, theme.wallTop.b * 0.35f, 1f);
+
+            // 2. Stone Balustrades along Bridge Edges (with Asphodel blossoms)
+            CreateInvisibleRimWall(chamberRoot, "Railing_West",
+                new Vector3(-4.6f, 0.5f, 0f), new Vector3(0.7f, 1.4f, 24.0f),
+                theme.wallTop, wallLeft, wallRight);
+
+            CreateInvisibleRimWall(chamberRoot, "Railing_East",
+                new Vector3(4.6f, 0.5f, 0f), new Vector3(0.7f, 1.4f, 24.0f),
+                theme.wallTop, wallLeft, wallRight);
+
+            // North and South Archway Rims
+            CreateInvisibleRimWall(chamberRoot, "SouthArchRim",
+                new Vector3(0f, 1.5f, -12.5f), new Vector3(9.5f, 3.0f, 1.2f),
+                theme.wallTop, wallLeft, wallRight);
+
+            CreateInvisibleRimWall(chamberRoot, "NorthArchRim",
+                new Vector3(0f, 1.5f, 12.5f), new Vector3(9.5f, 3.0f, 1.2f),
+                theme.wallTop, wallLeft, wallRight);
+
+            // 3. Obstacles (Pillars with Golden Sigils + Abyss Chasms)
+            Transform obsRoot = new GameObject("InteriorObstacles").transform;
+            obsRoot.SetParent(chamberRoot, false);
+
+            CreateIsoPillar(obsRoot, new Vector3(-4.2f, 0f, -4.0f), theme);
+            CreateIsoPillar(obsRoot, new Vector3(-4.2f, 0f,  4.0f), theme);
+            CreateIsoPillar(obsRoot, new Vector3( 4.2f, 0f, -4.0f), theme);
+            CreateIsoPillar(obsRoot, new Vector3( 4.2f, 0f,  4.0f), theme);
+
+            CreateCrackedObelisk(obsRoot, new Vector3(0f, 0f, 0.2f));
+
+            CreateDashableStyxChasm(obsRoot, new Vector3(-7.2f, 0f, 0f), new Vector3(4.2f, 1.0f, 24.0f));
+            CreateDashableStyxChasm(obsRoot, new Vector3( 7.2f, 0f, 0f), new Vector3(4.2f, 1.0f, 24.0f));
+
+            // 4. Chamber Exit Door at Northern Portal (+Z)
+            Vector3 doorPos = centerWorld + new Vector3(0f, 0f, 10.4f);
+            GameObject doorGo = new GameObject("Hades_ChamberExitDoor");
+            doorGo.transform.SetParent(chamberRoot, false);
+            doorGo.transform.position = doorPos;
+
+            BoxCollider trig = doorGo.AddComponent<BoxCollider>();
+            trig.isTrigger = true;
+            trig.size = new Vector3(4.5f, 2.5f, 2.5f);
+            trig.center = new Vector3(0f, 1.0f, 0f);
+
+            GameObject portalVis = new GameObject("ArchwayPortalGlow");
+            portalVis.transform.SetParent(doorGo.transform, false);
+            portalVis.transform.localPosition = new Vector3(0f, 1.45f, 0f);
+            portalVis.transform.localScale = new Vector3(2.4f, 3.0f, 1f);
+            SpriteRenderer portalSr = RenderPipeline2DSetup.AttachBillboardSprite(portalVis, RenderPipeline2DSetup.SoftGlowSprite, Color.red, 10);
+
+            GameObject floorRing = new GameObject("DoorThresholdRune");
+            floorRing.transform.SetParent(doorGo.transform, false);
+            floorRing.transform.localPosition = new Vector3(0f, 0.03f, 0f);
+            floorRing.transform.localScale = new Vector3(2.6f, 2.6f, 1f);
+            SpriteRenderer beaconSr = RenderPipeline2DSetup.AttachGroundDecal(floorRing, RenderPipeline2DSetup.RingSprite, Color.red, 4);
+
+            ChamberExitDoor exitComp = doorGo.AddComponent<ChamberExitDoor>();
+            exitComp.targetChamberIndex = 1;
+            exitComp.isFinalSunlightExit = false;
+            exitComp.SetupVisuals(portalSr, beaconSr);
+
+            // 5. Parallax Rig for Cantor of Fury (uses the user's painted Asphodel vista in 2D Boss Duel!)
+            GameObject rigGo = new GameObject("Parallax2DRig_Ch00");
+            rigGo.transform.SetParent(chamberRoot, false);
+            UnderworldParallaxRig rig = rigGo.AddComponent<UnderworldParallaxRig>();
+            rig.farAbyssSkySprite = vistaSprite;
+            rig.Initialize(centerWorld, theme.parallaxGlow, theme.parallaxArch, theme.parallaxFire);
+
+            CerberusRhythmBoss boss = CreateGuardian(chamberRoot, "GuardianBoss_Ch00", BossIdentity.CantorOfFury, centerWorld);
+
+            // 6. Waves
+            List<HadesChamberDirector.WaveSpawnSpec> w1 = new List<HadesChamberDirector.WaveSpawnSpec>
+            {
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,     localOffsetXZ = new Vector2(-1.8f,  2.5f) },
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,     localOffsetXZ = new Vector2( 1.8f,  4.5f) },
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster,  localOffsetXZ = new Vector2( 0.0f,  6.8f) },
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.MourningAbductor, localOffsetXZ = new Vector2(-2.2f, -4.5f) }
+            };
+
+            List<HadesChamberDirector.WaveSpawnSpec> w2 = new List<HadesChamberDirector.WaveSpawnSpec>
+            {
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.ArmoredWarden,   localOffsetXZ = new Vector2( 0.0f,  3.5f) },
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,    localOffsetXZ = new Vector2(-2.0f,  1.2f) },
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster, localOffsetXZ = new Vector2( 2.2f,  6.2f) }
+            };
+
+            return new HadesChamberDirector.ChamberRuntimeData
+            {
+                chamberTitle = "I  ·  Asphodel Viaduct",
+                centerWorld = centerWorld,
+                playerSpawnWorld = centerWorld + new Vector3(0f, 0f, -9.5f),
+                cameraLeashRadius = 6.2f,
+                cameraOrthoOverride = 8.5f,
+                exitDoor = exitComp,
+                guardianBoss = boss,
+                interiorObstaclesRoot = obsRoot,
+                wave1 = w1,
+                wave2 = w2
+            };
+        }
+
         private static void BuildTiltedBackgroundPlate(Transform root, int chamberIndex, float sizeX, float sizeZ, BiomeTheme theme)
         {
             // Try loading user background texture from Resources/ChamberBackgrounds/ or registered dictionary
-            Texture2D plateTex = null;
-            if (!CustomPlates.TryGetValue(chamberIndex, out plateTex))
-            {
-                plateTex = Resources.Load<Texture2D>($"ChamberBackgrounds/Chamber_{chamberIndex:D2}")
-                        ?? Resources.Load<Texture2D>($"ChamberBackgrounds/Chamber_{chamberIndex}");
-            }
+            Texture2D plateTex = LoadChamberTexture(chamberIndex);
 
             GameObject plateGo = new GameObject("TiltedBackgroundPlate25D");
             plateGo.transform.SetParent(root, false);
