@@ -18,6 +18,7 @@ namespace OrpheusBelow
         public static OrpheusFluteChannel Instance { get; private set; }
 
         public bool IsFluteActive { get; private set; }
+        public int StanceEntryCount { get; private set; }
         public float earshotRadius = 8.5f;
         public float sequenceTimeoutSeconds = 4.2f;
 
@@ -138,7 +139,9 @@ namespace OrpheusBelow
 
         public void EnterFluteStance()
         {
+            if (IsFluteActive) return;
             IsFluteActive = true;
+            StanceEntryCount++;
             GenerateNewMelody();
             if (_noteDisplayRoot != null) _noteDisplayRoot.gameObject.SetActive(true);
             if (_fluteVis != null) _fluteVis.gameObject.SetActive(true);

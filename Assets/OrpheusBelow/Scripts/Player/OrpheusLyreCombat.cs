@@ -36,6 +36,8 @@ namespace OrpheusBelow
         public float cadenceWindowSeconds = 1.35f;
 
         public string CurrentCadenceDisplay { get; private set; } = "";
+        public int SoftNoteCount { get; private set; }
+        public int HardBoomCount { get; private set; }
 
         private OrpheusPlayerController _player;
         private BlurredEurydice _eurydice;
@@ -115,10 +117,12 @@ namespace OrpheusBelow
 
             if (isHardBoom)
             {
+                HardBoomCount++;
                 ExecuteHardBoom(intensity, dashStrike);
             }
             else
             {
+                SoftNoteCount++;
                 ExecuteSoftComboStrike(intensity, dashStrike);
                 TryPingEurydiceAcoustically();
             }

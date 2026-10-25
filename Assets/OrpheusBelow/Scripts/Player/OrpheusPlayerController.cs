@@ -33,6 +33,7 @@ namespace OrpheusBelow
 
         public float CurrentHealth { get; private set; }
         public int CurrentDashCharges { get; private set; }
+        public int DashUseCount { get; private set; }
         public bool IsDashing => _isDashing;
         public bool IsInDashStrikeWindow => _isDashing || _postDashStrikeTimer > 0f;
         public bool IsIn2DBossStage { get; private set; }
@@ -408,6 +409,7 @@ namespace OrpheusBelow
         {
             _dashBufferTimer = 0f;
             CurrentDashCharges--;
+            DashUseCount++;
             _dashRechargeTimer = dashRechargeTime;
             _dashChainCooldown = dashChainMinDelay;
             _lungeTimer = 0f;
