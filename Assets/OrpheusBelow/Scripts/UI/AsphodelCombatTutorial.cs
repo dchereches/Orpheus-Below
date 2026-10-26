@@ -32,8 +32,10 @@ namespace OrpheusBelow
     }
 
     /// <summary>
-    /// Pure progress model for Eurydice's first-run Asphodel lesson. It observes
-    /// successful gameplay actions, so every supported input device behaves alike.
+    /// Spread-out progressive learning model for Orpheus Below:
+    ///   - Chamber 0 Entrance introduces Movement and the primary Soft Note strike.
+    ///   - Further mechanics (Dash, Hard Boom, Flute Stance, and Cadences) unlock organically
+    ///     as encounters and chambers progress ("learn features as you go").
     /// </summary>
     public sealed class AsphodelCombatTutorial
     {
@@ -53,7 +55,7 @@ namespace OrpheusBelow
 
         public bool Observe(AsphodelTutorialSnapshot snapshot, Vector3 playerPosition)
         {
-            bool satisfied;
+            bool satisfied = false;
             switch (CurrentStep)
             {
                 case AsphodelTutorialStep.Move:
@@ -61,29 +63,27 @@ namespace OrpheusBelow
                     travelled.y = 0f;
                     satisfied = travelled.magnitude >= RequiredMovementDistance;
                     break;
-                case AsphodelTutorialStep.Dash:
-                    satisfied = snapshot.DashUseCount > _baseline.DashUseCount;
-                    break;
                 case AsphodelTutorialStep.SoftNote:
                     satisfied = snapshot.SoftNoteCount > _baseline.SoftNoteCount;
                     break;
-                case AsphodelTutorialStep.HardBoom:
-                    satisfied = snapshot.HardBoomCount > _baseline.HardBoomCount;
-                    break;
-                case AsphodelTutorialStep.Flute:
-                    satisfied = snapshot.StanceEntryCount > _baseline.StanceEntryCount;
-                    break;
-                case AsphodelTutorialStep.Cadence:
-                    satisfied = snapshot.CadenceCount > _baseline.CadenceCount;
-                    break;
                 default:
-                    return false;
+                    satisfied = true;
+                    break;
             }
 
             if (!satisfied) return false;
-            CurrentStep++;
-            _baseline = snapshot;
-            return true;
+
+            if (CurrentStep == AsphodelTutorialStep.Move)
+            {
+                CurrentStep = AsphodelTutorialStep.SoftNote;
+                _baseline = snapshot;
+                return true;
+            }
+            else
+            {
+                CurrentStep = AsphodelTutorialStep.Complete;
+                return true;
+            }
         }
 
         public static string GetStepId(AsphodelTutorialStep step)

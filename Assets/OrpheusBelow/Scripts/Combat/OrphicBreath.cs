@@ -18,7 +18,7 @@ namespace OrpheusBelow
             dt = Mathf.Max(0f, dt);
             RecoveryRemaining = Mathf.Max(0f, RecoveryRemaining - dt);
             _rest += dt;
-            if (_rest > 0.5f) Breath = Mathf.Min(100f, Breath + 24f * dt);
+            if (_rest > 0.5f) Breath = Mathf.Min(100f, Breath + (24f * DifficultySettings.BreathRecoveryMultiplier) * dt);
             if (_rest > 2f) { RepeatedNotes = 0; _hasNote = false; DamageMultiplier = 1f; }
         }
 

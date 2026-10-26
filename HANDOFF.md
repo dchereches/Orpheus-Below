@@ -36,9 +36,61 @@
 2. **Phase 2: Stave Climax (Milestones at 65% & 30% HP):** Boss leaps into the background ruins/vista. Stave illuminates overhead for a high-tempo 6-note rhythm barrage at 110–120 BPM. Deflecting notes fires radiant energy lances into the boss.
 3. **Phase 3: Crashed & Stunned (The Flute Execution Window):** Boss crashes face-down, stunned for 5.0 seconds and taking **2.0x damage** from all attacks (`"GUARDIAN CRASHED! [F] UNLEASH THE FLUTE!"`).
 
-### D. Sound & Acoustic Calibration Menu (`[C]`)
-- Opened via `[C]` key or Gamepad Select anytime during gameplay or from pause.
-- Features: Live animated VU Meter with Soft and Boom threshold markers; real-time note recognition badge (*Silence*, *Soft Pluck [S]*, *Hard Boom [B]*); sliders for Mic Sensitivity (Gain: 1.0x–8.0x), Soft Threshold (0.05–0.40), Hard Boom Threshold (0.45–0.85), and Master Volume (0%–100%); microphone device selector; audio preview buttons; auto-saves to `PlayerPrefs`.
+### D. Classical Greek Main Menu & Settings Submenu (`UnderworldFrontEnd.cs`)
+- **Main Menu (3 Greek Mythology Styled Buttons):**
+  - **`[ ✦  NEW GAME  ✦ ]`** (switches to **`[ ✦  RESUME  ✦ ]`** when paused in run).
+  - **`[ ✦  SETTINGS  ✦ ]`** (opens the comprehensive Hellenic tuning sanctuary).
+  - **`[ ✦  QUIT  ✦ ]`** (switches to **`[ ✦  RETURN TO TITLE  ✦ ]`** when paused in run).
+  - Styled with chiseled bronze borders, gold leaf meander trims, deep obsidian backgrounds, and `Palatino Linotype` serif typography.
+- **Settings Submenu (Sanctuary of Tuning):**
+  1. **Acoustic & Microphone Calibration:**
+     - Live 500px animated VU Meter (Gray -> Gold -> Crimson).
+     - Live note detection feedback pill (`[ SILENCE ]`, `[ SOFT NOTE (S) ]`, `[ HARD BOOM (B) ]`).
+     - **Mic Sensitivity / Gain Slider:** `1.0x` to `8.0x` (persisted in `PlayerPrefs` and updating `SensorPulseInput`).
+     - **Soft Note Threshold Slider:** `0.05` to `0.40` (14% default).
+     - **Hard Boom Threshold Slider:** `0.45` to `0.85` (60% default).
+     - **Input Mode Selector:** Cycles Keyboard & Mouse, PC Microphone, ESP32 Serial.
+  2. **Brightness & Exposure:**
+     - Fullscreen brightness slider from `0.5x` (50%) to `1.5x` (150%).
+     - Real-time full-screen luminance overlay (darkening veil for < 1.0, radiant warm glow for > 1.0).
+     - Persists automatically via `PlayerPrefs`.
+  3. **Underworld Difficulty:**
+     - **Mortal:** Story descent. 0.70x incoming damage, +30% breath recovery.
+     - **Heroic:** Standard balanced classical Underworld challenge (1.00x).
+     - **Tartarus:** Wrath of Hades. 1.40x incoming damage, -15% breath recovery.
+     - Persists via `DifficultySettings` / `PlayerPrefs`.
+  4. **Audio Volumes:**
+     - Master volume slider (0% to 100%) and Mute toggle.
+  5. **`[ ✦  RETURN TO MENU  ✦ ]`** button.
+- **Microphone Calibration Unbound from `[C]`:**
+  - Removed `[C]` key gameplay trigger to prevent accidental toggling during combat. All calibration and microphone testing is accessible via Settings in the Main Menu and `[Esc]` Pause Menu.
+
+### E. Prominent Greek Vitality Bar (`OrpheusHud.cs`)
+- Upgraded from an obscure 5px hairline into an ornate **320x22px** classical Greek health cluster.
+- **Double-Border Bronze & Gold Frame:** Chiseled bronze borders with gold leaf corner brackets.
+- **Ghost Damage Bar (`_hpGhostFill`):** White-hot amber damage indicator that smoothly catches up to current HP over 0.4s.
+- **Vivid Ruby-Crimson Fill:** High-contrast health bar with an urgent heartbeat pulsing glow when HP falls below 25%.
+- **Vitality Emblem:** Classical rotated 45° gold diamond laurel glyph at the left edge.
+- **Bold Numeric Readout:** Crisp `HP 100 / 100` Palatino serif text with drop shadow centered on the bar.
+
+### F. Per-Chamber Healing & Restoration
+1. **Interactive Ambrosia Healing Well (`AmbrosiaHealingWell.cs`):**
+   - Stamped procedurally into every chamber (safe entrance alcove).
+   - Features a glowing golden nectar ground decal and marble pedestal fountain.
+   - Shows a floating 3D prompt when approaching within 2.4m: `[E] Drink Ambrosia (+35 HP)`.
+   - Restores **+35 HP**, triggers a radiant golden shockwave ring and harp arpeggio fanfare, then depletes for the remainder of that chamber.
+2. **Chamber Respite (+20 HP Transition):**
+   - Stepping through an exit portal into a new chamber automatically restores **+20 HP**, providing steady momentum through deep Underworld crawls.
+
+### G. Spread-Out Progressive Learning Tutorial ("Learn as You Go")
+- Replaced the frontloaded 6-step checklist in Chamber 0 with contextual, progressive lessons:
+  1. **Chamber 0 Entrance:** Move (`WASD`) and light strike (`LMB` / `J`) introduced in the peaceful viaduct walk. Completes immediately upon moving and plucking, triggering Wave 1!
+  2. **Chamber 0 Wave 1 (Fast Wretches):** Eurydice calls out to teach Double-Dash (`[Space]` / `[Shift]`) to evade lunging strikes.
+  3. **Chamber 0 Wave 2 (Armored Wardens):** Eurydice teaches Hard Boom (`RMB` / `K`) to crack bronze Grief-Armor.
+  4. **Chamber 1 Entrance (Shade Swarms):** Eurydice teaches Flute Stance (`[F]`) and Cataclysmic Requiem to pacify dense mobs.
+  5. **Chamber 1 Exit / Boss:** Eurydice teaches Cadence [S - S - B] Hymn of Dawn piercing beam.
+  6. **Chamber 2:** Eurydice whispers guidance for Cadence [B - S] Sanctuary of Eurydice.
+  7. **Chamber 3:** Eurydice whispers guidance for Cadence [S - B - S] Siren's Convergence vortex.
 
 ---
 
@@ -53,7 +105,8 @@
 | `S - S - B` | Cadence: Hymn of Dawn (Piercing Resonance Beam) |
 | `B - S` | Cadence: Sanctuary of Eurydice (Golden Aegis) |
 | `S - B - S` | Cadence: Siren's Convergence (Harmonic Vortex) |
-| `C` / Gamepad Select | Sound & Acoustic Calibration Menu |
+| `E` / Gamepad South | Drink Ambrosia from Chamber Well (+35 HP) |
+| `Esc` / Gamepad Start | Pause Menu & Greek Settings (Mic Calibration, Brightness, Difficulty) |
 | `Tab` | Cycle Lyre Input (Keyboard+Mouse / Microphone / ESP32) |
 | `H` | Toggle Controls Card Overlay |
 | Hold `Q` / Gamepad Left Shoulder | Forbidden Look-Back (Fatal temptation!) |
@@ -148,7 +201,7 @@ Drop generated textures into the appropriate folder under `Assets/OrpheusBelow/R
   - `Prop_ChamberExitDoor.png`: Hellenic archway framed by glowing red/gold Underworld runes.
   - `Prop_ThresholdRuneRing.png`: Ground decal ring activating when all chamber enemies are cleared.
 - **Healing & Shrines (`Props/Healing/`):**
-  - `Shrine_AmbrosiaFountain.png`: Carved marble lion-head fountain pouring luminous golden water into a stone basin.
+  - `Shrine_AmbrosiaFountain.png`: Carved marble lion-head fountain pouring luminous golden water into a stone basin (`AmbrosiaHealingWell.cs`).
   - `Item_NectarFlask.png`: Golden Greek amphora containing healing honey-nectar (+40 HP).
   - `Shrine_HarmonicAltar.png`: Resonant stone altar that restores full breath and grants a temporary 4th dash charge.
 
@@ -158,15 +211,5 @@ Drop generated textures into the appropriate folder under `Assets/OrpheusBelow/R
 - **Textures:**
   - `Fluid_StyxWater_Base.png`: Dark turquoise water with submerged dead petals.
   - `Fluid_StyxWater_Foam.png`: White-cyan foam and spray for rapids and waterfalls.
-  - `Fluid_PhlegethonLava_Base.png`: Molten orange-red lava with dark cooling crust plates.
-  - `Fluid_CocytusIce_Sheen.png`: Blue-black cracked sheet ice with trapped souls.
-  - `Fluid_LetheMist_Tile.png`: Purple amnesiac fog and smoke particles.
-  - `VFX_AulosShockwave_Ring.png`: Golden-cyan acoustic wave texture for the Cataclysmic Requiem.
-  - `VFX_MusicalStave_Lines.png`: Radiant golden 3-line musical stave for 2D Boss Duels.
-
----
-
-## 5. Next Steps for Incoming Developer / AI
-1. Generated artwork dropped into `Assets/OrpheusBelow/Resources/` is instantly recognized by the multi-tier loading system in `ProceduralChamberGenerator.cs` and `UnderworldArtLibrary.cs`.
-2. Hitting **Play** in Unity automatically refreshes older scenes via `HadesChamberDirector.AutoBootstrapIfNeeded()`.
-3. Press `[C]` in-game or from pause to calibrate microphone, breath detection, and master audio volumes.
+  - `Fluid_PhlegethonLava_Base.png`: Viscous molten orange-red magma with floating obsidian crust.
+  - `Fluid_CocytusIce_Sheet.png`: Frosted translucent ice sheet with sub-surface cracks.

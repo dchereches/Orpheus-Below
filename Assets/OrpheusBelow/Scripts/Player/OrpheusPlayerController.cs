@@ -650,7 +650,7 @@ namespace OrpheusBelow
             if (UnderworldFrontEnd.BlocksGameplay) return;
             if (IsGameOver || IsVictory || _invulnTimer > 0f || _isDashing) return;
 
-            CurrentHealth = Mathf.Max(0f, CurrentHealth - dmg);
+            CurrentHealth = Mathf.Max(0f, CurrentHealth - (dmg * DifficultySettings.DamageMultiplier));
             UnderworldSoundscape.Instance?.PlayHurt();
             _invulnTimer = 0.68f;
 
@@ -678,7 +678,7 @@ namespace OrpheusBelow
         public void OnHitStyxHazard(float dmg)
         {
             if (IsGameOver || IsVictory) return;
-            CurrentHealth = Mathf.Max(0f, CurrentHealth - dmg);
+            CurrentHealth = Mathf.Max(0f, CurrentHealth - (dmg * DifficultySettings.DamageMultiplier));
             UnderworldCamera2D.Instance?.AddShake(0.42f);
 
             if (CurrentHealth <= 0f)

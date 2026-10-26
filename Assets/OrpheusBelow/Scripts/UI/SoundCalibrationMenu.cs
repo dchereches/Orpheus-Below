@@ -88,8 +88,7 @@ namespace OrpheusBelow
             Keyboard kb = Keyboard.current;
             Gamepad pad = Gamepad.current;
 
-            bool toggle = (kb != null && kb.cKey.wasPressedThisFrame)
-                       || (pad != null && pad.selectButton.wasPressedThisFrame);
+            bool toggle = pad != null && pad.selectButton.wasPressedThisFrame;
 
             if (toggle)
             {

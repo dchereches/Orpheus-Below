@@ -156,6 +156,11 @@ namespace OrpheusBelow
             if (player != null)
             {
                 player.TeleportToChamberSpawn(ch.playerSpawnWorld);
+                if (index > 0)
+                {
+                    player.Heal(20f);
+                    OrpheusHud.Instance?.ShowSubtleCallout("+20 HP Restored  ·  Chamber Respite", 2.2f);
+                }
             }
 
             BlurredEurydice eu = Object.FindFirstObjectByType<BlurredEurydice>();
@@ -174,6 +179,19 @@ namespace OrpheusBelow
             if (ch.exitDoor != null) ch.exitDoor.SetUnlocked(false);
 
             OrpheusHud.Instance?.ShowBanner(ch.chamberTitle, 2.8f);
+
+            if (index == 1)
+            {
+                OrpheusHud.Instance?.ShowEurydiceHint("A swarm gathers. Draw the Aulos (Flute) with [F] — play its four notes to pacify them or detonate a cataclysmic shockwave!", 5.5f);
+            }
+            else if (index == 2)
+            {
+                OrpheusHud.Instance?.ShowEurydiceHint("Sanctuary of Eurydice is awakened [B - S]. Pluck Boom, then Soft to summon a protective ward.", 5.0f);
+            }
+            else if (index == 3)
+            {
+                OrpheusHud.Instance?.ShowEurydiceHint("Siren's Convergence is attuned [S - B - S]. Pluck Soft · Boom · Soft to pull scattered shades into a vortex.", 5.0f);
+            }
 
             if (ch.wave1.Count > 0)
             {
@@ -197,6 +215,10 @@ namespace OrpheusBelow
         private IEnumerator SpawnWaveWithRunesRoutine(ChamberRuntimeData ch, List<WaveSpawnSpec> specs, float delayBeforeRunes)
         {
             _spawningWave = true;
+            if (chambers.Count > 0 && ch == chambers[0] && _currentWaveIndex == 0)
+            {
+                OrpheusHud.Instance?.ShowEurydiceHint("Shades lunge quickly! Space or Shift gives two invulnerable dashes to cross danger.", 4.5f);
+            }
             yield return new WaitForSeconds(delayBeforeRunes);
 
             List<GameObject> runes = new List<GameObject>();
@@ -314,13 +336,13 @@ namespace OrpheusBelow
             switch (step)
             {
                 case AsphodelTutorialStep.Move:
-                    text = "Stay ahead of me. Move with W A S D or the left stick.";
+                    text = "Stay ahead of me, Orpheus. Move with W A S D or the left stick.";
                     break;
                 case AsphodelTutorialStep.Dash:
                     text = "Space or Shift gives two invulnerable dashes. Cross danger cleanly.";
                     break;
                 case AsphodelTutorialStep.SoftNote:
-                    text = "Tap LMB or J — or play below 60% — for a Soft Note.";
+                    text = "Tap LMB or J — a light pluck to keep the tempo.";
                     break;
                 case AsphodelTutorialStep.HardBoom:
                     text = "RMB, K, hold LMB, or a strong pulse makes a Hard Boom. It breaks bronze armor, but costs breath.";
