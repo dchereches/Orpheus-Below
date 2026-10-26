@@ -14,7 +14,7 @@ namespace OrpheusBelow.Tests
             Assert.That(breath.TryPlay(true), Is.True);
             breath.Tick(0.5f);
             Assert.That(breath.TryPlay(true), Is.True);
-            Assert.That(breath.DamageMultiplier, Is.LessThan(0.5f));
+            Assert.That(breath.DamageMultiplier, Is.LessThan(1f));
             breath.Tick(0.5f);
             Assert.That(breath.TryPlay(true), Is.False);
             breath.Tick(3f);
@@ -46,7 +46,7 @@ namespace OrpheusBelow.Tests
         {
             var breath = new OrphicBreath();
             for (int i = 0; i < 4; i++) { Assert.That(breath.TryPlay(false), Is.True); breath.Tick(0.23f); }
-            Assert.That(breath.DamageMultiplier, Is.EqualTo(0.2f));
+            Assert.That(breath.DamageMultiplier, Is.EqualTo(0.3f));
             Assert.That(breath.TryPlay(true), Is.True);
             Assert.That(breath.DamageMultiplier, Is.EqualTo(1f));
         }
@@ -61,7 +61,7 @@ namespace OrpheusBelow.Tests
             float guarded = shade.ResolveDamage(40f);
             shade.Expose();
             Assert.That(shade.TryStagger(), Is.True);
-            Assert.That(shade.ResolveDamage(40f), Is.GreaterThan(guarded * 2));
+            Assert.That(shade.ResolveDamage(40f), Is.GreaterThan(guarded * 1.8f));
             shade.Tick(3.3f);
             Assert.That(shade.ResolveDamage(40f), Is.EqualTo(guarded));
         }

@@ -46,7 +46,6 @@ namespace OrpheusBelow
         private Transform[] _heads;
         private SpriteRenderer[] _headRenderers;
         private Color _headBaseColor;
-        private SpriteRenderer _paintedGuardian;
         private float _nextDiscordPenalty;
 
         // 2D Stave UI in world space (perfectly aligned to 2D Side-View!)
@@ -124,8 +123,8 @@ namespace OrpheusBelow
                     break;
             }
 
-            maxHealth *= 1.45f;
-            hitWindowSeconds = 0.18f;
+            maxHealth *= 1.20f;
+            hitWindowSeconds = 0.23f;
             CurrentHealth = maxHealth;
             _beatInterval = 60f / Mathf.Max(50f, bpm);
 
@@ -184,16 +183,6 @@ namespace OrpheusBelow
                 RenderPipeline2DSetup.AttachSprite(eyes, RenderPipeline2DSetup.SquareSprite, new Color(2.9f, 2.2f, 0.45f, 1f), 16);
 
                 _heads[i] = h.transform;
-            }
-
-            Sprite portrait = UnderworldArtLibrary.Creature(4 + (int)identity);
-            if (portrait != null)
-            {
-                foreach (SpriteRenderer old in _billboardRoot.GetComponentsInChildren<SpriteRenderer>()) old.enabled = false;
-                GameObject art = new GameObject("PaintedGuardian");
-                art.transform.SetParent(_billboardRoot, false);
-                art.transform.localScale = Vector3.one * 1.65f;
-                _paintedGuardian = RenderPipeline2DSetup.AttachSprite(art, portrait, Color.white, 14);
             }
 
             // --- CRISP 2D MUSICAL STAVE STRETCHING ACROSS UPPER-MID SCREEN ---
@@ -259,11 +248,6 @@ namespace OrpheusBelow
 
             // Animate heads & metronome target ring to the exact BPM!
             float beatPhase = (Time.time / _beatInterval) * Mathf.PI * 2f;
-            if (_paintedGuardian != null)
-            {
-                _paintedGuardian.transform.localPosition = Vector3.up * (Mathf.Sin(beatPhase * 0.5f) * 0.08f);
-                _paintedGuardian.color = Color.Lerp(_paintedGuardian.color, Color.white, Time.deltaTime * 8f);
-            }
             float metronomePulse = 1.32f + Mathf.Pow(Mathf.Max(0f, Mathf.Cos(beatPhase * 0.5f)), 6f) * 0.22f;
             if (_targetHitRing != null) _targetHitRing.localScale = new Vector3(metronomePulse, metronomePulse, 1f);
 
@@ -384,7 +368,7 @@ namespace OrpheusBelow
                 LastJudgement = "Off beat — wait for the note to reach the ring";
                 if (Time.time >= _nextDiscordPenalty)
                 {
-                    _nextDiscordPenalty = Time.time + 0.8f;
+                    _nextDiscordPenalty = Time.time + 1.2f;
                     Spawn2DSweepWave();
                     UnderworldSoundscape.Instance?.PlayDryNote();
                 }
@@ -412,7 +396,6 @@ namespace OrpheusBelow
                     new Color(2.7f, 1.9f, 0.45f, 1f), 0.28f, upright2D: true);
 
                 foreach (var sr in _headRenderers) sr.color = new Color(3f, 3f, 3f, 1f);
-                if (_paintedGuardian != null) _paintedGuardian.color = new Color(1f, 0.79f, 0.48f);
                 UnderworldCamera2D.Instance?.AddShake(isHardBoom ? 0.58f : 0.20f);
 
                 if (CurrentHealth <= 0f) DefeatGuardian();
@@ -465,7 +448,6 @@ namespace OrpheusBelow
             // #4 Catharsis & Slumber: Guardian is charmed into peaceful golden rest rather than slaughtered
             ProceduralLyreAudio.Instance?.PlayCadenceComplete();
             ProceduralLyreAudio.Instance?.PlayShadePacified();
-            if (_paintedGuardian != null) _paintedGuardian.color = new Color(1f, 0.87f, 0.58f, 0.65f);
 
             if (_headRenderers != null)
             {

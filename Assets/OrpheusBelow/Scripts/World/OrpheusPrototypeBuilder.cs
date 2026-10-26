@@ -37,7 +37,7 @@ namespace OrpheusBelow
             public List<WaveSpawnSpec> wave2 = new List<WaveSpawnSpec>();
         }
 
-        public const int PrototypeBuildVersion = 7;
+        public const int PrototypeBuildVersion = 8;
 
         public int buildVersion = PrototypeBuildVersion;
         public List<ChamberRuntimeData> chambers = new List<ChamberRuntimeData>();
@@ -489,7 +489,6 @@ namespace OrpheusBelow
                 director.chambers.Add(chamberData);
             }
 
-            sysGo.AddComponent<UnderworldFrontEnd>();
             return root;
         }
 

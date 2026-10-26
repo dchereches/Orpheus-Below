@@ -18,7 +18,7 @@ namespace OrpheusBelow
             dt = Mathf.Max(0f, dt);
             RecoveryRemaining = Mathf.Max(0f, RecoveryRemaining - dt);
             _rest += dt;
-            if (_rest > 0.65f) Breath = Mathf.Min(100f, Breath + 19f * dt);
+            if (_rest > 0.5f) Breath = Mathf.Min(100f, Breath + 24f * dt);
             if (_rest > 2f) { RepeatedNotes = 0; _hasNote = false; DamageMultiplier = 1f; }
         }
 
@@ -26,11 +26,11 @@ namespace OrpheusBelow
         {
             if (RecoveryRemaining > 0f) return false;
             int repeats = _hasNote && hard == _lastWasHard ? RepeatedNotes + 1 : 1;
-            float cost = (hard ? 28f : 8f) * (repeats >= 3 ? 1.5f : 1f);
+            float cost = (hard ? 24f : 7f) * (repeats >= 3 ? 1.25f : 1f);
             if (Breath + 0.001f < cost) return false;
             Breath -= cost;
             RepeatedNotes = repeats;
-            DamageMultiplier = repeats <= 2 ? 1f : repeats == 3 ? 0.45f : 0.2f;
+            DamageMultiplier = repeats <= 2 ? 1f : repeats == 3 ? 0.6f : 0.3f;
             _lastWasHard = hard;
             _hasNote = true;
             _rest = 0f;
@@ -64,7 +64,7 @@ namespace OrpheusBelow
             _staggerGuard = Mathf.Max(0f, _staggerGuard - dt);
         }
         public void Expose() { ExposedRemaining = 3.2f; _staggerGuard = 0f; }
-        public float ResolveDamage(float damage) => damage * (ExposedRemaining > 0f ? 1.35f : 0.55f);
+        public float ResolveDamage(float damage) => damage * (ExposedRemaining > 0f ? 1.35f : 0.7f);
         public bool TryStagger()
         {
             if (_staggerGuard > 0f) return false;

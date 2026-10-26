@@ -20,7 +20,8 @@ namespace OrpheusBelow
             "Phlegethon Foundry", "Cinder Basilica", "Cocytus Mirror Tarn",
             "The Weeping Colonnade", "Lethe's Drowned Library", "The Gates of Styx"
         };
-        public static Vector2 GetChamberSize(int index) => new Vector2(34f + (index % 3) * 5f, 38f + (index % 2) * 8f);
+        public static Vector2 GetChamberSize(int index) => index == 0 ? new Vector2(9.2f, 24.5f)
+            : new Vector2(34f + (index % 3) * 5f, 38f + (index % 2) * 8f);
         public struct BiomeTheme
         {
             public string name;
@@ -166,14 +167,23 @@ namespace OrpheusBelow
             int biomeIdx = Mathf.Clamp(chamberIndex * Biomes.Length / Mathf.Max(1, totalChambers), 0, Biomes.Length - 1);
             BiomeTheme theme = Biomes[biomeIdx];
 
-            Vector2 roomSize = GetChamberSize(chamberIndex);
-            float sizeX = roomSize.x;
-            float sizeZ = roomSize.y;
+            // Dedicated Asphodel Viaduct Bridge environment from user artwork
+            if (chamberIndex == 0)
+            {
+                Texture2D asphodelTex = LoadChamberTexture(0);
+                if (asphodelTex != null)
+                {
+                    return BuildAsphodelBridgeChamber(parent, chamberIndex, centerWorld, theme, asphodelTex);
+                }
+            }
+
+            float sizeX = GetChamberSize(chamberIndex).x;
+            float sizeZ = GetChamberSize(chamberIndex).y;
             bool isFinal = (chamberIndex == totalChambers - 1);
             bool isBossChamber = (chamberIndex == 0 || chamberIndex == 4 || chamberIndex == 8 || isFinal);
 
             string titleRoman = ToRoman(chamberIndex + 1);
-            string title = $"{titleRoman}  ·  {ChamberNames[chamberIndex % ChamberNames.Length]}";
+            string title = $"{titleRoman}  ·  {theme.name}";
 
             Transform chamberRoot = new GameObject($"ProceduralChamber_{chamberIndex:D2}_{theme.name}").transform;
             chamberRoot.SetParent(parent, false);
@@ -181,7 +191,6 @@ namespace OrpheusBelow
 
             // 1. Tilted 2.5D Background Plate Quad (A5)
             BuildTiltedBackgroundPlate(chamberRoot, chamberIndex, sizeX, sizeZ, theme);
-            UnderworldEnvironmentArt.Build(chamberRoot, chamberIndex, sizeX, sizeZ, theme);
 
             // 2. Procedural Perimeter Walls & Invisible Rim Bounds
             ChamberExitDoor exitDoor = BuildPerimeterShell(chamberRoot, centerWorld, sizeX, sizeZ, chamberIndex + 1, isFinal, theme);
@@ -231,38 +240,203 @@ namespace OrpheusBelow
             };
         }
 
-        public static List<HadesChamberDirector.WaveSpawnSpec> GetAsphodelWaveSpecs(int waveNumber)
-            => GenerateWaveSpecs(0, waveNumber);
+        private static HadesChamberDirector.ChamberRuntimeData BuildAsphodelBridgeChamber(
+            Transform parent,
+            int chamberIndex,
+            Vector3 centerWorld,
+            BiomeTheme theme,
+            Texture2D asphodelTex)
+        {
+            Transform chamberRoot = new GameObject("ProceduralChamber_00_Asphodel_Viaduct").transform;
+            chamberRoot.SetParent(parent, false);
+            chamberRoot.position = centerWorld;
 
-        private static Sprite _stoneFloor;
+            // 1. Camera-Facing 2.5D Painted Vista Quad (matches 16:9 ratio with orthographic size 8.5)
+            const float quadWidth = 30.2f;
+            const float quadHeight = 17.0f;
+
+            GameObject vistaGo = new GameObject("AsphodelPaintedVista_25D");
+            vistaGo.transform.SetParent(chamberRoot, false);
+            Vector3 camBack = -(RenderPipeline2DSetup.IsoCameraRotation * Vector3.forward);
+            vistaGo.transform.position = centerWorld + new Vector3(0f, 0.45f, 0f) + camBack * 5.0f;
+            vistaGo.transform.rotation = RenderPipeline2DSetup.IsoCameraRotation;
+
+            Sprite vistaSprite = Sprite.Create(
+                asphodelTex,
+                new Rect(0, 0, asphodelTex.width, asphodelTex.height),
+                new Vector2(0.5f, 0.5f),
+                100f);
+
+            SpriteRenderer vistaSr = vistaGo.AddComponent<SpriteRenderer>();
+            vistaSr.sprite = vistaSprite;
+            vistaSr.sharedMaterial = RenderPipeline2DSetup.Get2DSpriteMaterial();
+            vistaSr.sortingOrder = -50;
+            vistaGo.transform.localScale = new Vector3(quadWidth / (asphodelTex.width / 100f), quadHeight / (asphodelTex.height / 100f), 1f);
+
+            // Floor backing slab for physics raycasts & ground shadow decals
+            RenderPipeline2DSetup.CreateIsoBlock(chamberRoot, "BridgeWalkableSlab",
+                new Vector3(0f, -0.6f, 0f), new Vector3(9.2f, 1.2f, 24.5f),
+                theme.floorTop, theme.floorLeft, theme.floorRight, addSolidWallCollider: false);
+
+            Color wallLeft = new Color(theme.wallTop.r * 0.6f, theme.wallTop.g * 0.6f, theme.wallTop.b * 0.6f, 1f);
+            Color wallRight = new Color(theme.wallTop.r * 0.35f, theme.wallTop.g * 0.35f, theme.wallTop.b * 0.35f, 1f);
+
+            // 2. Stone Balustrades along Bridge Edges (with Asphodel blossoms)
+            CreateInvisibleRimWall(chamberRoot, "Railing_West",
+                new Vector3(-4.6f, 0.5f, 0f), new Vector3(0.7f, 1.4f, 24.0f),
+                theme.wallTop, wallLeft, wallRight);
+
+            CreateInvisibleRimWall(chamberRoot, "Railing_East",
+                new Vector3(4.6f, 0.5f, 0f), new Vector3(0.7f, 1.4f, 24.0f),
+                theme.wallTop, wallLeft, wallRight);
+
+            // North and South Archway Rims
+            CreateInvisibleRimWall(chamberRoot, "SouthArchRim",
+                new Vector3(0f, 1.5f, -12.5f), new Vector3(9.5f, 3.0f, 1.2f),
+                theme.wallTop, wallLeft, wallRight);
+
+            CreateInvisibleRimWall(chamberRoot, "NorthArchRim",
+                new Vector3(0f, 1.5f, 12.5f), new Vector3(9.5f, 3.0f, 1.2f),
+                theme.wallTop, wallLeft, wallRight);
+
+            // 3. Obstacles (Pillars with Golden Sigils + Abyss Chasms)
+            Transform obsRoot = new GameObject("InteriorObstacles").transform;
+            obsRoot.SetParent(chamberRoot, false);
+
+            CreateIsoPillar(obsRoot, new Vector3(-4.2f, 0f, -4.0f), theme);
+            CreateIsoPillar(obsRoot, new Vector3(-4.2f, 0f,  4.0f), theme);
+            CreateIsoPillar(obsRoot, new Vector3( 4.2f, 0f, -4.0f), theme);
+            CreateIsoPillar(obsRoot, new Vector3( 4.2f, 0f,  4.0f), theme);
+
+            CreateCrackedObelisk(obsRoot, new Vector3(0f, 0f, 0.2f));
+
+            CreateDashableStyxChasm(obsRoot, new Vector3(-7.2f, 0f, 0f), new Vector3(4.2f, 1.0f, 24.0f));
+            CreateDashableStyxChasm(obsRoot, new Vector3( 7.2f, 0f, 0f), new Vector3(4.2f, 1.0f, 24.0f));
+
+            // 4. Chamber Exit Door at Northern Portal (+Z)
+            Vector3 doorPos = centerWorld + new Vector3(0f, 0f, 10.4f);
+            GameObject doorGo = new GameObject("Hades_ChamberExitDoor");
+            doorGo.transform.SetParent(chamberRoot, false);
+            doorGo.transform.position = doorPos;
+
+            BoxCollider trig = doorGo.AddComponent<BoxCollider>();
+            trig.isTrigger = true;
+            trig.size = new Vector3(4.5f, 2.5f, 2.5f);
+            trig.center = new Vector3(0f, 1.0f, 0f);
+
+            GameObject portalVis = new GameObject("ArchwayPortalGlow");
+            portalVis.transform.SetParent(doorGo.transform, false);
+            portalVis.transform.localPosition = new Vector3(0f, 1.45f, 0f);
+            portalVis.transform.localScale = new Vector3(2.4f, 3.0f, 1f);
+            SpriteRenderer portalSr = RenderPipeline2DSetup.AttachBillboardSprite(portalVis, RenderPipeline2DSetup.SoftGlowSprite, Color.red, 10);
+
+            GameObject floorRing = new GameObject("DoorThresholdRune");
+            floorRing.transform.SetParent(doorGo.transform, false);
+            floorRing.transform.localPosition = new Vector3(0f, 0.03f, 0f);
+            floorRing.transform.localScale = new Vector3(2.6f, 2.6f, 1f);
+            SpriteRenderer beaconSr = RenderPipeline2DSetup.AttachGroundDecal(floorRing, RenderPipeline2DSetup.RingSprite, Color.red, 4);
+
+            ChamberExitDoor exitComp = doorGo.AddComponent<ChamberExitDoor>();
+            exitComp.targetChamberIndex = 1;
+            exitComp.isFinalSunlightExit = false;
+            exitComp.SetupVisuals(portalSr, beaconSr);
+
+            // 5. Parallax Rig for Cantor of Fury (uses the user's painted Asphodel vista in 2D Boss Duel!)
+            GameObject rigGo = new GameObject("Parallax2DRig_Ch00");
+            rigGo.transform.SetParent(chamberRoot, false);
+            UnderworldParallaxRig rig = rigGo.AddComponent<UnderworldParallaxRig>();
+            rig.farAbyssSkySprite = vistaSprite;
+            rig.Initialize(centerWorld, theme.parallaxGlow, theme.parallaxArch, theme.parallaxFire);
+
+            CerberusRhythmBoss boss = CreateGuardian(chamberRoot, "GuardianBoss_Ch00", BossIdentity.CantorOfFury, centerWorld);
+
+            // 6. Waves
+            List<HadesChamberDirector.WaveSpawnSpec> w1 = GetAsphodelWaveSpecs(1);
+            List<HadesChamberDirector.WaveSpawnSpec> w2 = GetAsphodelWaveSpecs(2);
+
+            return new HadesChamberDirector.ChamberRuntimeData
+            {
+                chamberTitle = "I  ·  Asphodel Viaduct",
+                roomRoot = chamberRoot.gameObject,
+                centerWorld = centerWorld,
+                playerSpawnWorld = centerWorld + new Vector3(0f, 0f, -9.5f),
+                cameraLeashRadius = 6.2f,
+                cameraOrthoOverride = 8.5f,
+                exitDoor = exitComp,
+                guardianBoss = boss,
+                interiorObstaclesRoot = obsRoot,
+                wave1 = w1,
+                wave2 = w2
+            };
+        }
+
+        public static List<HadesChamberDirector.WaveSpawnSpec> GetAsphodelWaveSpecs(int waveNumber)
+        {
+            if (waveNumber == 1)
+            {
+                return new List<HadesChamberDirector.WaveSpawnSpec>
+                {
+                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,     localOffsetXZ = new Vector2(-1.8f,  2.5f) },
+                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,     localOffsetXZ = new Vector2( 1.8f,  4.5f) },
+                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,     localOffsetXZ = new Vector2( 2.5f, -0.8f) },
+                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster,  localOffsetXZ = new Vector2( 0.0f,  6.8f) },
+                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.MourningAbductor, localOffsetXZ = new Vector2(-2.2f, -4.5f) }
+                };
+            }
+
+            return new List<HadesChamberDirector.WaveSpawnSpec>
+            {
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.ArmoredWarden,    localOffsetXZ = new Vector2( 0.0f,  3.5f) },
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,     localOffsetXZ = new Vector2(-2.0f,  1.2f) },
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster,  localOffsetXZ = new Vector2( 2.2f,  6.2f) },
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster,  localOffsetXZ = new Vector2(-2.8f,  7.4f) },
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.MourningAbductor, localOffsetXZ = new Vector2( 2.6f, -4.8f) }
+            };
+        }
 
         private static void BuildTiltedBackgroundPlate(Transform root, int chamberIndex, float sizeX, float sizeZ, BiomeTheme theme)
         {
-            RenderPipeline2DSetup.CreateIsoBlock(root, "CarvedStoneFoundation",
-                new Vector3(0f, -0.75f, 0f), new Vector3(sizeX, 1.5f, sizeZ),
-                theme.floorTop, theme.floorLeft, theme.floorRight, addSolidWallCollider: false);
+            // Try loading user background texture from Resources/ChamberBackgrounds/ or registered dictionary
+            Texture2D plateTex = LoadChamberTexture(chamberIndex);
 
-            if (_stoneFloor == null)
+            GameObject plateGo = new GameObject("TiltedBackgroundPlate25D");
+            plateGo.transform.SetParent(root, false);
+            plateGo.transform.localPosition = new Vector3(0f, 0.005f, 0f);
+
+            if (plateTex != null)
             {
-                Texture2D texture = Resources.Load<Texture2D>("Art/UnderworldFloor");
-                if (texture != null)
-                    _stoneFloor = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height),
-                        Vector2.one * .5f, 100f, 0, SpriteMeshType.FullRect);
+                // User-supplied painted background plate quad tilted flat on XZ ground
+                Sprite sprite = Sprite.Create(plateTex, new Rect(0, 0, plateTex.width, plateTex.height), new Vector2(0.5f, 0.5f), 100f);
+                SpriteRenderer sr = plateGo.AddComponent<SpriteRenderer>();
+                sr.sprite = sprite;
+                sr.sharedMaterial = RenderPipeline2DSetup.Get2DSpriteMaterial();
+                sr.sortingOrder = -1;
+                plateGo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                plateGo.transform.localScale = new Vector3(sizeX / (plateTex.width / 100f), sizeZ / (plateTex.height / 100f), 1f);
             }
-            Sprite stone = _stoneFloor != null ? _stoneFloor : RenderPipeline2DSetup.SquareSprite;
-            int columns = Mathf.CeilToInt(sizeX / 10f), rows = Mathf.CeilToInt(sizeZ / 10f);
-            float width = sizeX / columns, depth = sizeZ / rows;
-            Color tint = _stoneFloor != null ? Color.Lerp(Color.white, theme.wallTop, .15f) : theme.floorTop;
-            tint.a = 1f;
-            for (int x = 0; x < columns; x++)
-            for (int z = 0; z < rows; z++)
+            else
             {
-                GameObject tile = new GameObject("EngravedBasaltPaving");
-                tile.transform.SetParent(root, false);
-                tile.transform.localPosition = new Vector3(-sizeX * .5f + (x + .5f) * width, .012f,
-                    -sizeZ * .5f + (z + .5f) * depth);
-                tile.transform.localScale = new Vector3(width / stone.bounds.size.x, depth / stone.bounds.size.y, 1f);
-                RenderPipeline2DSetup.AttachGroundDecal(tile, stone, tint, 0);
+                // Procedural high-res stylized mosaic slab with biome accent
+                RenderPipeline2DSetup.CreateIsoBlock(root, "ProceduralBaseFloorSlab",
+                    new Vector3(0f, -0.75f, 0f), new Vector3(sizeX, 1.5f, sizeZ),
+                    theme.floorTop, theme.floorLeft, theme.floorRight, addSolidWallCollider: false);
+
+                // Geometric mosaic floor patterns
+                Color tileAccent = new Color(theme.floorTop.r * 1.5f, theme.floorTop.g * 1.5f, theme.floorTop.b * 1.5f, 0.45f);
+                int gx = Mathf.FloorToInt(sizeX / 4f);
+                int gz = Mathf.FloorToInt(sizeZ / 4f);
+                for (int ix = -gx / 2; ix <= gx / 2; ix++)
+                {
+                    for (int iz = -gz / 2; iz <= gz / 2; iz++)
+                    {
+                        if ((ix + iz) % 2 != 0) continue;
+                        GameObject tile = new GameObject("FloorMosaicTile");
+                        tile.transform.SetParent(root, false);
+                        tile.transform.localPosition = new Vector3(ix * 3.4f, 0.008f, iz * 3.4f);
+                        tile.transform.localScale = new Vector3(3.15f, 3.15f, 1f);
+                        RenderPipeline2DSetup.AttachGroundDecal(tile, RenderPipeline2DSetup.SquareSprite, tileAccent, 0);
+                    }
+                }
             }
         }
 
@@ -354,7 +528,7 @@ namespace OrpheusBelow
             CreateCrackedObelisk(obsRoot, new Vector3(Random.Range(-1.5f, 1.5f), 0f, Random.Range(-1.5f, 1.5f)));
 
             // Chasms in deeper chambers
-            if (chamberIndex >= 2)
+            if (chamberIndex >= 2 && chamberIndex != 7)
             {
                 CreateDashableStyxChasm(obsRoot, new Vector3(-2.8f, 0f, 2.4f), new Vector3(8.5f, 1.0f, 2.2f));
             }
@@ -362,6 +536,7 @@ namespace OrpheusBelow
 
         public static List<HadesChamberDirector.WaveSpawnSpec> GenerateWaveSpecs(int chamberIndex, int waveNumber)
         {
+            if (chamberIndex == 0) return GetAsphodelWaveSpecs(waveNumber);
             List<HadesChamberDirector.WaveSpawnSpec> specs = new List<HadesChamberDirector.WaveSpawnSpec>();
 
             // Base wretches
@@ -430,10 +605,6 @@ namespace OrpheusBelow
             GameObject go = new GameObject(name);
             go.transform.SetParent(parent, false);
             UnderworldParallaxRig rig = go.AddComponent<UnderworldParallaxRig>();
-            Texture2D panorama = name == "Parallax2DRig_Ch0"
-                ? LoadChamberTexture(0) : Resources.Load<Texture2D>("Art/UnderworldPanorama");
-            if (panorama != null)
-                rig.farAbyssSkySprite = Sprite.Create(panorama, new Rect(0, 0, panorama.width, panorama.height), new Vector2(0.5f, 0.5f), panorama.height);
             rig.Initialize(stageCenter, theme.parallaxGlow, theme.parallaxArch, theme.parallaxFire);
         }
 
@@ -459,19 +630,9 @@ namespace OrpheusBelow
         {
             Color left = new Color(theme.wallTop.r * 0.55f, theme.wallTop.g * 0.55f, theme.wallTop.b * 0.55f, 1f);
             Color right = new Color(theme.wallTop.r * 0.32f, theme.wallTop.g * 0.32f, theme.wallTop.b * 0.32f, 1f);
-            GameObject column = RenderPipeline2DSetup.CreateIsoBlock(parent, "TartarusPillar",
+            RenderPipeline2DSetup.CreateIsoBlock(parent, "TartarusPillar",
                 localPos + new Vector3(0f, 1.55f, 0f), new Vector3(1.45f, 3.1f, 1.45f),
                 theme.wallTop, left, right, addSolidWallCollider: true);
-            for (int ring = 0; ring < 5; ring++)
-                RenderPipeline2DSetup.CreateIsoBlock(parent, "CarvedColumnBand",
-                    localPos + new Vector3(0f, 0.18f + ring * 0.71f, 0f), new Vector3(ring == 0 || ring == 4 ? 1.9f : 1.54f, 0.16f, ring == 0 || ring == 4 ? 1.9f : 1.54f),
-                    new Color(0.43f, 0.36f, 0.25f), left, right);
-            for (int flute = -2; flute <= 2; flute++)
-            {
-                RenderPipeline2DSetup.CreateIsoBlock(parent, "ColumnFluting",
-                    localPos + new Vector3(flute * 0.25f, 1.55f, -0.735f), new Vector3(0.045f, 2.65f, 0.04f),
-                    left, right, new Color(0.07f, 0.08f, 0.11f));
-            }
         }
 
         private static void CreateCrackedObelisk(Transform parent, Vector3 localPos)
@@ -497,8 +658,17 @@ namespace OrpheusBelow
             chasm.transform.SetParent(parent, false);
             chasm.transform.localPosition = localPos;
 
-            StyxWaterSurface.Create(chasm.transform, new Vector3(0f, 0.04f, 0f), new Vector2(size.x, size.z),
-                new Color(0.018f, 0.10f, 0.14f), new Color(0.40f, 0.78f, 0.75f));
+            GameObject darkPit = new GameObject("AbyssPit");
+            darkPit.transform.SetParent(chasm.transform, false);
+            darkPit.transform.localPosition = new Vector3(0f, 0.015f, 0f);
+            darkPit.transform.localScale = new Vector3(size.x, size.z, 1f);
+            RenderPipeline2DSetup.AttachGroundDecal(darkPit, RenderPipeline2DSetup.SquareSprite, new Color(0.02f, 0.05f, 0.06f, 0.98f), 1);
+
+            GameObject riverGlow = new GameObject("StyxLavaVein");
+            riverGlow.transform.SetParent(chasm.transform, false);
+            riverGlow.transform.localPosition = new Vector3(0f, 0.022f, 0f);
+            riverGlow.transform.localScale = new Vector3(size.x * 0.78f, size.z * 0.78f, 1f);
+            RenderPipeline2DSetup.AttachGroundDecal(riverGlow, RenderPipeline2DSetup.SquareSprite, new Color(0.22f, 1.95f, 1.25f, 0.85f), 2);
 
             BoxCollider col = chasm.AddComponent<BoxCollider>();
             col.size = new Vector3(size.x, 3.0f, size.z);

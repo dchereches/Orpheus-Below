@@ -6,10 +6,10 @@ namespace OrpheusBelow.Tests
     public class UnderworldOverhaulTests
     {
         [Test]
-        public void AllTwelveChambersAreLargerAndHaveEscalatingTwoWaveEncounters()
+        public void TwelveChambersRetainLargerLaterRoomsAndTwoWaves()
         {
             Assert.That(ProceduralChamberGenerator.ChamberNames.Length, Is.EqualTo(12));
-            for (int i = 0; i < ProceduralChamberGenerator.TotalChambers; i++)
+            for (int i = 1; i < ProceduralChamberGenerator.TotalChambers; i++)
             {
                 Vector2 size = ProceduralChamberGenerator.GetChamberSize(i);
                 Assert.That(size.x, Is.GreaterThanOrEqualTo(34f));
@@ -24,6 +24,23 @@ namespace OrpheusBelow.Tests
                     Assert.That(Mathf.Abs(spawn.localOffsetXZ.y), Is.LessThan(size.y * 0.5f - 2));
                 }
             }
+        }
+
+        [Test]
+        public void ShadesAndGuardiansUseOriginalProceduralSprites()
+        {
+            var shadeObject = new GameObject("RestoredShadeTest");
+            var bossObject = new GameObject("RestoredBossTest");
+            try
+            {
+                shadeObject.AddComponent<ShadeEnemy>().SetupArchetype(ShadeArchetype.WretchLunger);
+                var body = shadeObject.transform.Find("ShadeBillboard25D/ShadeBody").GetComponent<SpriteRenderer>();
+                Assert.That(body.sprite, Is.SameAs(RenderPipeline2DSetup.DiamondSprite));
+                bossObject.AddComponent<CerberusRhythmBoss>().ConfigureBoss(BossIdentity.CantorOfFury, Vector3.zero);
+                foreach (var sprite in bossObject.GetComponentsInChildren<SpriteRenderer>())
+                    Assert.That(sprite.gameObject.name, Is.Not.EqualTo("PaintedGuardian"));
+            }
+            finally { Object.DestroyImmediate(shadeObject); Object.DestroyImmediate(bossObject); }
         }
 
         [Test]

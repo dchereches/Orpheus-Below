@@ -92,66 +92,50 @@ namespace OrpheusBelow.EditorTools
                 if (EditorApplication.timeSinceStartup > SessionState.GetFloat(Key + ".Deadline", float.MaxValue))
                     throw new Exception("Runtime smoke capture timed out");
                 if (!EditorApplication.isPlaying) return;
-                if (HadesChamberDirector.Instance == null || UnderworldFrontEnd.Instance == null) return;
+                if (HadesChamberDirector.Instance == null) return;
                 if (_step == 0) { _next = EditorApplication.timeSinceStartup + 12; _step++; return; }
                 if (EditorApplication.timeSinceStartup < _next) return;
                 var director = HadesChamberDirector.Instance;
                 var player = OrpheusPlayerController.Instance;
-                var menu = UnderworldFrontEnd.Instance;
                 switch (_step)
                 {
                     case 1:
-                        if (!UnderworldFrontEnd.BlocksGameplay || director.chambers.Count != 12) throw new Exception("Title or chamber count invalid");
-                        Capture("01-title");
+                        if (UnderworldFrontEnd.Instance != null || director.chambers.Count != 12)
+                            throw new Exception("Restored direct-entry flow or room count invalid");
+                        if (GameObject.Find("AsphodelPaintedVista_25D") == null ||
+                            UnityEngine.Object.FindFirstObjectByType<UnderworldEnvironmentArt>() != null ||
+                            UnityEngine.Object.FindFirstObjectByType<StyxWaterSurface>() != null)
+                            throw new Exception("Restored Asphodel visual layout invalid");
+                        Capture("rollback-01-asphodel");
                         break;
                     case 2:
-                        Invoke(menu, "BeginOrResume");
+                        Invoke(director, "EnterChamberImmediate", 1);
+                        player.TeleportToChamberSpawn(director.chambers[1].centerWorld + new Vector3(-2, 0, -4));
                         break;
                     case 3:
-                        Capture("02-asphodel-tutorial");
+                        Capture("rollback-02-combat");
+                        foreach (var shade in UnityEngine.Object.FindObjectsByType<ShadeEnemy>(FindObjectsSortMode.None))
+                        {
+                            var body = shade.transform.Find("ShadeBillboard25D/ShadeBody").GetComponent<SpriteRenderer>();
+                            if (body.sprite.name.StartsWith("UnderworldCreature")) throw new Exception("Overhaul enemy art is still active");
+                            UnityEngine.Object.Destroy(shade.gameObject);
+                        }
+                        director.StopAllCoroutines();
+                        Invoke(director, "EnterChamberImmediate", 0);
+                        director.StopAllCoroutines();
+                        Invoke(director, "BeginChamberBossShowdown", director.chambers[0]);
                         break;
                     case 4:
-                        Time.timeScale = .05f;
-                        Invoke(menu, "OpenMenu");
-                        float hp = player.CurrentHealth;
-                        player.TakeDamage(20f, player.transform.position);
-                        if (player.CurrentHealth != hp) throw new Exception("Damage leaked through pause");
-                        Invoke(menu, "BeginOrResume");
-                        if (Time.timeScale != 1f) throw new Exception("Hitstop survived resume");
-                        Invoke(director, "EnterChamberImmediate", 1);
-                        player.TeleportToChamberSpawn(director.chambers[1].centerWorld + new Vector3(-2f, 0f, -4f));
+                        Capture("rollback-03-guardian");
+                        OrpheusPrototypeBuilder.RestartDescent(true);
                         break;
                     case 5:
-                        Capture("03-garden-combat");
-                        break;
-                    case 6:
-                        // Keep screenshot checks deterministic after the live combat sample.
-                        foreach (var shade in UnityEngine.Object.FindObjectsByType<ShadeEnemy>(FindObjectsSortMode.None))
-                            UnityEngine.Object.Destroy(shade.gameObject);
-                        director.StopAllCoroutines();
-                        Invoke(director, "EnterChamberImmediate", 8);
-                        director.StopAllCoroutines();
-                        player.TeleportToChamberSpawn(director.chambers[8].centerWorld + new Vector3(4f, 0f, 14f));
-                        break;
-                    case 7:
-                        Capture("04-cocytus-water");
-                        Invoke(director, "BeginChamberBossShowdown", director.chambers[8]);
-                        break;
-                    case 8:
-                        Capture("05-guardian-stage");
-                        break;
-                    case 9:
-                        Debug.Log("[Overhaul smoke] Restarting scene: " + UnityEngine.SceneManagement.SceneManager.GetActiveScene().path + " index=" + UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
-                        OrpheusPrototypeBuilder.RestartDescent(true);
-                        Debug.Log("[Overhaul smoke] Restart returned");
-                        break;
-                    case 10:
                         if (UnderworldFrontEnd.BlocksGameplay || player.CurrentHealth != player.maxHealth ||
                             UnderworldCamera2D.Instance.SideViewBlend01 > .01f)
-                            throw new Exception("Unsaved scene restart did not reset the run");
+                            throw new Exception("Restart did not reset the run");
                         if (_runtimeErrors > 0) throw new Exception("Runtime logged " + _runtimeErrors + " errors; inspect the batch log.");
                         SessionState.SetBool(Key, false);
-                        Debug.Log("[Overhaul smoke] PASS: title, 12 rooms, pause damage gate, hitstop resume, biome transition, guardian stage, unsaved scene restart.");
+                        Debug.Log("[Rollback smoke] PASS: previous Asphodel, direct entry, original enemy art, 12 rooms, guardian, restart.");
                         EditorApplication.Exit(0);
                         return;
                 }
