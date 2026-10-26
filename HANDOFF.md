@@ -116,6 +116,16 @@
 
 ---
 
+### I. Assembly Definition & Compilation Integrity
+- **Assembly Boundaries:**
+  - `OrpheusBelow.Runtime.asmdef`: Core gameplay, entities, combat, HUD, audio, camera, and world generation.
+  - `OrpheusBelow.Editor.asmdef`: Editor tooling, screenshot capture, and menu commands.
+  - `OrpheusBelow.EditModeTests.asmdef`: NUnit test suite covering tutorials, difficulty scaling, sprite animators, and environment lifecycle.
+- **Pure Abyss Architecture:** All test files (e.g. `UnderworldOverhaulTests.cs`) and editor capture scripts (`UnderworldSmokeCapture.cs`) are verified and clean of legacy water references.
+- **Zero-Warning Assembly Compiles:** All three projects compile with 0 errors via standard `dotnet build` and Unity Editor compilation.
+
+---
+
 ## 3. Controls Reference
 | Key / Input | Action |
 |---|---|
@@ -147,15 +157,15 @@ Drop generated textures into the appropriate folder under `Assets/OrpheusBelow/R
 - **Resolution:** `2048 x 2048` or `1920 x 1080` PNG / JPG (RGB, no transparency).
 - **Camera Perspective:** Top-down angled isometric floor (`Pitch 36°`, `Yaw 45°`). No upright double-foreshortening.
 - **Biomes & Chamber List:**
-  1. `Chamber_00.png`: **Asphodel Viaduct** *(ACTIVE & INTEGRATED)* — Elevated stone bridge with asphodel blossoms, amber seams, abyss waterfall flanks.
+  1. `Chamber_00.png`: **Asphodel Viaduct** *(ACTIVE & INTEGRATED)* — Elevated stone bridge with asphodel blossoms, amber seams, abyss chasm flanks.
   2. `Chamber_01.png`: **Cantor's Amphitheatre** — Ruined stone arena with ancient Hellenic musical staves etched into flagstones, broken fluted columns.
-  3. `Chamber_02.png`: **Vault of the Ferryman** — Damp cavern with mossy wooden docks, stacks of green copper coins, Stygian riverbanks.
-  4. `Chamber_03.png`: **Acheron Rapids** — Jagged obsidian stepping stones, roaring cyan whitewater, dashed chasm drops.
+  3. `Chamber_02.png`: **Vault of the Ferryman** — Damp cavern with mossy wooden docks, stacks of green copper coins, Stygian chasm docks.
+  4. `Chamber_03.png`: **Acheron Rapids** — Jagged obsidian stepping stones, floating basalt slabs, dashable abyss chasm drops.
   5. `Chamber_04.png`: **Warden's Crossing** — Massive stone mooring posts, heavy iron chains crossing the abyss, shattered oars.
   6. `Chamber_05.png`: **Phlegethon Lava Vaults** — Floating basalt hexagonal tiles over glowing magma rivers, cracked magma veins.
   7. `Chamber_06.png`: **Crucible of Tisiphone** — Scorched crimson stone arena, boiling lava falls in background, obsidian altars.
   8. `Chamber_07.png`: **Elysian Sepulchre** — Pale marble mosaic floor overgrown with ghost-white reeds and silver weeping willows.
-  9. `Chamber_08.png`: **Siren's Grove** — Ethereal moonlit reflecting pool, hollow resonant stone bells, mist-covered ruins.
+  9. `Chamber_08.png`: **Siren's Grove** — Ethereal moonlit obsidian mosaic floor, hollow resonant stone bells, mist-covered ruins.
   10. `Chamber_09.png`: **Cocytus Frozen Tarn** — Black translucent sheet ice with frozen shades trapped beneath, frost-cracked chasms.
   11. `Chamber_10.png`: **Lethe Oblivion Gate** — Deep purple/indigo stone floor fading into amnesiac violet mist, crumbling archways.
   12. `Chamber_11.png`: **The Gates of Styx (Cerberus Den)** — Colossal bronze threshold doors of Hades, blood-red volcanic stone, triple-chained pillars.
@@ -169,7 +179,7 @@ Drop generated textures into the appropriate folder under `Assets/OrpheusBelow/R
   2. `Parallax_Layer1_DistantRuins.png`: Colossal Greek temples, ruined aqueducts, distant colossal statues.
   3. `Parallax_Layer2_MidArchways.png`: Framing stone pillars and cracked arches (where boss perches during Stave Climax).
   4. `Parallax_Layer3_StagePlate.png`: Horizontal stone balustrade and cracked floor tiles of the duel arena.
-  5. `Parallax_Layer4_ForegroundMist.png`: Drifting ghost mist, waterfall spray, or volcanic embers.
+  5. `Parallax_Layer4_ForegroundMist.png`: Drifting ghost mist, abyss vapors, or volcanic embers.
 
 ### Category C: Character Sprite Sheets & Animations
 - **Folder:** `Assets/OrpheusBelow/Resources/Characters/`
@@ -220,7 +230,7 @@ Drop generated textures into the appropriate folder under `Assets/OrpheusBelow/R
   - `Prop_TuningForkPillar.png`: Bronze tuning-fork pillar that vibrates with golden rings when struck.
   - `Prop_CrackedObelisk.png`: Destructible basalt obelisk with glowing amber runes (intact & shattered frames).
   - `Prop_StygianUrn.png`: Classical black-and-orange Greek vase that smashes into shards, dropping breath notes.
-  - `Prop_DashableChasmEdge.png`: Broken stone bridge ledge with waterfalls tumbling into abyss.
+  - `Prop_DashableChasmEdge.png`: Broken stone bridge ledge overlooking the bottomless Stygian abyss.
   - `Prop_ChamberExitDoor.png`: Hellenic archway framed by glowing red/gold Underworld runes.
   - `Prop_ThresholdRuneRing.png`: Ground decal ring activating when all chamber enemies are cleared.
 - **Healing & Shrines (`Props/Healing/`):**
@@ -228,11 +238,10 @@ Drop generated textures into the appropriate folder under `Assets/OrpheusBelow/R
   - `Item_NectarFlask.png`: Golden Greek amphora containing healing honey-nectar (+40 HP).
   - `Shrine_HarmonicAltar.png`: Resonant stone altar that restores full breath and grants a temporary 4th dash charge.
 
-### Category G: Fluids & Particle Textures
+### Category G: Environmental Surfaces & Atmospheric Textures
 - **Folder:** `Assets/OrpheusBelow/Resources/Fluids/`
 - **Format:** Seamless tileable textures (`1024 x 1024`).
 - **Textures:**
-  - `Fluid_StyxWater_Base.png`: Dark turquoise water with submerged dead petals.
-  - `Fluid_StyxWater_Foam.png`: White-cyan foam and spray for rapids and waterfalls.
-  - `Fluid_PhlegethonLava_Base.png`: Viscous molten orange-red magma with floating obsidian crust.
-  - `Fluid_CocytusIce_Sheet.png`: Frosted translucent ice sheet with sub-surface cracks.
+  - `Surface_PhlegethonLava_Base.png`: Viscous molten orange-red magma with floating obsidian crust.
+  - `Surface_CocytusIce_Sheet.png`: Frosted translucent ice sheet with sub-surface cracks and trapped shades.
+  - `Surface_AbyssVapor_Noise.png`: Deep violet and ash particulate noise for bottomless Tartarus chasms.
