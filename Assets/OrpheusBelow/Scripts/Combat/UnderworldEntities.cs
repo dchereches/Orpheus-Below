@@ -16,6 +16,44 @@ namespace OrpheusBelow
         MourningAbductor
     }
 
+    public readonly struct ShadeBalance
+    {
+        public readonly float MaxHealth;
+        public readonly float MoveSpeed;
+        public readonly float ContactDamage;
+        public readonly float AttackRecovery;
+        public readonly float LungeTelegraph;
+        public readonly float OrbDamage;
+        public readonly float VolleyCooldown;
+
+        private ShadeBalance(float maxHealth, float moveSpeed, float contactDamage,
+            float attackRecovery, float lungeTelegraph, float orbDamage, float volleyCooldown)
+        {
+            MaxHealth = maxHealth;
+            MoveSpeed = moveSpeed;
+            ContactDamage = contactDamage;
+            AttackRecovery = attackRecovery;
+            LungeTelegraph = lungeTelegraph;
+            OrbDamage = orbDamage;
+            VolleyCooldown = volleyCooldown;
+        }
+
+        public static ShadeBalance Get(ShadeArchetype archetype)
+        {
+            switch (archetype)
+            {
+                case ShadeArchetype.WretchLunger:
+                    return new ShadeBalance(86f, 5.4f, 18f, 0.68f, 0.34f, 0f, 0f);
+                case ShadeArchetype.BrimstoneCaster:
+                    return new ShadeBalance(78f, 3.8f, 0f, 0f, 0.34f, 17f, 1.12f);
+                case ShadeArchetype.ArmoredWarden:
+                    return new ShadeBalance(150f, 4.3f, 24f, 0.68f, 0.34f, 0f, 0f);
+                default:
+                    return new ShadeBalance(82f, 4.6f, 0f, 0f, 0.34f, 0f, 0f);
+            }
+        }
+    }
+
     /// <summary>
     /// Tormented Underworld Shades bound by Discord & Grief (Pacified by Orpheus's Lyre rather than slaughtered!):
     ///   - WretchLunger     : fast pursuit (5.4 m/s), short 0.34s crimson floor telegraph, 18.5 m/s lunge
@@ -46,7 +84,9 @@ namespace OrpheusBelow
         private SpriteRenderer _eyesSr;
         private Transform _hpFillBar;
         private Transform _telegraphLine;
+        private SpriteRenderer _telegraphSr;
         private Color _baseColor;
+        private ShadeBalance _balance;
 
         private float _stunTimer;
         private float _flashTimer;
@@ -91,27 +131,22 @@ namespace OrpheusBelow
         {
             archetype = type;
             hasBronzeShield = (type == ShadeArchetype.ArmoredWarden);
+            _balance = ShadeBalance.Get(type);
+            maxHealth = _balance.MaxHealth;
+            moveSpeed = _balance.MoveSpeed;
 
             switch (type)
             {
                 case ShadeArchetype.WretchLunger:
-                    maxHealth = 62f;
-                    moveSpeed = 5.4f;
                     _baseColor = new Color(1.45f, 0.22f, 0.36f, 1f);
                     break;
                 case ShadeArchetype.BrimstoneCaster:
-                    maxHealth = 54f;
-                    moveSpeed = 3.8f;
                     _baseColor = new Color(1.15f, 0.28f, 1.40f, 1f);
                     break;
                 case ShadeArchetype.ArmoredWarden:
-                    maxHealth = 105f;
-                    moveSpeed = 4.3f;
                     _baseColor = new Color(1.35f, 0.44f, 0.22f, 1f);
                     break;
                 case ShadeArchetype.MourningAbductor:
-                    maxHealth = 58f;
-                    moveSpeed = 4.6f;
                     _baseColor = new Color(0.32f, 1.35f, 1.55f, 0.94f);
                     break;
             }
@@ -131,8 +166,8 @@ namespace OrpheusBelow
             GameObject telStrip = new GameObject("Strip");
             telStrip.transform.SetParent(tel.transform, false);
             telStrip.transform.localPosition = new Vector3(0f, 0f, 2.4f);
-            telStrip.transform.localScale = new Vector3(0.26f, 4.8f, 1f);
-            RenderPipeline2DSetup.AttachGroundDecal(telStrip, RenderPipeline2DSetup.SquareSprite, new Color(2.8f, 0.20f, 0.25f, 0.72f), 3);
+            telStrip.transform.localScale = new Vector3(0.32f, 4.8f, 1f);
+            _telegraphSr = RenderPipeline2DSetup.AttachGroundDecal(telStrip, RenderPipeline2DSetup.SquareSprite, new Color(2.8f, 0.20f, 0.25f, 0.82f), 3);
             _telegraphLine = tel.transform;
             _telegraphLine.gameObject.SetActive(false);
 
@@ -424,7 +459,7 @@ namespace OrpheusBelow
                 MoveEnemyXZ(_lungeDirXZ * (18.5f * dt), checkWallSlam: false);
                 if (Vector3.Distance(transform.position, player.transform.position) < 0.98f)
                 {
-                    player.TakeDamage(archetype == ShadeArchetype.ArmoredWarden ? 20f : 15f, transform.position);
+                    player.TakeDamage(_balance.ContactDamage, transform.position);
                     _activeLungeTimer = 0f;
                 }
                 return;
@@ -432,13 +467,19 @@ namespace OrpheusBelow
 
             if (_windingUp)
             {
+                if (_telegraphSr != null)
+                {
+                    Color telegraphColor = _telegraphSr.color;
+                    telegraphColor.a = 0.72f + Mathf.PingPong(Time.time * 5.5f, 0.24f);
+                    _telegraphSr.color = telegraphColor;
+                }
                 _windupTimer -= dt;
                 if (_windupTimer <= 0f)
                 {
                     _windingUp = false;
                     if (_telegraphLine != null) _telegraphLine.gameObject.SetActive(false);
                     _activeLungeTimer = 0.24f;
-                    _aiCooldown = 0.82f;
+                    _aiCooldown = _balance.AttackRecovery;
                 }
                 return;
             }
@@ -453,7 +494,7 @@ namespace OrpheusBelow
             else if (_aiCooldown <= 0f)
             {
                 _windingUp = true;
-                _windupTimer = 0.34f;
+                _windupTimer = _balance.LungeTelegraph;
                 _lungeDirXZ = dirToPlayer;
                 if (_telegraphLine != null)
                 {
@@ -479,13 +520,13 @@ namespace OrpheusBelow
 
             if (_aiCooldown <= 0f && dist < 15f)
             {
-                _aiCooldown = 1.38f;
+                _aiCooldown = _balance.VolleyCooldown;
                 _volleyCount++;
                 float[] spread = (_volleyCount % 2 == 0) ? new[] { -18f, 0f, 18f } : new[] { -11f, 11f };
                 foreach (float ang in spread)
                 {
                     Vector3 d = Quaternion.Euler(0f, ang, 0f) * dirToPlayer;
-                    StygianOrbProjectile.Spawn(transform.position + new Vector3(0f, 0.6f, 0f) + d * 0.55f, d, 9.8f, 14f);
+                    StygianOrbProjectile.Spawn(transform.position + new Vector3(0f, 0.6f, 0f) + d * 0.55f, d, 9.8f, _balance.OrbDamage);
                 }
             }
         }

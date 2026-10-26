@@ -340,20 +340,8 @@ namespace OrpheusBelow
             CerberusRhythmBoss boss = CreateGuardian(chamberRoot, "GuardianBoss_Ch00", BossIdentity.CantorOfFury, centerWorld);
 
             // 6. Waves
-            List<HadesChamberDirector.WaveSpawnSpec> w1 = new List<HadesChamberDirector.WaveSpawnSpec>
-            {
-                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,     localOffsetXZ = new Vector2(-1.8f,  2.5f) },
-                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,     localOffsetXZ = new Vector2( 1.8f,  4.5f) },
-                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster,  localOffsetXZ = new Vector2( 0.0f,  6.8f) },
-                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.MourningAbductor, localOffsetXZ = new Vector2(-2.2f, -4.5f) }
-            };
-
-            List<HadesChamberDirector.WaveSpawnSpec> w2 = new List<HadesChamberDirector.WaveSpawnSpec>
-            {
-                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.ArmoredWarden,   localOffsetXZ = new Vector2( 0.0f,  3.5f) },
-                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,    localOffsetXZ = new Vector2(-2.0f,  1.2f) },
-                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster, localOffsetXZ = new Vector2( 2.2f,  6.2f) }
-            };
+            List<HadesChamberDirector.WaveSpawnSpec> w1 = GetAsphodelWaveSpecs(1);
+            List<HadesChamberDirector.WaveSpawnSpec> w2 = GetAsphodelWaveSpecs(2);
 
             return new HadesChamberDirector.ChamberRuntimeData
             {
@@ -367,6 +355,30 @@ namespace OrpheusBelow
                 interiorObstaclesRoot = obsRoot,
                 wave1 = w1,
                 wave2 = w2
+            };
+        }
+
+        public static List<HadesChamberDirector.WaveSpawnSpec> GetAsphodelWaveSpecs(int waveNumber)
+        {
+            if (waveNumber == 1)
+            {
+                return new List<HadesChamberDirector.WaveSpawnSpec>
+                {
+                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,     localOffsetXZ = new Vector2(-1.8f,  2.5f) },
+                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,     localOffsetXZ = new Vector2( 1.8f,  4.5f) },
+                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,     localOffsetXZ = new Vector2( 2.5f, -0.8f) },
+                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster,  localOffsetXZ = new Vector2( 0.0f,  6.8f) },
+                    new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.MourningAbductor, localOffsetXZ = new Vector2(-2.2f, -4.5f) }
+                };
+            }
+
+            return new List<HadesChamberDirector.WaveSpawnSpec>
+            {
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.ArmoredWarden,    localOffsetXZ = new Vector2( 0.0f,  3.5f) },
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.WretchLunger,     localOffsetXZ = new Vector2(-2.0f,  1.2f) },
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster,  localOffsetXZ = new Vector2( 2.2f,  6.2f) },
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster,  localOffsetXZ = new Vector2(-2.8f,  7.4f) },
+                new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.MourningAbductor, localOffsetXZ = new Vector2( 2.6f, -4.8f) }
             };
         }
 

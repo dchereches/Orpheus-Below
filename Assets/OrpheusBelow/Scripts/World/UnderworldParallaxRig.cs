@@ -53,6 +53,7 @@ namespace OrpheusBelow
         {
             _planes.Clear();
             Quaternion rot = Quaternion.Euler(4f, 45f, 0f);
+            bool hasFullBackdrop = farAbyssSkySprite != null;
 
             // PLANE 0: Deep Abyss Sky & Stygian Nebula (furthest back, slow 0.08x drift)
             ParallaxPlane p0 = CreatePlane("Parallax0_FarAbyss", depth: 18f, baseY: 4.2f, mult: 0.08f, rot);
@@ -73,7 +74,7 @@ namespace OrpheusBelow
             {
                 AddElement(p1, "CustomPeaks", distantPeaksSprite, Vector3.zero, new Vector3(32f, 14f, 1f), Color.white, -35);
             }
-            else
+            else if (!hasFullBackdrop)
             {
                 for (int i = -4; i <= 4; i++)
                 {
@@ -90,7 +91,7 @@ namespace OrpheusBelow
             {
                 AddElement(p2, "CustomColonnade", midColonnadeSprite, Vector3.zero, new Vector3(28f, 13f, 1f), Color.white, -28);
             }
-            else
+            else if (!hasFullBackdrop)
             {
                 for (int i = -4; i <= 4; i++)
                 {
@@ -108,7 +109,7 @@ namespace OrpheusBelow
             {
                 AddElement(p3, "CustomChains", nearChainsSprite, Vector3.zero, new Vector3(26f, 12f, 1f), Color.white, -18);
             }
-            else
+            else if (!hasFullBackdrop)
             {
                 for (int i = -3; i <= 3; i++)
                 {
