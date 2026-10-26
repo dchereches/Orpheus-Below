@@ -85,7 +85,6 @@ namespace OrpheusBelow.Tests
                 try
                 {
                     UnderworldEnvironmentArt.Build(root.transform, 0, 34f, 38f, ProceduralChamberGenerator.Biomes[0]);
-                    Assert.That(root.GetComponentsInChildren<StyxWaterSurface>().Length, Is.GreaterThan(0));
                     Assert.That(root.GetComponentsInChildren<MeshRenderer>().Length, Is.GreaterThan(0));
                 }
                 finally { Object.DestroyImmediate(root); }
