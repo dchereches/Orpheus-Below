@@ -1,11 +1,11 @@
 # Orpheus Below — Project Architecture & AI Hand-off Guide
 
 ## 1. Project Overview & Repository
-- **Repository Root:** `C:\Users\chere\OneDrive\Desktop\Orpheus Below`
+- **Repository Root:** `D:\Serban\software-projects\Orpheus-Below`
 - **GitHub Remote:** `https://github.com/dchereches/Orpheus-Below.git` (`main` branch)
 - **Engine & Version:** Unity 6 (`6000.3.10f1`), High Definition Render Pipeline (HDRP `17.3.0`), New Input System (`1.18.0`), `.NET Standard 2.1`.
 - **Core Premise:** A distinctive mythic Hellenic chamber-crawler based on **sound, breath, and grief**. Orpheus descends into the Underworld with his Lyre and Flute (Aulos) to lead Eurydice to the upper light. Features a dual-perspective camera system, zero RNG stat boons, procedural 2.5D background-plate chamber generation, and deterministic musical progression.
-- **Current Build Version:** `HadesChamberDirector.PrototypeBuildVersion = 5` (auto-upgrades scenes on Play mode).
+- **Current Build Version:** `HadesChamberDirector.PrototypeBuildVersion = 6` (auto-upgrades scenes on Play mode).
 
 ---
 
@@ -54,7 +54,7 @@ Sequences of Soft (`S`) and Hard Boom (`B`) notes woven within `1.35s` trigger m
 
 ### A. General Procedural Biome Pipeline
 Implements **Approach A5**: 2D painted background plates aligned with the 2.5D isometric pitch (`36°`, `45°`) with procedurally stamped colliders, props, hazards, and encounters.
-- **Automatic Upgrades:** `HadesChamberDirector.PrototypeBuildVersion = 5`. Pressing **Play** in Unity automatically rebuilds and upgrades any older scene in the hierarchy.
+- **Automatic Upgrades:** `HadesChamberDirector.PrototypeBuildVersion = 6`. Pressing **Play** in Unity automatically rebuilds and upgrades any older scene in the hierarchy.
 - **8 Underworld Biomes:**
   1. *Asphodel Viaduct* (Mini-Boss: Cantor of Fury) — **Active Painted Artwork!**
   2. *Vault of the Ferryman* (Heavy Abductor & Caster crossfire)
@@ -66,7 +66,7 @@ Implements **Approach A5**: 2D painted background plates aligned with the 2.5D i
   8. *The Gates of Styx* (Final Boss: 3-Headed Cerberus)
 
 ### B. Chamber 0: Asphodel Viaduct Integration Details
-The user-provided painted artwork (`Chamber_00.png` / `Chamber_00.jpg`) is fully integrated into the game world:
+The enhanced painted artwork (`Chamber_00.png`, 3840x2160) is fully integrated into the game world. The duplicate JPG was removed so the Resources lookup resolves one deterministic asset:
 - **Camera-Facing 2.5D Vista Quad:**
   - Placed at `position = centerWorld + (0, 0.45, 0) - camForward * 5.0f` with exact rotation `Euler(36°, 45°, 0°)`.
   - Dimensions: `30.2f x 17.0f` (16:9 aspect ratio, orthographic size `8.5f`, `sortingOrder = -50`).
@@ -85,15 +85,27 @@ The user-provided painted artwork (`Chamber_00.png` / `Chamber_00.jpg`) is fully
   - Chamber Exit Door: `(0, 0, +10.4m)` framed by the top-left distant arched portal.
 - **Dual-Perspective Parallax Rig Binding:**
   - `rig.farAbyssSkySprite = vistaSprite`. When transitioning to the 2D Boss Duel (`Cantor of Fury`), the painted Asphodel Viaduct seamlessly shifts into the backdrop behind the musical stave.
+  - When the full painted backdrop is assigned, procedural peaks, columns, and hanging chains are suppressed so they do not cover the artwork. The foreground frame remains for depth.
 - **Multi-Tier Asset Loading Pipeline:**
   - `ProceduralChamberGenerator.LoadChamberTexture(int chamberIndex)`:
     1. Checks runtime registered dictionary (`CustomPlates[chamberIndex]`).
     2. Checks `Resources.Load<Texture2D>("ChamberBackgrounds/Chamber_XX")`.
     3. Direct disk byte-fallback (`Application.dataPath + "/OrpheusBelow/Resources/ChamberBackgrounds/Chamber_XX.png"` / `.jpg` via `Texture2D.LoadImage`). This guarantees instant zero-delay loading even before Unity generates `.meta` files.
 
+### C. Asphodel Encounter Difficulty
+- Both chamber waves now spawn **five Shades**.
+- Wretch Lunger: `86 HP`, `18 contact damage`, `0.68s recovery`, `0.34s telegraph`.
+- Brimstone Caster: `78 HP`, `17 orb damage`, `1.12s volley cooldown`.
+- Armored Warden: `150 HP`, `24 contact damage`, `0.68s recovery`, `0.34s telegraph`.
+- Mourning Abductor: `82 HP`.
+- Melee telegraphs are wider, brighter, and pulse during wind-up. Increased durability and damage do not shorten the established reaction window.
+
 ---
 
 ## 6. Eurydice Psychological & Escort Mechanics (`BlurredEurydice.cs`)
+- **Generated Runtime Sprite:** `Assets/OrpheusBelow/Resources/Characters/Eurydice/Eurydice_DarkCrimson_4x4.png` is a transparent 2048x2048 sheet sliced at runtime into four-frame Idle, Glide, Teaching, and Shatter rows by `EurydiceSpriteAnimator.cs` (8 FPS). The old procedural silhouette remains as a safe fallback if the resource cannot load.
+- **Combat Tutorial:** On the first Asphodel entry in each runtime session, a screen-clamped speech bubble anchored to Eurydice teaches Move, Dash, Soft Note, Hard Boom, and Flute Stance in sequence. Progress comes from action counters rather than specific keyboard keys, so keyboard, gamepad, microphone, and hardware sensor inputs all work. Wave 1 is gated until the five actions are demonstrated.
+- **Context Hints:** Eurydice explains bronze armor on the first Warden and warns about the first Mourning Abductor. Tutorial UI hides during game-over, victory, guardian, and 2D-stage transitions.
 - **Soul Tether:** Glowing line renderer connecting Orpheus and Eurydice. Shimmers pale gold/silver normally; turns jagged crimson when grabbed.
 - **Mourning Abductors:** Special cyan-crimson Shades that ignore Orpheus and drag Eurydice backward toward Tartarus. If `AbductionDanger01` hits 1.0, she is lost (`TriggerEurydiceAbductedLoss`).
 - **Acoustic Call-and-Response:** Plucking a Soft note near Eurydice makes her hum back (`PlayEurydiceHumReply`) with a moonlit ripple.
@@ -109,9 +121,9 @@ To replace procedural fallback blocks across other chambers with custom painted 
 - **Target Folder:** `Assets/OrpheusBelow/Resources/ChamberBackgrounds/`
 - **Naming:** `Chamber_00.png` through `Chamber_07.png`
 - **Current Status:**
-  - `Chamber_00.png` / `Chamber_00.jpg` (**Asphodel Viaduct**) — **ACTIVE & INTEGRATED!**
+  - `Chamber_00.png` (**Asphodel Viaduct**, 3840x2160) — **ACTIVE & INTEGRATED!**
   - `Chamber_01` to `Chamber_07` — Awaiting user paintings; currently use procedural stone mosaic fallbacks.
-- **Resolution:** `2048 x 2048` or `1920 x 1080` / `1024 x 576` PNG/JPG.
+- **Resolution:** Prefer 4K 16:9 (`3840 x 2160`) PNG for full composite plates; the importer allows up to 4096px with no texture compression.
 - **Perspective:** Top-down angled isometric floor (`36°` tilt, `45°` yaw).
 
 ### B. 2D Parallax Boss Duel Backdrops
@@ -123,7 +135,7 @@ To replace procedural fallback blocks across other chambers with custom painted 
 
 ### C. Character & Enemy Sprites (Transparent PNGs)
 - **Orpheus:** Run cycle, Dash silhouette, Lyre pluck pose, Flute playing pose, Hurt/Stagger pose.
-- **Blurred Eurydice:** Veiled ghost silhouette with soft edge blur, looking-back focus sprite, and weeping mist pose.
+- **Blurred Eurydice:** **ACTIVE** — dark-crimson 4x4 transparent sprite sheet with Idle, Glide, Teaching, and Shatter animations. Looking-back focus art can still be added as a future dedicated state.
 - **Shades:**
   - *Wretch Lunger* (crimson agile ghoul, lunging pose)
   - *Brimstone Caster* (violet floating skull/sorcerer)
@@ -155,8 +167,19 @@ To replace procedural fallback blocks across other chambers with custom painted 
 
 ---
 
-## 9. Next Steps for Incoming Developer / AI
-1. When custom PNGs/JPGs are added to `Resources/ChamberBackgrounds/Chamber_XX.png`, they are picked up automatically by `ProceduralChamberGenerator.LoadChamberTexture(int chamberIndex)`.
-2. To customize collider footprints for new chambers, add a dedicated method in `ProceduralChamberGenerator.cs` (patterned after `BuildAsphodelBridgeChamber`).
-3. Press **Play** in the Unity Editor (`SampleScene`) to verify and test gameplay directly — all bootstrap logic runs automatically via `HadesChamberDirector.AutoBootstrapIfNeeded()`.
-4. If hardware sensor input is connected (Piezo / BMP280 via ESP32), select the active COM port in `SensorPulseInput` inspector.
+## 9. Verification & Next Steps
+
+### Automated Verification (2026-10-26)
+- Unity EditMode: **17/17 passed, 0 failed** on Unity `6000.3.10f1`.
+- Unity batch import/compile: exited with code `0`; no C# compilation errors, missing-script errors, missing-reference exceptions, or texture-import exceptions were found in the log.
+- Raster inspection: Asphodel background is a real `3840x2160` PNG; Eurydice sheet is a real `2048x2048` 32-bit PNG with alpha. Neither file is an unresolved Git LFS pointer.
+- Automated coverage includes tutorial progression and session gating, animation slicing/frame selection, all four enemy balance profiles, and both five-enemy Asphodel waves.
+
+### Manual Play-Mode Smoke Checklist
+The headless checks cannot judge composition, bubble readability, or animation feel. In `SampleScene`, verify: the first-entry five-step tutorial; keyboard/gamepad and any connected mic/sensor action paths; Wave 1 and Wave 2 spawns; Warden armor break and hint; Flute stance; first-Abductor warning; boss transition; and Eurydice shatter. Confirm the painted plate stays unobscured at both 2.5D and boss-camera angles.
+
+### Continuing Work
+1. New `Resources/ChamberBackgrounds/Chamber_XX.png` plates are picked up automatically by `ProceduralChamberGenerator.LoadChamberTexture(int chamberIndex)`.
+2. For a chamber-specific collider footprint, add a method patterned after `BuildAsphodelBridgeChamber`.
+3. Press **Play** in Unity (`SampleScene`) to run bootstrap and complete the visual smoke checklist above.
+4. If hardware sensor input is connected (Piezo / BMP280 via ESP32), select the active COM port in the `SensorPulseInput` inspector.
