@@ -4,7 +4,7 @@
 - **Repository Root:** `C:\Users\chere\OneDrive\Desktop\Orpheus Below`
 - **GitHub Remote:** `https://github.com/dchereches/Orpheus-Below.git` (`main` branch)
 - **Engine & Version:** Unity 6 (`6000.3.10f1`), High Definition Render Pipeline (HDRP `17.3.0`), New Input System (`1.18.0`), `.NET Standard 2.1`.
-- **Runtime Bootstrap Version:** `8` (auto-rebuilds and upgrades generated scenes on Play mode).
+- **Runtime Bootstrap Version:** `9` (auto-rebuilds and upgrades generated scenes on Play mode).
 - **Core Premise:** A distinctive mythic Hellenic chamber-crawler based on **sound, breath, and grief**. Orpheus descends into the Underworld with his Lyre and Flute (Aulos) to lead Eurydice to the upper light. Features dual-perspective camera geometry, zero RNG stat boons, procedural 2.5D background-plate chamber generation, and deterministic musical progression.
 
 ---
@@ -37,10 +37,20 @@
 3. **Phase 3: Crashed & Stunned (The Flute Execution Window):** Boss crashes face-down, stunned for 5.0 seconds and taking **2.0x damage** from all attacks (`"GUARDIAN CRASHED! [F] UNLEASH THE FLUTE!"`).
 
 ### D. Classical Greek Main Menu & Settings Submenu (`UnderworldFrontEnd.cs`)
+- **Game Starts on Dedicated Main Menu:** On launch, the game boots directly into the 3-button Hellenic Main Menu. `Time.timeScale` is frozen at `0f`, audio is paused, and gameplay stays frozen behind the painted Underworld panorama until the player clicks `[ ✦ NEW GAME ✦ ]`.
 - **Main Menu (3 Greek Mythology Styled Buttons):**
   - **`[ ✦  NEW GAME  ✦ ]`** (switches to **`[ ✦  RESUME  ✦ ]`** when paused in run).
   - **`[ ✦  SETTINGS  ✦ ]`** (opens the comprehensive Hellenic tuning sanctuary).
   - **`[ ✦  QUIT  ✦ ]`** (switches to **`[ ✦  RETURN TO TITLE  ✦ ]`** when paused in run).
+- **Rock-Solid [Esc] Pause & Settings Toggle:**
+  - Dedicated `TogglePause()` method with frame-deduplication (`_lastToggleFrame`) and a 150ms unscaled-time debounce to prevent button chatter and duplicate frame toggles.
+  - Pressing `[Esc]` during gameplay pauses the world and displays the Greek menu.
+  - Pressing `[Esc]` while in the Settings submenu returns to the Pause screen.
+  - Pressing `[Esc]` while on the Pause screen resumes gameplay seamlessly.
+- **Triple-Redundant Component Architecture:**
+  1. `OrpheusPrototypeBuilder.BuildPrototypeWorld()` adds `UnderworldFrontEnd` to `Systems_Input_Audio_HUD`.
+  2. `AutoBootstrapIfNeeded()` auto-rebuilds and spawns it if missing on scene load.
+  3. `OrpheusHud.Start()` auto-attaches `UnderworldFrontEnd` if somehow absent, guaranteeing 100% presence.
   - Styled with chiseled bronze borders, gold leaf meander trims, deep obsidian backgrounds, and `Palatino Linotype` serif typography.
 - **Settings Submenu (Sanctuary of Tuning):**
   1. **Acoustic & Microphone Calibration:**
@@ -65,13 +75,10 @@
 - **Microphone Calibration Unbound from `[C]`:**
   - Removed `[C]` key gameplay trigger to prevent accidental toggling during combat. All calibration and microphone testing is accessible via Settings in the Main Menu and `[Esc]` Pause Menu.
 
-### E. Prominent Greek Vitality Bar (`OrpheusHud.cs`)
-- Upgraded from an obscure 5px hairline into an ornate **320x22px** classical Greek health cluster.
-- **Double-Border Bronze & Gold Frame:** Chiseled bronze borders with gold leaf corner brackets.
-- **Ghost Damage Bar (`_hpGhostFill`):** White-hot amber damage indicator that smoothly catches up to current HP over 0.4s.
-- **Vivid Ruby-Crimson Fill:** High-contrast health bar with an urgent heartbeat pulsing glow when HP falls below 25%.
-- **Vitality Emblem:** Classical rotated 45° gold diamond laurel glyph at the left edge.
-- **Bold Numeric Readout:** Crisp `HP 100 / 100` Palatino serif text with drop shadow centered on the bar.
+### E. Restored Minimalist Vitality Bar & Dash Gems (`OrpheusHud.cs`)
+- **Restored Exact Original Aesthetics:** Per player preference, reverted the 320x22px health box back to the subtle, literary 240px wide **5px hairline vitality bar** (`_hpFill`) and minimal 9x9 rotated 45° diamond dash gems.
+- **Razor-Sharp HDRP Rendering:** Ultra-thin geometric precision renders cleanly across high-DPI displays without blocking the Underworld backdrop or boss action.
+- **Dual Esc Handler:** `OrpheusHud.cs` includes a direct `[Esc]` / `[P]` / Gamepad Start listener that routes directly to `UnderworldFrontEnd.Instance.TogglePause()`, providing immediate pause response.
 
 ### F. Per-Chamber Healing & Restoration
 1. **Interactive Ambrosia Healing Well (`AmbrosiaHealingWell.cs`):**

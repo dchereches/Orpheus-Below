@@ -5,11 +5,9 @@ using UnityEngine.UI;
 namespace OrpheusBelow
 {
     /// <summary>
-    /// Prominent classical Greek UGUI HUD for Orpheus Below:
-    ///   - Ornate Greek Vitality Bar (320x22px) with bronze frame, white-hot trailing damage ghost bar,
-    ///     vivid ruby-crimson health gradient, classical vitality glyph, and bold HP 100 / 100 readout.
-    ///   - Classical Windows serif typography (Palatino Linotype / Georgia).
-    ///   - Spreads out combat cues and provides seamless settings access via [Esc].
+    /// Subtle, literary ScreenSpaceOverlay UGUI HUD for Orpheus Below.
+    /// Uses classical Windows serif typography (Palatino Linotype / Georgia) + ultra-thin geometric bars
+    /// rendering razor-sharp in HDRP without cluttering the artwork.
     /// </summary>
     public class OrpheusHud : MonoBehaviour
     {
@@ -20,13 +18,8 @@ namespace OrpheusBelow
         private Font _serifFont;
         private BlurredEurydice _eurydice;
 
-        // Bottom-left Greek Vitality cluster + Cadence trail
+        // Bottom-left minimal bars + Cadence trail
         private RectTransform _hpFill;
-        private Image _hpFillImg;
-        private RectTransform _hpGhostFill;
-        private Text _hpText;
-        private float _ghostHpPct = 1f;
-
         private Image[] _dashGems;
         private RectTransform _pulseFill;
         private Image _pulseFillImg;
@@ -83,7 +76,7 @@ namespace OrpheusBelow
         private Text _endTitleText;
         private Text _endBodyText;
 
-        private const float BarWidth = 320f;
+        private const float BarWidth = 240f;
         private const float BossBarWidth = 460f;
 
         private void Awake()
@@ -102,6 +95,11 @@ namespace OrpheusBelow
         private void Start()
         {
             _eurydice = Object.FindFirstObjectByType<BlurredEurydice>();
+            // Guarantee UnderworldFrontEnd is always present in scene
+            if (UnderworldFrontEnd.Instance == null && Object.FindFirstObjectByType<UnderworldFrontEnd>() == null)
+            {
+                gameObject.AddComponent<UnderworldFrontEnd>();
+            }
         }
 
         private static Font LoadClassicalFont()
@@ -192,49 +190,27 @@ namespace OrpheusBelow
             RectTransform root = canvas.GetComponent<RectTransform>();
             _canvasRoot = root;
 
-            // --- 1. BOTTOM-LEFT: PROMINENT GREEK VITALITY BAR, DASH GEMS & SENSOR READOUT ---
-            RectTransform bl = CreateRect("BottomLeftCluster", root, Vector2.zero, Vector2.zero, Vector2.zero, new Vector2(42f, 30f), new Vector2(520f, 130f));
+            // --- 1. BOTTOM-LEFT: VITALITY, DASH GEMS, SENSOR PULSE & PHYSICAL CADENCES ---
+            RectTransform bl = CreateRect("BottomLeftCluster", root, Vector2.zero, Vector2.zero, Vector2.zero, new Vector2(42f, 30f), new Vector2(480f, 114f));
 
-            // Classical Greek Vitality Bar Container (320x22px)
-            RectTransform hpBarRoot = CreateRect("GreekVitalityBar", bl, Vector2.zero, Vector2.zero, Vector2.zero, new Vector2(0f, 78f), new Vector2(BarWidth, 22f));
-            Image hpBg = hpBarRoot.gameObject.AddComponent<Image>();
-            hpBg.color = new Color(0.10f, 0.03f, 0.05f, 0.94f);
-            hpBg.raycastTarget = false;
-
-            // Bronze border with corner accents
-            CreateBarBorder(hpBarRoot, new Color(0.72f, 0.54f, 0.31f), 2);
-
-            // Trailing damage ghost bar (catches up smoothly after damage)
-            _hpGhostFill = CreateBarFill(hpBarRoot, "HpGhostFill", Vector2.zero, new Vector2(BarWidth, 22f), new Color(1.0f, 0.65f, 0.38f, 0.88f), out _);
-
-            // Main Greek ruby-crimson HP fill
-            _hpFill = CreateBarFill(hpBarRoot, "HpFill", Vector2.zero, new Vector2(BarWidth, 22f), new Color(0.90f, 0.18f, 0.28f, 0.96f), out _hpFillImg);
-
-            // Left vitality emblem glyph (rotated 45 deg diamond)
-            RectTransform hpGlyph = CreateRect("HpGlyph", hpBarRoot, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(11f, 11f), new Vector2(10f, 10f));
-            hpGlyph.localRotation = Quaternion.Euler(0f, 0f, 45f);
-            hpGlyph.gameObject.AddComponent<Image>().color = new Color(0.96f, 0.82f, 0.35f, 0.95f);
-
-            // Bold numeric HP readout right on the bar
-            _hpText = CreateSerifText("HpNumericText", hpBarRoot, new Vector2(24f, 0f), new Vector2(BarWidth - 34f, 22f),
-                13, FontStyle.Bold, TextAnchor.MiddleRight, new Color(0.98f, 0.95f, 0.88f, 0.98f));
-            _hpText.text = "HP 100 / 100";
+            // Vitality hairline (Original subtle 5px bar)
+            CreateBarBg(bl, new Vector2(0f, 78f), new Vector2(BarWidth, 5f), new Color(0.18f, 0.06f, 0.10f, 0.72f));
+            _hpFill = CreateBarFill(bl, "HpFill", new Vector2(0f, 78f), new Vector2(BarWidth, 5f), new Color(0.86f, 0.22f, 0.30f, 0.90f), out _);
 
             // Two rotated 45 deg Dash Gems next to Vitality
             _dashGems = new Image[2];
             for (int i = 0; i < 2; i++)
             {
-                RectTransform gem = CreateRect("DashGem_" + i, bl, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(BarWidth + 20f + i * 22f, 89f), new Vector2(12f, 12f));
+                RectTransform gem = CreateRect("DashGem_" + i, bl, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(BarWidth + 22f + i * 20f, 80.5f), new Vector2(9f, 9f));
                 gem.localRotation = Quaternion.Euler(0f, 0f, 45f);
                 _dashGems[i] = gem.gameObject.AddComponent<Image>();
-                CreateBarBorder(gem, new Color(0.72f, 0.54f, 0.31f), 1);
             }
 
-            // Sensor / Breath hairline + 60% Boom tick
-            CreateBarBg(bl, new Vector2(0f, 54f), new Vector2(BarWidth, 6f), new Color(0.12f, 0.10f, 0.18f, 0.75f));
-            _pulseFill = CreateBarFill(bl, "PulseFill", new Vector2(0f, 54f), new Vector2(0f, 6f), new Color(0.95f, 0.78f, 0.36f, 0.88f), out _pulseFillImg);
+            // Sensor / Piezo / Breath hairline + 60% Boom tick
+            CreateBarBg(bl, new Vector2(0f, 58f), new Vector2(BarWidth, 4f), new Color(0.12f, 0.10f, 0.18f, 0.68f));
+            _pulseFill = CreateBarFill(bl, "PulseFill", new Vector2(0f, 58f), new Vector2(0f, 4f), new Color(0.95f, 0.78f, 0.36f, 0.88f), out _pulseFillImg);
 
-            RectTransform boomTick = CreateRect("BoomThresholdTick", bl, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(BarWidth * 0.60f, 57f), new Vector2(2f, 10f));
+            RectTransform boomTick = CreateRect("BoomThresholdTick", bl, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(BarWidth * 0.60f, 60f), new Vector2(2f, 10f));
             boomTick.gameObject.AddComponent<Image>().color = new Color(0.95f, 0.90f, 0.80f, 0.75f);
 
             // Physical S / B Chord Cadence Line
@@ -324,15 +300,13 @@ namespace OrpheusBelow
             _eurydiceBubbleRoot.SetActive(false);
 
             // --- 5. BOTTOM-RIGHT: DISCREET [H] CONTROLS TOGGLE & [Esc] SETTINGS HINT ---
-            _controlsHintCorner = CreateSerifText("ControlsCornerHint", root, new Vector2(-38f, 30f), new Vector2(300f, 24f),
-                14, FontStyle.Italic, TextAnchor.LowerRight, new Color(0.82f, 0.78f, 0.72f, 0.45f),
+            _controlsHintCorner = CreateSerifText("ControlsCornerHint", root, new Vector2(-38f, 30f), new Vector2(280f, 24f),
+                14, FontStyle.Italic, TextAnchor.LowerRight, new Color(0.82f, 0.78f, 0.72f, 0.42f),
                 anchorMin: new Vector2(1f, 0f), anchorMax: new Vector2(1f, 0f), pivot: new Vector2(1f, 0f));
-            _controlsHintCorner.text = "[Esc] Settings  ·  [H] Controls";
+            _controlsHintCorner.text = "[Esc] Settings   ·   [H] Controls";
 
             RectTransform cardRt = CreateRect("ControlsCard", root, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-38f, 62f), new Vector2(405f, 210f));
-            cardRt.gameObject.AddComponent<Image>().color = new Color(0.04f, 0.02f, 0.07f, 0.88f);
-            CreateBarBorder(cardRt, new Color(0.72f, 0.54f, 0.31f), 1);
-
+            cardRt.gameObject.AddComponent<Image>().color = new Color(0.04f, 0.02f, 0.07f, 0.78f);
             Text cardTxt = CreateSerifText("ControlsBody", cardRt, new Vector2(16f, 12f), new Vector2(374f, 186f),
                 13, FontStyle.Normal, TextAnchor.MiddleLeft, new Color(0.88f, 0.84f, 0.78f, 0.88f));
             cardTxt.text =
@@ -401,8 +375,20 @@ namespace OrpheusBelow
 
         private void Update()
         {
-            if (UnderworldFrontEnd.BlocksGameplay) return;
             Keyboard kb = Keyboard.current;
+            Gamepad pad = Gamepad.current;
+
+            // Explicit Esc / Pause key handler directly in HUD so pause toggle is guaranteed
+            if ((kb != null && (kb.escapeKey.wasPressedThisFrame || kb.pKey.wasPressedThisFrame))
+                || (pad != null && pad.startButton.wasPressedThisFrame))
+            {
+                if (UnderworldFrontEnd.Instance != null)
+                {
+                    UnderworldFrontEnd.Instance.TogglePause();
+                }
+            }
+
+            if (UnderworldFrontEnd.BlocksGameplay) return;
 
             if (kb != null && kb.hKey.wasPressedThisFrame)
             {
@@ -418,48 +404,17 @@ namespace OrpheusBelow
             if (_eurydice == null) _eurydice = Object.FindFirstObjectByType<BlurredEurydice>();
             UpdateEurydiceBubble(dt, player);
 
-            // 1. Update Vitality & Ghost Bar & Dash Gems
+            // 1. Update Vitality & Dash Gems (Original hairline format)
             if (player != null && _hpFill != null)
             {
                 float hpPct = Mathf.Clamp01(player.CurrentHealth / Mathf.Max(1f, player.maxHealth));
-                _hpFill.sizeDelta = new Vector2(BarWidth * hpPct, 22f);
-
-                // Ghost Damage Catch-Up Bar
-                if (_ghostHpPct < hpPct)
-                {
-                    _ghostHpPct = hpPct;
-                }
-                else if (_ghostHpPct > hpPct)
-                {
-                    _ghostHpPct = Mathf.MoveTowards(_ghostHpPct, hpPct, dt * 0.40f);
-                }
-                if (_hpGhostFill != null)
-                {
-                    _hpGhostFill.sizeDelta = new Vector2(BarWidth * _ghostHpPct, 22f);
-                }
-
-                // Numeric readout
-                if (_hpText != null)
-                {
-                    _hpText.text = "HP  " + Mathf.CeilToInt(player.CurrentHealth) + " / " + Mathf.CeilToInt(player.maxHealth);
-                }
-
-                // Heartbeat pulse if low health (< 25%)
-                if (hpPct < 0.25f && _hpFillImg != null)
-                {
-                    float pulse = 0.75f + Mathf.Sin(Time.unscaledTime * 8f) * 0.25f;
-                    _hpFillImg.color = new Color(0.96f * pulse, 0.12f, 0.18f, 0.98f);
-                }
-                else if (_hpFillImg != null)
-                {
-                    _hpFillImg.color = new Color(0.90f, 0.18f, 0.28f, 0.96f);
-                }
+                _hpFill.sizeDelta = new Vector2(BarWidth * hpPct, 5f);
 
                 for (int i = 0; i < _dashGems.Length; i++)
                 {
                     _dashGems[i].color = i < player.CurrentDashCharges
-                        ? new Color(0.96f, 0.82f, 0.35f, 0.95f)
-                        : new Color(0.24f, 0.20f, 0.28f, 0.45f);
+                        ? new Color(0.94f, 0.82f, 0.48f, 0.88f)
+                        : new Color(0.28f, 0.22f, 0.34f, 0.35f);
                 }
             }
 
@@ -478,7 +433,7 @@ namespace OrpheusBelow
                 float pulseAge = Time.unscaledTime - sensor.LastPulseTime;
                 float val = pulseAge < 0.20f ? Mathf.Max(sensor.CurrentLiveLevel, sensor.LastPulseIntensity) : sensor.CurrentLiveLevel;
                 val = Mathf.Clamp01(val);
-                _pulseFill.sizeDelta = new Vector2(BarWidth * val, 6f);
+                _pulseFill.sizeDelta = new Vector2(BarWidth * val, 4f);
                 _pulseFillImg.color = val >= sensor.hardBoomThreshold
                     ? new Color(0.96f, 0.32f, 0.26f, 0.92f)
                     : new Color(0.95f, 0.80f, 0.42f, 0.85f);
@@ -669,22 +624,6 @@ namespace OrpheusBelow
             img.color = col;
             img.raycastTarget = false;
             return rt;
-        }
-
-        private static void CreateBarBorder(RectTransform parent, Color col, int thickness)
-        {
-            // Top
-            var top = CreateRect("B_Top", parent, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f), Vector2.zero, new Vector2(0f, thickness)).gameObject.AddComponent<Image>();
-            top.color = col; top.raycastTarget = false;
-            // Bot
-            var bot = CreateRect("B_Bot", parent, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 0f), Vector2.zero, new Vector2(0f, thickness)).gameObject.AddComponent<Image>();
-            bot.color = col; bot.raycastTarget = false;
-            // Left
-            var left = CreateRect("B_Left", parent, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 0f), Vector2.zero, new Vector2(thickness, 0f)).gameObject.AddComponent<Image>();
-            left.color = col; left.raycastTarget = false;
-            // Right
-            var right = CreateRect("B_Right", parent, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0f), Vector2.zero, new Vector2(thickness, 0f)).gameObject.AddComponent<Image>();
-            right.color = col; right.raycastTarget = false;
         }
 
         private Text CreateSerifText(

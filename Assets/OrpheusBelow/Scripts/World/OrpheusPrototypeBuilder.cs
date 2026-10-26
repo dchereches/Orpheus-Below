@@ -37,7 +37,7 @@ namespace OrpheusBelow
             public List<WaveSpawnSpec> wave2 = new List<WaveSpawnSpec>();
         }
 
-        public const int PrototypeBuildVersion = 8;
+        public const int PrototypeBuildVersion = 9;
 
         public int buildVersion = PrototypeBuildVersion;
         public List<ChamberRuntimeData> chambers = new List<ChamberRuntimeData>();
@@ -440,7 +440,7 @@ namespace OrpheusBelow
         {
             // Auto-upgrade if empty scene OR if an older prototype build version is open in the Editor!
             HadesChamberDirector existing = Object.FindFirstObjectByType<HadesChamberDirector>();
-            if (existing != null && existing.buildVersion >= HadesChamberDirector.PrototypeBuildVersion)
+            if (existing != null && existing.buildVersion >= HadesChamberDirector.PrototypeBuildVersion && UnderworldFrontEnd.Instance != null)
             {
                 return;
             }
@@ -469,6 +469,7 @@ namespace OrpheusBelow
             sysGo.AddComponent<ProceduralLyreAudio>();
             sysGo.AddComponent<UnderworldSoundscape>();
             sysGo.AddComponent<OrpheusHud>();
+            sysGo.AddComponent<UnderworldFrontEnd>();
 
             HadesChamberDirector director = root.AddComponent<HadesChamberDirector>();
 

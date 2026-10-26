@@ -122,6 +122,14 @@ namespace OrpheusBelow
             }
         }
 
+        private void Start()
+        {
+            if (!_inRun && !_open)
+            {
+                OpenMenu();
+            }
+        }
+
         private void EnsureEventSystem()
         {
             _events = EventSystem.current;
@@ -435,11 +443,37 @@ namespace OrpheusBelow
             return slider;
         }
 
+        private int _lastToggleFrame = -1;
+        private float _lastToggleRealtime = -1f;
+
+        public void TogglePause()
+        {
+            if (_reloading) return;
+            if (Time.frameCount == _lastToggleFrame) return;
+            if (Time.unscaledTime - _lastToggleRealtime < 0.15f) return;
+            _lastToggleFrame = Time.frameCount;
+            _lastToggleRealtime = Time.unscaledTime;
+
+            if (!_open)
+            {
+                OpenMenu();
+            }
+            else if (_settings != null && _settings.activeSelf)
+            {
+                HideSettings();
+            }
+            else if (_inRun)
+            {
+                BeginOrResume();
+            }
+        }
+
         private void Update()
         {
             var keyboard = Keyboard.current;
             var pad = Gamepad.current;
-            bool pause = (keyboard != null && keyboard.escapeKey.wasPressedThisFrame) || (pad != null && pad.startButton.wasPressedThisFrame);
+            bool pause = (keyboard != null && (keyboard.escapeKey.wasPressedThisFrame || keyboard.pKey.wasPressedThisFrame))
+                      || (pad != null && pad.startButton.wasPressedThisFrame);
             bool back = pad != null && pad.buttonEast.wasPressedThisFrame;
 
             if (_reloading) return;
@@ -447,18 +481,8 @@ namespace OrpheusBelow
             // Calibration is accessed purely via Settings submenu now!
             if (pause || (_open && back))
             {
-                if (!_open)
-                {
-                    OpenMenu();
-                }
-                else if (_settings.activeSelf)
-                {
-                    HideSettings();
-                }
-                else if (_inRun)
-                {
-                    BeginOrResume();
-                }
+                TogglePause();
+                return;
             }
 
             if (!_open) return;
@@ -469,7 +493,7 @@ namespace OrpheusBelow
             }
 
             if (_lastWidth != Screen.width || _lastHeight != Screen.height) FitPanorama();
-            if (_events.currentSelectedGameObject == null)
+            if (_events != null && _events.currentSelectedGameObject == null)
             {
                 Select(_settings.activeSelf ? _settingsBack : _primary);
             }
