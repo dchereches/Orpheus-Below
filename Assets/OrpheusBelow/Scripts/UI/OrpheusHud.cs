@@ -48,6 +48,14 @@ namespace OrpheusBelow
         private GameObject _lookBackRoot;
         private RectTransform _lookBackFill;
 
+        // World-anchored Eurydice tutorial speech bubble
+        private RectTransform _canvasRoot;
+        private GameObject _eurydiceBubbleRoot;
+        private RectTransform _eurydiceBubbleRect;
+        private Text _eurydiceBubbleText;
+        private float _eurydiceBubbleTimer;
+        private bool _eurydiceBubblePersistent;
+
         // Optional [H] controls card
         private GameObject _controlsCard;
         private Text _controlsHintCorner;
@@ -112,6 +120,34 @@ namespace OrpheusBelow
             _calloutTimer = duration;
         }
 
+        public void ShowEurydiceTutorial(string text)
+        {
+            if (_eurydice == null) _eurydice = Object.FindFirstObjectByType<BlurredEurydice>();
+            if (_eurydiceBubbleText != null) _eurydiceBubbleText.text = text;
+            if (_eurydiceBubbleRoot != null) _eurydiceBubbleRoot.SetActive(true);
+            _eurydiceBubblePersistent = true;
+            _eurydiceBubbleTimer = 0f;
+            _eurydice?.SetTeachingPose(true);
+        }
+
+        public void ShowEurydiceHint(string text, float duration = 3.2f)
+        {
+            if (_eurydice == null) _eurydice = Object.FindFirstObjectByType<BlurredEurydice>();
+            if (_eurydiceBubbleText != null) _eurydiceBubbleText.text = text;
+            if (_eurydiceBubbleRoot != null) _eurydiceBubbleRoot.SetActive(true);
+            _eurydiceBubblePersistent = false;
+            _eurydiceBubbleTimer = Mathf.Max(0.1f, duration);
+            _eurydice?.SetTeachingPose(true);
+        }
+
+        public void HideEurydiceTutorial()
+        {
+            if (_eurydiceBubbleRoot != null) _eurydiceBubbleRoot.SetActive(false);
+            _eurydiceBubblePersistent = false;
+            _eurydiceBubbleTimer = 0f;
+            _eurydice?.SetTeachingPose(false);
+        }
+
         public void ShowCadenceUnlockCeremony(string cadenceName, string chordFormula, string description, float duration = 4.2f)
         {
             if (_cadenceUnlockRoot != null)
@@ -147,6 +183,7 @@ namespace OrpheusBelow
             scaler.matchWidthOrHeight = 0.5f;
 
             RectTransform root = canvas.GetComponent<RectTransform>();
+            _canvasRoot = root;
 
             // --- 1. BOTTOM-LEFT: VITALITY, DASH GEMS, SENSOR PULSE & PHYSICAL CADENCES ---
             RectTransform bl = CreateRect("BottomLeftCluster", root, Vector2.zero, Vector2.zero, Vector2.zero, new Vector2(42f, 30f), new Vector2(480f, 114f));
@@ -227,7 +264,37 @@ namespace OrpheusBelow
             _lookBackFill = CreateBarFill(lbRt, "LookBackFill", new Vector2(0f, 2f), new Vector2(0f, 3f), new Color(0.98f, 0.28f, 0.46f, 0.95f), out _);
             _lookBackRoot.SetActive(false);
 
-            // --- 4. BOTTOM-RIGHT: DISCREET [H] CONTROLS TOGGLE ---
+            // --- 4. EURYDICE'S WORLD-ANCHORED COMBAT LESSON ---
+            _eurydiceBubbleRect = CreateRect("EurydiceTutorialBubble", root,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0f),
+                Vector2.zero, new Vector2(520f, 126f));
+            _eurydiceBubbleRoot = _eurydiceBubbleRect.gameObject;
+
+            Image bubbleBg = _eurydiceBubbleRoot.AddComponent<Image>();
+            bubbleBg.color = new Color(0.055f, 0.018f, 0.055f, 0.94f);
+            bubbleBg.raycastTarget = false;
+            Outline bubbleOutline = _eurydiceBubbleRoot.AddComponent<Outline>();
+            bubbleOutline.effectColor = new Color(0.82f, 0.18f, 0.30f, 0.85f);
+            bubbleOutline.effectDistance = new Vector2(2f, -2f);
+
+            RectTransform tail = CreateRect("BubbleTail", _eurydiceBubbleRect,
+                new Vector2(0.18f, 0f), new Vector2(0.18f, 0f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -9f), new Vector2(20f, 20f));
+            tail.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            Image tailImage = tail.gameObject.AddComponent<Image>();
+            tailImage.color = bubbleBg.color;
+            tailImage.raycastTarget = false;
+
+            Text speaker = CreateSerifText("EurydiceSpeaker", _eurydiceBubbleRect,
+                new Vector2(22f, 89f), new Vector2(470f, 24f), 16, FontStyle.Bold,
+                TextAnchor.MiddleLeft, new Color(0.98f, 0.52f, 0.60f, 0.98f));
+            speaker.text = "EURYDICE";
+            _eurydiceBubbleText = CreateSerifText("EurydiceLesson", _eurydiceBubbleRect,
+                new Vector2(22f, 18f), new Vector2(470f, 68f), 19, FontStyle.Normal,
+                TextAnchor.UpperLeft, new Color(0.96f, 0.90f, 0.82f, 0.98f));
+            _eurydiceBubbleRoot.SetActive(false);
+
+            // --- 5. BOTTOM-RIGHT: DISCREET [H] CONTROLS TOGGLE ---
             _controlsHintCorner = CreateSerifText("ControlsCornerHint", root, new Vector2(-38f, 30f), new Vector2(260f, 24f),
                 14, FontStyle.Italic, TextAnchor.LowerRight, new Color(0.82f, 0.78f, 0.72f, 0.42f),
                 anchorMin: new Vector2(1f, 0f), anchorMax: new Vector2(1f, 0f), pivot: new Vector2(1f, 0f));
@@ -250,7 +317,7 @@ namespace OrpheusBelow
             _controlsCard = cardRt.gameObject;
             _controlsCard.SetActive(showControlsHelp);
 
-            // --- 5. CADENCE UNLOCK CEREMONY OVERLAY ---
+            // --- 6. CADENCE UNLOCK CEREMONY OVERLAY ---
             RectTransform unlockRt = CreateRect("CadenceUnlockOverlay", root, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             _cadenceUnlockRoot = unlockRt.gameObject;
             _cadenceUnlockGroup = unlockRt.gameObject.AddComponent<CanvasGroup>();
@@ -279,7 +346,7 @@ namespace OrpheusBelow
 
             _cadenceUnlockRoot.SetActive(false);
 
-            // --- 6. CHAMBER TRANSITION FADE & END OVERLAY ---
+            // --- 7. CHAMBER TRANSITION FADE & END OVERLAY ---
             RectTransform fadeRt = CreateRect("ChamberWipeFade", root, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             _fadeOverlay = fadeRt.gameObject.AddComponent<Image>();
             _fadeOverlay.color = new Color(0.02f, 0.01f, 0.04f, 0f);
@@ -316,6 +383,7 @@ namespace OrpheusBelow
             SensorPulseInput sensor = SensorPulseInput.Instance;
             HadesChamberDirector dir = HadesChamberDirector.Instance;
             if (_eurydice == null) _eurydice = Object.FindFirstObjectByType<BlurredEurydice>();
+            UpdateEurydiceBubble(dt, player);
 
             // 1. Update Vitality & Dash Gems
             if (player != null && _hpFill != null)
@@ -470,6 +538,43 @@ namespace OrpheusBelow
                     _endBodyText.text = "Every tormented Shade found peace, every Guardian was lulled into golden slumber,\nand you trusted her voice behind you without ever looking back.\nIn the warm light of day, Eurydice steps beside you — whole and alive.\n\nPress [R] to play again.";
                 }
             }
+        }
+
+        private void UpdateEurydiceBubble(float dt, OrpheusPlayerController player)
+        {
+            if (_eurydiceBubbleRoot == null || !_eurydiceBubbleRoot.activeSelf) return;
+
+            CerberusRhythmBoss boss = CerberusRhythmBoss.ActiveBoss;
+            if (player == null || player.IsGameOver || player.IsVictory || player.IsIn2DBossStage ||
+                (boss != null && boss.IsBattleActive))
+            {
+                HideEurydiceTutorial();
+                return;
+            }
+
+            if (!_eurydiceBubblePersistent)
+            {
+                _eurydiceBubbleTimer -= dt;
+                if (_eurydiceBubbleTimer <= 0f)
+                {
+                    HideEurydiceTutorial();
+                    return;
+                }
+            }
+
+            if (_eurydice == null || _canvasRoot == null || _eurydiceBubbleRect == null) return;
+            Camera cam = Camera.main;
+            if (cam == null) return;
+
+            Vector3 screen = cam.WorldToScreenPoint(_eurydice.transform.position + new Vector3(0f, 2.35f, 0f));
+            if (screen.z <= 0f) return;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_canvasRoot, screen, null, out Vector2 local)) return;
+
+            Rect bounds = _canvasRoot.rect;
+            Vector2 half = _eurydiceBubbleRect.sizeDelta * 0.5f;
+            local.x = Mathf.Clamp(local.x, bounds.xMin + half.x + 32f, bounds.xMax - half.x - 32f);
+            local.y = Mathf.Clamp(local.y + 48f, bounds.yMin + 32f, bounds.yMax - _eurydiceBubbleRect.sizeDelta.y - 32f);
+            _eurydiceBubbleRect.anchoredPosition = local;
         }
 
         private static RectTransform CreateRect(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 anchoredPos, Vector2 sizeDelta)

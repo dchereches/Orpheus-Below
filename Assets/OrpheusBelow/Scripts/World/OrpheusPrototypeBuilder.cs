@@ -36,7 +36,7 @@ namespace OrpheusBelow
             public List<WaveSpawnSpec> wave2 = new List<WaveSpawnSpec>();
         }
 
-        public const int PrototypeBuildVersion = 5;
+        public const int PrototypeBuildVersion = 6;
 
         public int buildVersion = PrototypeBuildVersion;
         public List<ChamberRuntimeData> chambers = new List<ChamberRuntimeData>();
@@ -50,6 +50,9 @@ namespace OrpheusBelow
         private bool _bossPhaseStarted;
         private bool _chamberCleared;
         private bool _transitioning;
+        private readonly AsphodelTutorialSession _asphodelTutorial = new AsphodelTutorialSession();
+        private AsphodelTutorialStep _shownTutorialStep = AsphodelTutorialStep.Complete;
+        private bool _shownWardenHint;
 
         private void Awake()
         {
@@ -62,6 +65,31 @@ namespace OrpheusBelow
             {
                 EnterChamberImmediate(0);
             }
+        }
+
+        private void Update()
+        {
+            if (!_asphodelTutorial.IsActive) return;
+
+            OrpheusPlayerController player = OrpheusPlayerController.Instance;
+            if (player == null || player.IsGameOver || player.IsVictory || player.IsIn2DBossStage)
+            {
+                OrpheusHud.Instance?.HideEurydiceTutorial();
+                return;
+            }
+
+            bool advanced = _asphodelTutorial.Observe(CaptureTutorialSnapshot(), player.transform.position);
+            if (!advanced) return;
+
+            if (_asphodelTutorial.HasCompleted)
+            {
+                OrpheusHud.Instance?.HideEurydiceTutorial();
+                ChamberRuntimeData chamber = chambers[CurrentChamberIndex];
+                StartCoroutine(SpawnWaveWithRunesRoutine(chamber, chamber.wave1, 0.55f));
+                return;
+            }
+
+            ShowCurrentTutorialStep();
         }
 
         public string GetCurrentChamberTitle()
@@ -140,7 +168,16 @@ namespace OrpheusBelow
 
             if (ch.wave1.Count > 0)
             {
-                StartCoroutine(SpawnWaveWithRunesRoutine(ch, ch.wave1, 0.35f));
+                if (index == 0 && !_asphodelTutorial.HasCompleted)
+                {
+                    _asphodelTutorial.TryBegin(CaptureTutorialSnapshot(), ch.playerSpawnWorld);
+                    _shownTutorialStep = AsphodelTutorialStep.Complete;
+                    ShowCurrentTutorialStep();
+                }
+                else
+                {
+                    StartCoroutine(SpawnWaveWithRunesRoutine(ch, ch.wave1, 0.35f));
+                }
             }
             else
             {
@@ -182,6 +219,13 @@ namespace OrpheusBelow
                 shade.SetupArchetype(s.archetype);
                 shade.OnShadeSlain += OnShadeKilled;
                 _aliveShades.Add(shade);
+
+                if (s.archetype == ShadeArchetype.ArmoredWarden && !_shownWardenHint)
+                {
+                    _shownWardenHint = true;
+                    OrpheusHud.Instance?.ShowEurydiceHint(
+                        "Bronze grief-armor turns Soft Notes aside. Break it with a Hard Boom.", 4.0f);
+                }
             }
 
             _spawningWave = false;
@@ -212,6 +256,7 @@ namespace OrpheusBelow
         {
             if (_bossPhaseStarted) return;
             _bossPhaseStarted = true;
+            OrpheusHud.Instance?.HideEurydiceTutorial();
 
             foreach (StygianOrbProjectile orb in Object.FindObjectsByType<StygianOrbProjectile>(FindObjectsSortMode.None))
             {
@@ -234,6 +279,50 @@ namespace OrpheusBelow
             {
                 HandleChamberCleared();
             }
+        }
+
+        private static AsphodelTutorialSnapshot CaptureTutorialSnapshot()
+        {
+            OrpheusPlayerController player = OrpheusPlayerController.Instance;
+            OrpheusLyreCombat combat = OrpheusLyreCombat.Instance;
+            OrpheusFluteChannel flute = OrpheusFluteChannel.Instance;
+            return new AsphodelTutorialSnapshot(
+                player != null ? player.DashUseCount : 0,
+                combat != null ? combat.SoftNoteCount : 0,
+                combat != null ? combat.HardBoomCount : 0,
+                flute != null ? flute.StanceEntryCount : 0);
+        }
+
+        private void ShowCurrentTutorialStep()
+        {
+            AsphodelTutorialStep step = _asphodelTutorial.CurrentStep;
+            if (step == _shownTutorialStep) return;
+            _shownTutorialStep = step;
+
+            string text;
+            switch (step)
+            {
+                case AsphodelTutorialStep.Move:
+                    text = "Stay ahead of me. Move with W A S D or the left stick.";
+                    break;
+                case AsphodelTutorialStep.Dash:
+                    text = "Space or Shift gives two invulnerable dashes. Cross danger cleanly.";
+                    break;
+                case AsphodelTutorialStep.SoftNote:
+                    text = "Tap LMB or J — or play below 60% — for a Soft Note.";
+                    break;
+                case AsphodelTutorialStep.HardBoom:
+                    text = "RMB, K, or a strong pulse makes a Hard Boom. It breaks bronze grief-armor.";
+                    break;
+                case AsphodelTutorialStep.Flute:
+                    text = "Press F or the left trigger for the Aulos. Weaken Shades, then follow its four-note phrase.";
+                    break;
+                default:
+                    OrpheusHud.Instance?.HideEurydiceTutorial();
+                    return;
+            }
+
+            OrpheusHud.Instance?.ShowEurydiceTutorial(text);
         }
 
         private void HandleChamberCleared()

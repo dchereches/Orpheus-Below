@@ -23,6 +23,7 @@ namespace OrpheusBelow
         public float AbductionDanger01 { get; private set; }
         public bool HasSanctuaryShield => _sanctuaryTimer > 0f;
         public bool IsBeingAbducted => _activeAbductors.Count > 0;
+        public bool IsTeachingPose { get; private set; }
 
         private readonly Queue<Vector3> _breadcrumbs = new Queue<Vector3>();
         private readonly HashSet<ShadeEnemy> _activeAbductors = new HashSet<ShadeEnemy>();
@@ -40,6 +41,7 @@ namespace OrpheusBelow
         private float _focus01;
         private float _sanctuaryTimer;
         private float _replyCooldown;
+        private bool _shownAbductorHint;
 
         private void Start()
         {
@@ -130,8 +132,19 @@ namespace OrpheusBelow
         {
             if (shade != null && _sanctuaryTimer <= 0f)
             {
-                _activeAbductors.Add(shade);
+                bool newlyAdded = _activeAbductors.Add(shade);
+                if (newlyAdded && !_shownAbductorHint)
+                {
+                    _shownAbductorHint = true;
+                    OrpheusHud.Instance?.ShowEurydiceHint(
+                        "That Shade is taking me. Strike it now; later, B - S will raise my Sanctuary.", 4.2f);
+                }
             }
+        }
+
+        public void SetTeachingPose(bool active)
+        {
+            IsTeachingPose = active && !IsVanished;
         }
 
         public void UnregisterAbductor(ShadeEnemy shade)
@@ -190,6 +203,7 @@ namespace OrpheusBelow
         {
             if (IsVanished) return;
             IsVanished = true;
+            IsTeachingPose = false;
             _focus01 = 1f;
             if (_tetherLine != null) _tetherLine.enabled = false;
             StartCoroutine(ShatterRoutine());

@@ -78,5 +78,46 @@ namespace OrpheusBelow
             CurrentStep++;
             return true;
         }
+
+        public static string GetStepId(AsphodelTutorialStep step)
+        {
+            switch (step)
+            {
+                case AsphodelTutorialStep.Move: return "move";
+                case AsphodelTutorialStep.Dash: return "dash";
+                case AsphodelTutorialStep.SoftNote: return "soft-note";
+                case AsphodelTutorialStep.HardBoom: return "hard-boom";
+                case AsphodelTutorialStep.Flute: return "flute";
+                default: return "complete";
+            }
+        }
+    }
+
+    /// <summary>Keeps the tutorial's once-per-play-session completion latch.</summary>
+    public sealed class AsphodelTutorialSession
+    {
+        private AsphodelCombatTutorial _activeTutorial;
+
+        public bool HasCompleted { get; private set; }
+        public bool IsActive => _activeTutorial != null && !HasCompleted;
+        public AsphodelTutorialStep CurrentStep => HasCompleted
+            ? AsphodelTutorialStep.Complete
+            : (_activeTutorial != null ? _activeTutorial.CurrentStep : AsphodelTutorialStep.Move);
+        public string CurrentStepId => AsphodelCombatTutorial.GetStepId(CurrentStep);
+
+        public bool TryBegin(AsphodelTutorialSnapshot baseline, Vector3 startPosition)
+        {
+            if (HasCompleted || _activeTutorial != null) return false;
+            _activeTutorial = new AsphodelCombatTutorial(baseline, startPosition);
+            return true;
+        }
+
+        public bool Observe(AsphodelTutorialSnapshot snapshot, Vector3 playerPosition)
+        {
+            if (!IsActive) return false;
+            bool advanced = _activeTutorial.Observe(snapshot, playerPosition);
+            if (_activeTutorial.IsComplete) HasCompleted = true;
+            return advanced;
+        }
     }
 }

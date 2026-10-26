@@ -70,5 +70,46 @@ namespace OrpheusBelow.Tests
             Assert.That(tutorial.Observe(Baseline, Vector3.zero), Is.False);
             Assert.That(tutorial.CurrentStep, Is.EqualTo(AsphodelTutorialStep.Dash));
         }
+
+        [Test]
+        public void SessionCompletesOnlyOnce()
+        {
+            AsphodelTutorialSession session = new AsphodelTutorialSession();
+            Assert.That(session.TryBegin(Baseline, Vector3.zero), Is.True);
+
+            session.Observe(Baseline, new Vector3(1.25f, 0f, 0f));
+            session.Observe(new AsphodelTutorialSnapshot(5, 7, 3, 2), Vector3.zero);
+            session.Observe(new AsphodelTutorialSnapshot(5, 8, 3, 2), Vector3.zero);
+            session.Observe(new AsphodelTutorialSnapshot(5, 8, 4, 2), Vector3.zero);
+            session.Observe(new AsphodelTutorialSnapshot(5, 8, 4, 3), Vector3.zero);
+
+            Assert.That(session.HasCompleted, Is.True);
+            Assert.That(session.TryBegin(Baseline, Vector3.zero), Is.False);
+        }
+
+        [Test]
+        public void ReentryKeepsCompletedLatch()
+        {
+            AsphodelTutorialSession session = new AsphodelTutorialSession();
+            session.TryBegin(Baseline, Vector3.zero);
+            session.Observe(Baseline, new Vector3(1.25f, 0f, 0f));
+            session.Observe(new AsphodelTutorialSnapshot(5, 7, 3, 2), Vector3.zero);
+            session.Observe(new AsphodelTutorialSnapshot(5, 8, 3, 2), Vector3.zero);
+            session.Observe(new AsphodelTutorialSnapshot(5, 8, 4, 2), Vector3.zero);
+            session.Observe(new AsphodelTutorialSnapshot(5, 8, 4, 3), Vector3.zero);
+
+            Assert.That(session.CurrentStep, Is.EqualTo(AsphodelTutorialStep.Complete));
+            Assert.That(session.CurrentStepId, Is.EqualTo("complete"));
+        }
+
+        [Test]
+        public void ExposesStableStepIdentifiers()
+        {
+            Assert.That(AsphodelCombatTutorial.GetStepId(AsphodelTutorialStep.Move), Is.EqualTo("move"));
+            Assert.That(AsphodelCombatTutorial.GetStepId(AsphodelTutorialStep.Dash), Is.EqualTo("dash"));
+            Assert.That(AsphodelCombatTutorial.GetStepId(AsphodelTutorialStep.SoftNote), Is.EqualTo("soft-note"));
+            Assert.That(AsphodelCombatTutorial.GetStepId(AsphodelTutorialStep.HardBoom), Is.EqualTo("hard-boom"));
+            Assert.That(AsphodelCombatTutorial.GetStepId(AsphodelTutorialStep.Flute), Is.EqualTo("flute"));
+        }
     }
 }
