@@ -5,13 +5,15 @@ using UnityEngine.InputSystem;
 namespace OrpheusBelow
 {
     /// <summary>
-    /// Flute (Aulos) Stance & Melodic Flee Mechanic:
+    /// Flute (Aulos) Stance & Cataclysmic Requiem Area Damage Mechanic:
     ///   - Hold/Toggle [F] to draw the Flute (slows movement by 65%, disables Dash).
     ///   - A 4-note sequence appears above Orpheus: input matching Soft ('S', <60%) or Hard Boom ('B', >=60%) notes.
-    ///   - Discordant Backlash (A2): Wrong note, timeout, or taking damage screeches, interrupts Flute,
+    ///   - Each correct note pulses for 45 AOE damage & micro-staggers surrounding enemies.
+    ///   - The 4th note detonates the CATACLYSMIC REQUIEM: a 240+ damage screen-shattering Nova that
+    ///     obliterates basic shades, cracks all armor, destroys projectiles, and stuns heavy survivors for 3s.
+    ///     Also chunks massive damage into Guardians (480 dmg if Crashed!).
+    ///   - Discordant Backlash: Wrong note, timeout, or taking damage screeches, interrupts Flute,
     ///     and frenzies nearby Shades into faster aggressive lunges!
-    ///   - Dual-Instrument Synergy (A3): Shades whose Grief-Armor has been cracked by the Lyre (or <70% HP / stunned)
-    ///     are convinced by the melody to stop, weep in sorrow, and sink into the floor mist (A4)!
     /// </summary>
     public class OrpheusFluteChannel : MonoBehaviour
     {
@@ -101,7 +103,7 @@ namespace OrpheusBelow
             if (_lockoutCooldown > 0f) _lockoutCooldown -= dt;
             if (_staggerTimer > 0f) _staggerTimer -= dt;
 
-            if (_player == null || _player.IsGameOver || _player.IsVictory || _player.IsIn2DBossStage)
+            if (_player == null || _player.IsGameOver || _player.IsVictory)
             {
                 if (IsFluteActive) ExitFluteStance();
                 return;
@@ -146,7 +148,7 @@ namespace OrpheusBelow
             GenerateNewMelody();
             if (_noteDisplayRoot != null) _noteDisplayRoot.gameObject.SetActive(true);
             if (_fluteVis != null) _fluteVis.gameObject.SetActive(true);
-            OrpheusHud.Instance?.ShowSubtleCallout("Aulos Drawn  [Play Notes to Convince Shades]");
+            OrpheusHud.Instance?.ShowSubtleCallout("Aulos Drawn  [Play Notes — Cataclysmic Requiem on 4th Note!]");
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.05f, 0f), 2.2f, new Color(0.6f, 1.8f, 2.4f, 0.7f), 0.25f);
         }
 
@@ -220,8 +222,31 @@ namespace OrpheusBelow
             {
                 // Correct note played
                 ProceduralLyreAudio.Instance?.PlayFluteNote(isHardBoom);
-                GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.06f, 0f), 1.8f + _currentNoteIndex * 0.6f,
+                GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.06f, 0f), 2.2f + _currentNoteIndex * 0.8f,
                     isHardBoom ? new Color(2.8f, 0.35f, 0.25f, 0.85f) : new Color(0.6f, 2.2f, 2.6f, 0.85f), 0.20f);
+
+                // --- NOTE PULSE AOE DAMAGE: 45 DMG & Micro-Stagger ---
+                const float pulseDmg = 45f;
+                ShadeEnemy[] nearbyShades = Object.FindObjectsByType<ShadeEnemy>(FindObjectsSortMode.None);
+                for (int sIdx = 0; sIdx < nearbyShades.Length; sIdx++)
+                {
+                    ShadeEnemy s = nearbyShades[sIdx];
+                    if (s == null || s.IsFleeing) continue;
+                    if (Vector3.Distance(transform.position, s.transform.position) <= earshotRadius)
+                    {
+                        s.OnOrphicHit(pulseDmg, 0.8f, isHardBoom, transform.position);
+                        s.ApplyStun(0.35f, breakShield: isHardBoom);
+                    }
+                }
+
+                if (CerberusRhythmBoss.ActiveBoss != null && CerberusRhythmBoss.ActiveBoss.IsBattleActive)
+                {
+                    float bossDist = Vector3.Distance(transform.position, CerberusRhythmBoss.ActiveBoss.transform.position);
+                    if (bossDist <= earshotRadius + 4.5f)
+                    {
+                        CerberusRhythmBoss.ActiveBoss.OnOrphicHit(pulseDmg, 0.8f, isHardBoom, transform.position);
+                    }
+                }
 
                 _currentNoteIndex++;
                 _sequenceTimer = sequenceTimeoutSeconds; // refresh timer on successful hit
@@ -243,12 +268,27 @@ namespace OrpheusBelow
         private void CompleteMelodyOfSorrow()
         {
             ProceduralLyreAudio.Instance?.PlayFluteFleeCatharsis();
-            GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.06f, 0f), earshotRadius * 2.0f,
-                new Color(0.6f, 2.2f, 2.8f, 0.95f), 0.48f);
-            UnderworldCamera2D.Instance?.AddShake(0.35f);
+            UnderworldSoundscape.Instance?.PlayImpact(true);
+            UnderworldCamera2D.Instance?.AddShake(0.85f);
 
+            // Triple expanding screen-shattering shockwave rings
+            GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.06f, 0f), earshotRadius * 2.2f,
+                new Color(0.6f, 2.4f, 3.0f, 1f), 0.55f);
+            GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.08f, 0f), earshotRadius * 1.5f,
+                new Color(2.9f, 2.4f, 0.6f, 1f), 0.38f);
+            GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.10f, 0f), earshotRadius * 0.8f,
+                new Color(3.5f, 3.5f, 3.5f, 1f), 0.25f);
+
+            // Shatter all enemy projectiles across the chamber
+            StygianOrbProjectile[] orbs = Object.FindObjectsByType<StygianOrbProjectile>(FindObjectsSortMode.None);
+            for (int i = 0; i < orbs.Length; i++)
+            {
+                if (orbs[i] != null) orbs[i].ShatterOrb();
+            }
+
+            const float novaDamage = 240f;
+            int hitCount = 0;
             int convincedCount = 0;
-            int resistedCount = 0;
 
             ShadeEnemy[] shades = Object.FindObjectsByType<ShadeEnemy>(FindObjectsSortMode.None);
             for (int i = 0; i < shades.Length; i++)
@@ -257,33 +297,35 @@ namespace OrpheusBelow
                 if (s == null || s.IsFleeing) continue;
 
                 float dist = Vector3.Distance(transform.position, s.transform.position);
-                if (dist <= earshotRadius)
+                if (dist <= earshotRadius * 1.5f)
                 {
-                    if (s.IsVulnerableToFlute)
+                    hitCount++;
+                    s.ApplyStun(3.0f, breakShield: true);
+                    s.OnOrphicHit(novaDamage, 1.0f, isHardBoom: true, transform.position);
+
+                    if (s.CurrentHealth > 0f && s.IsVulnerableToFlute)
                     {
                         s.ConvinceToFlee();
                         convincedCount++;
                     }
-                    else if (s.HasGriefShield)
-                    {
-                        resistedCount++;
-                        s.OnOrphicHit(22f, 0.65f, false, transform.position);
-                    }
                 }
             }
 
-            if (convincedCount > 0)
+            // Hit 2D Guardian Boss if present
+            if (CerberusRhythmBoss.ActiveBoss != null && CerberusRhythmBoss.ActiveBoss.IsBattleActive)
             {
-                OrpheusHud.Instance?.ShowSubtleCallout($"Sorrowful Melody: {convincedCount} Shade(s) Surrendered");
+                float bossDist = Vector3.Distance(transform.position, CerberusRhythmBoss.ActiveBoss.transform.position);
+                if (bossDist <= earshotRadius * 2.5f)
+                {
+                    CerberusRhythmBoss.ActiveBoss.OnOrphicHit(novaDamage, 1.0f, isHardBoom: true, transform.position);
+                    hitCount++;
+                }
             }
-            else if (resistedCount > 0)
-            {
-                OrpheusHud.Instance?.ShowSubtleCallout("Grief-Armor Resists Flute — Crack with Hard Boom!");
-            }
-            else
-            {
-                OrpheusHud.Instance?.ShowSubtleCallout("Melody Played (No Vulnerable Shades in Earshot)");
-            }
+
+            // Full breath refill reward for executing the full 4-note Requiem!
+            OrpheusLyreCombat.Instance?.Breath.Refill();
+
+            OrpheusHud.Instance?.ShowSubtleCallout($"CATACLYSMIC REQUIEM! -{Mathf.RoundToInt(novaDamage)} AOE Nova ({hitCount} Hit)");
 
             GenerateNewMelody();
         }

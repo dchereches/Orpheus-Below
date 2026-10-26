@@ -146,7 +146,8 @@ namespace OrpheusBelow
             }
 
             // Physical S / B Chord Cadences operate freely in 2.5D exploration & combat!
-            if (!_player.IsIn2DBossStage)
+            bool staveBarrage = CerberusRhythmBoss.ActiveBoss != null && CerberusRhythmBoss.ActiveBoss.IsStaveBarrageActive;
+            if (!staveBarrage)
             {
                 RecordCadenceNoteAndEvaluate(isHardBoom ? 'B' : 'S');
             }
@@ -380,7 +381,8 @@ namespace OrpheusBelow
             float comboScale = _comboStep == 2 ? 1.25f : 1.0f;
             float dmg = softBaseDamage * comboScale * Mathf.Lerp(0.90f, 1.30f, intensity / 0.6f);
             if (isDashStrike) dmg *= dashStrikeMultiplier;
-            if (!_player.IsIn2DBossStage) dmg *= Breath.DamageMultiplier;
+            bool staveBarrage = CerberusRhythmBoss.ActiveBoss != null && CerberusRhythmBoss.ActiveBoss.IsStaveBarrageActive;
+            if (!staveBarrage) dmg *= Breath.DamageMultiplier;
 
             Vector3 slashOrigin = transform.position + new Vector3(0f, 0.06f, 0f);
             float reach = isDashStrike ? meleeSlashRadius * 1.22f : meleeSlashRadius;
@@ -420,7 +422,8 @@ namespace OrpheusBelow
             float t = Mathf.InverseLerp(0.60f, 1.0f, intensity);
             float radius = Mathf.Lerp(hardBoomMinRadius, hardBoomMaxRadius, t);
             float dmg = Mathf.Lerp(hardBoomMinDamage, hardBoomMaxDamage, t) * (isDashStrike ? 1.2f : 1.0f);
-            if (!_player.IsIn2DBossStage) dmg *= Breath.DamageMultiplier;
+            bool staveBarrage = CerberusRhythmBoss.ActiveBoss != null && CerberusRhythmBoss.ActiveBoss.IsStaveBarrageActive;
+            if (!staveBarrage) dmg *= Breath.DamageMultiplier;
             bool in2D = _player.IsIn2DBossStage;
 
             Vector3 vfxCenter = in2D

@@ -95,6 +95,7 @@ namespace OrpheusBelow
         private void Start()
         {
             _eurydice = Object.FindFirstObjectByType<BlurredEurydice>();
+            if (SoundCalibrationMenu.Instance == null) gameObject.AddComponent<SoundCalibrationMenu>();
         }
 
         private static Font LoadClassicalFont()
@@ -298,7 +299,7 @@ namespace OrpheusBelow
             _controlsHintCorner = CreateSerifText("ControlsCornerHint", root, new Vector2(-38f, 30f), new Vector2(260f, 24f),
                 14, FontStyle.Italic, TextAnchor.LowerRight, new Color(0.82f, 0.78f, 0.72f, 0.42f),
                 anchorMin: new Vector2(1f, 0f), anchorMax: new Vector2(1f, 0f), pivot: new Vector2(1f, 0f));
-            _controlsHintCorner.text = "[H] Controls & Cadences";
+            _controlsHintCorner.text = "[C] Sound Calibration   ·   [H] Controls";
 
             RectTransform cardRt = CreateRect("ControlsCard", root, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-38f, 62f), new Vector2(405f, 210f));
             cardRt.gameObject.AddComponent<Image>().color = new Color(0.04f, 0.02f, 0.07f, 0.78f);
@@ -313,7 +314,7 @@ namespace OrpheusBelow
                 "Cadence [S - S - B]  —  Hymn of Dawn (Piercing Beam)\n" +
                 "Cadence [B - S]  —  Sanctuary of Eurydice (Ch. I Reward)\n" +
                 "Cadence [S - B - S]  —  Siren's Convergence (Ch. II Reward)\n" +
-                "Tab  —  Cycle Mic / ESP32   ·   Hold Q  —  Look Back   ·   R  —  Restart";
+                "Tab  —  Cycle Mic / ESP32   ·   C  —  Sound Calibration   ·   Hold Q  —  Look Back   ·   R  —  Restart";
             _controlsCard = cardRt.gameObject;
             _controlsCard.SetActive(showControlsHelp);
 
@@ -372,6 +373,10 @@ namespace OrpheusBelow
         {
             if (UnderworldFrontEnd.BlocksGameplay) return;
             Keyboard kb = Keyboard.current;
+            if (kb != null && kb.cKey.wasPressedThisFrame)
+            {
+                SoundCalibrationMenu.Instance?.ToggleOpen();
+            }
             if (kb != null && kb.hKey.wasPressedThisFrame)
             {
                 showControlsHelp = !showControlsHelp;
@@ -427,7 +432,7 @@ namespace OrpheusBelow
                     mode = sensor.SerialConnected
                         ? "Lyre Input [Tab]: ESP32 Connected (" + sensor.serialPortName + ")"
                         : "Lyre Input [Tab]: ESP32 Waiting (" + sensor.serialPortName + ")";
-                _sensorModeLabel.text = mode;
+                _sensorModeLabel.text = mode + "  ·  [C] Sound Calibration";
             }
 
             // 3. Guardian Rhythm Bar vs Subtle Chamber Banner

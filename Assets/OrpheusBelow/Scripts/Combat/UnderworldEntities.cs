@@ -73,6 +73,8 @@ namespace OrpheusBelow
         public bool IsVulnerableToFlute => !hasBronzeShield && (_hp <= maxHealth * 0.70f || _resonance.ExposedRemaining > 0f);
         public bool HasGriefShield => hasBronzeShield;
         public bool IsFleeing { get; private set; }
+        public float CurrentHealth => _hp;
+        public bool IsPacified => _pacified;
 
         private float _hp;
         private bool _pacified;
@@ -302,6 +304,20 @@ namespace OrpheusBelow
             _flyingForWallSlam = false;
             _knockbackVelXZ = toCenter * 5.8f;
             _stunTimer = Mathf.Max(_stunTimer, 0.58f);
+        }
+
+        public void ApplyStun(float duration, bool breakShield = false)
+        {
+            if (_pacified || _hp <= 0f) return;
+            if (breakShield && hasBronzeShield)
+            {
+                BreakBronzeGriefShield();
+            }
+            _stunTimer = Mathf.Max(_stunTimer, duration);
+            _windingUp = false;
+            _activeLungeTimer = 0f;
+            _knockbackVelXZ = Vector3.zero;
+            if (_telegraphLine != null) _telegraphLine.gameObject.SetActive(false);
         }
 
         private void BreakBronzeGriefShield()

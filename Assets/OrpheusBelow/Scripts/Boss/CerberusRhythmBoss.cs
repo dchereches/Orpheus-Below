@@ -12,14 +12,22 @@ namespace OrpheusBelow
         CerberusHoundOfHades  // Chamber IV Final Boss (126 BPM)
     }
 
+    public enum DuelPhase
+    {
+        ArenaCombat,     // Active 2D action combat (slashes, lunges, floor waves, cadences)
+        StaveLeap,       // Boss leaps into background ruins
+        StaveBarrage,    // High-tempo rhythm barrage from the ruins
+        CrashedStunned   // Boss crashed face-down, stunned 5s, 2x damage (Flute Requiem window!)
+    }
+
     /// <summary>
-    /// 2D Side-View Parallax Rhythm Guardian System!
-    /// Every Chamber culminates in a Guardian that smoothly drops the camera from 2.5D Isometric into a
-    /// cinematic 2D Parallax Duelling Stage:
-    ///   - A luminous 2D Musical Stave stretches between Guardian (Right) and Orpheus's Golden Lyre Ring (Left)
-    ///   - GOLD DIAMOND (◇)  -> Soft Tap / Puff (< 60%)
-    ///   - CRIMSON HALO (◎)  -> HARD PUNCH / EXHALE BOOM (>= 60%)!
-    ///   - Meanwhile, dodge 2D Sweeping Shockwaves (Spacebar Dash i-frames!) & Floor Geysers (A/D step)!
+    /// Phased 2D Parallax Guardian Duel System:
+    ///   1. Arena Combat: Freeform 2D action! Orpheus slashes, dash-strikes, and casts cadences while dodging
+    ///      boss lunges, ground cleaves, and geysers. Full damage to the boss!
+    ///   2. Stave Climax: Boss leaps into the background vista/ruins to channel a high-tempo rhythm barrage.
+    ///      Deflecting notes shoots radiant spears back into the boss!
+    ///   3. Crashed Stunned: The boss plummets from the ruins and crashes face-down, stunned for 5 seconds.
+    ///      Vulnerable to 2.0x damage — the ultimate window to unleash the FLUTE's Cataclysmic Requiem!
     /// </summary>
     public class CerberusRhythmBoss : MonoBehaviour, IOrphicTarget
     {
@@ -30,7 +38,7 @@ namespace OrpheusBelow
         public string bossDisplayName = "Cantor of Tisiphone";
         public float maxHealth = 260f;
         public float bpm = 100f;
-        public float noteTravelSeconds = 1.55f;
+        public float noteTravelSeconds = 1.15f;
         public float hitWindowSeconds = 0.23f;
 
         public float CurrentHealth { get; private set; }
@@ -38,6 +46,9 @@ namespace OrpheusBelow
         public bool IsDefeated { get; private set; }
         public int HarmonyStreak { get; private set; }
         public string LastJudgement { get; private set; } = "";
+
+        public DuelPhase CurrentPhase { get; private set; } = DuelPhase.ArenaCombat;
+        public bool IsStaveBarrageActive => CurrentPhase == DuelPhase.StaveBarrage || CurrentPhase == DuelPhase.StaveLeap;
 
         public event Action OnCerberusDefeated;
 
@@ -48,7 +59,22 @@ namespace OrpheusBelow
         private Color _headBaseColor;
         private float _nextDiscordPenalty;
 
-        // 2D Stave UI in world space (perfectly aligned to 2D Side-View!)
+        // Position Anchors in 2D Space
+        private Vector3 _bossGroundAnchor;
+        private Vector3 _bossRuinsAnchor;
+        private float _combatActionTimer = 1.8f;
+        private int _combatActionIndex = 0;
+        private bool _isLunging;
+        private float _lungeTimer;
+        private Vector3 _lungeStartPos;
+        private Vector3 _lungeEndPos;
+
+        // Climax Milestones
+        private bool _milestone65Done;
+        private bool _milestone30Done;
+        private float _crashStunTimer;
+
+        // 2D Stave UI in world space
         private Transform _staveRoot;
         private Transform _targetHitRing;
         private SpriteRenderer _targetRingSr;
@@ -57,8 +83,7 @@ namespace OrpheusBelow
 
         private float _beatInterval;
         private float _nextBeatTime;
-        private int _beatCounter;
-        private int[] _pattern;
+        private int _barrageNotesRemaining;
 
         private class StaveBeatNote
         {
@@ -70,56 +95,48 @@ namespace OrpheusBelow
 
         private readonly List<StaveBeatNote> _notes = new List<StaveBeatNote>();
 
-        // Distinct musical rhythm charts per Mini-Boss / Final Boss! (0 = Rest/Hazard, 1 = Soft Note, 2 = HARD BOOM)
-        private static readonly int[] PatternCantor   = { 1, 0, 1, 0,  2, 0, 0, 0,  1, 1, 2, 0,  1, 0, 2, 0 };
-        private static readonly int[] PatternOarsman  = { 1, 1, 2, 0,  1, 0, 2, 0,  2, 0, 1, 1,  2, 2, 0, 0 };
-        private static readonly int[] PatternSiren    = { 1, 2, 1, 0,  1, 1, 2, 0,  2, 1, 2, 0,  1, 2, 2, 0 };
-        private static readonly int[] PatternCerberus = { 1, 1, 2, 0,  2, 1, 2, 0,  1, 2, 1, 2,  2, 2, 0, 0 };
-
         public void ConfigureBoss(BossIdentity id, Vector3 chamberStageCenter)
         {
             identity = id;
             _stageCenter = chamberStageCenter;
+            _bossGroundAnchor = _stageCenter + UnderworldCamera2D.IsoRightXZ * 4.8f;
+            _bossRuinsAnchor = _stageCenter + UnderworldCamera2D.IsoRightXZ * 3.6f + new Vector3(0f, 3.8f, 0f)
+                             - (UnderworldCamera2D.Side2DRotation * Vector3.forward * 2.2f);
 
-            // Place Boss on the right side of the 2D duel stage (+5.6m along IsoRightXZ)
-            transform.position = _stageCenter + UnderworldCamera2D.IsoRightXZ * 5.6f;
+            transform.position = _bossGroundAnchor;
 
             switch (id)
             {
                 case BossIdentity.CantorOfFury:
                     bossDisplayName = "Alecto's Cantor";
                     maxHealth = 220f;
-                    bpm = 98f;
-                    noteTravelSeconds = 1.65f;
+                    bpm = 110f;
+                    noteTravelSeconds = 1.20f;
                     _headBaseColor = new Color(1.55f, 0.22f, 0.36f, 1f);
-                    _pattern = PatternCantor;
                     break;
 
                 case BossIdentity.OarsmanOfStyx:
                     bossDisplayName = "Warden of the Oar";
                     maxHealth = 280f;
-                    bpm = 110f;
-                    noteTravelSeconds = 1.50f;
+                    bpm = 116f;
+                    noteTravelSeconds = 1.15f;
                     _headBaseColor = new Color(0.28f, 1.45f, 1.25f, 1f);
-                    _pattern = PatternOarsman;
                     break;
 
                 case BossIdentity.SirenOfAcheron:
                     bossDisplayName = "Siren of Acheron";
                     maxHealth = 330f;
-                    bpm = 118f;
-                    noteTravelSeconds = 1.40f;
+                    bpm = 122f;
+                    noteTravelSeconds = 1.10f;
                     _headBaseColor = new Color(1.25f, 0.38f, 1.65f, 1f);
-                    _pattern = PatternSiren;
                     break;
 
                 case BossIdentity.CerberusHoundOfHades:
                     bossDisplayName = "Cerberus, Hound of Hades";
                     maxHealth = 460f;
-                    bpm = 126f;
-                    noteTravelSeconds = 1.32f;
+                    bpm = 128f;
+                    noteTravelSeconds = 1.05f;
                     _headBaseColor = new Color(1.75f, 0.20f, 0.22f, 1f);
-                    _pattern = PatternCerberus;
                     break;
             }
 
@@ -131,11 +148,11 @@ namespace OrpheusBelow
             SphereCollider sc = GetComponent<SphereCollider>();
             if (sc == null) sc = gameObject.AddComponent<SphereCollider>();
             sc.isTrigger = true;
-            sc.radius = 1.65f;
+            sc.radius = 1.85f;
             sc.center = new Vector3(0f, 1.3f, 0f);
 
             BuildBossVisuals();
-            gameObject.SetActive(false); // Hidden during 2.5D mob waves; awakens cleanly for the 2D Rhythm Showdown!
+            gameObject.SetActive(false);
         }
 
         private void BuildBossVisuals()
@@ -185,7 +202,7 @@ namespace OrpheusBelow
                 _heads[i] = h.transform;
             }
 
-            // --- CRISP 2D MUSICAL STAVE STRETCHING ACROSS UPPER-MID SCREEN ---
+            // --- 2D MUSICAL STAVE FOR RHYTHM CLIMAX ---
             _staveRoot = new GameObject("RhythmStave2D").transform;
             _staveRoot.SetParent(transform, false);
             _staveRoot.position = _stageCenter + new Vector3(0f, 3.65f, 0f);
@@ -211,6 +228,8 @@ namespace OrpheusBelow
             ringGo.transform.localScale = new Vector3(1.38f, 1.38f, 1f);
             _targetRingSr = RenderPipeline2DSetup.AttachSprite(ringGo, RenderPipeline2DSetup.RingSprite, new Color(2.5f, 2.05f, 0.55f, 0.95f), 20);
             _targetHitRing = ringGo.transform;
+
+            _staveRoot.gameObject.SetActive(false);
         }
 
         public void ActivateGuardianDuel()
@@ -221,14 +240,14 @@ namespace OrpheusBelow
             ActiveBoss = this;
             IsBattleActive = true;
             HarmonyStreak = 0;
-            LastJudgement = "Gold = Soft Tap   |   Crimson = Hard Boom";
-            _nextBeatTime = Time.time + 1.05f; // Allow 1s for smooth 2.5D -> 2D camera sweep!
+            CurrentPhase = DuelPhase.ArenaCombat;
+            LastJudgement = "Attack freely! Dodge lunges & floor waves!";
 
             UnderworldCamera2D.Instance?.EnterSide2DBossView(_stageCenter, identity == BossIdentity.CerberusHoundOfHades ? 6.3f : 5.8f);
-            OrpheusPlayerController.Instance?.Enter2DBossStage(_stageCenter, minX: -8.2f, maxX: 2.2f);
+            OrpheusPlayerController.Instance?.Enter2DBossStage(_stageCenter, minX: -8.2f, maxX: 4.2f);
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 1.2f, 0f), 5.2f, _headBaseColor, 0.45f, upright2D: true);
 
-            OrpheusHud.Instance?.ShowBanner(bossDisplayName + "  —  Rhythm Duel", 3.2f);
+            OrpheusHud.Instance?.ShowBanner(bossDisplayName + "  —  2D Guardian Duel", 3.2f);
         }
 
         private void Update()
@@ -246,7 +265,9 @@ namespace OrpheusBelow
             OrpheusPlayerController player = OrpheusPlayerController.Instance;
             if (player == null || player.IsGameOver || player.IsVictory) return;
 
-            // Animate heads & metronome target ring to the exact BPM!
+            float dt = Time.deltaTime;
+
+            // Animate heads to BPM
             float beatPhase = (Time.time / _beatInterval) * Mathf.PI * 2f;
             float metronomePulse = 1.32f + Mathf.Pow(Mathf.Max(0f, Mathf.Cos(beatPhase * 0.5f)), 6f) * 0.22f;
             if (_targetHitRing != null) _targetHitRing.localScale = new Vector3(metronomePulse, metronomePulse, 1f);
@@ -256,30 +277,182 @@ namespace OrpheusBelow
                 Vector3 basePos = _heads.Length == 1
                     ? new Vector3(-0.15f, 2.65f, 0f)
                     : (i == 0 ? new Vector3(-1.1f, 2.25f, 0f) : i == 1 ? new Vector3(0f, 2.95f, -0.02f) : new Vector3(1.1f, 2.25f, 0f));
-                _heads[i].localPosition = basePos + new Vector3(0f, Mathf.Sin(beatPhase + i * 1.1f) * 0.18f, 0f);
-                _headRenderers[i].color = Color.Lerp(_headRenderers[i].color, _headBaseColor, Time.deltaTime * 8f);
+                
+                if (CurrentPhase == DuelPhase.CrashedStunned)
+                {
+                    // Head droops to the ground when crashed!
+                    _heads[i].localPosition = basePos + new Vector3(0f, -0.85f, 0f);
+                    _headRenderers[i].color = Color.Lerp(_headRenderers[i].color, new Color(0.6f, 0.4f, 0.4f, 0.8f), dt * 6f);
+                }
+                else
+                {
+                    _heads[i].localPosition = basePos + new Vector3(0f, Mathf.Sin(beatPhase + i * 1.1f) * 0.18f, 0f);
+                    _headRenderers[i].color = Color.Lerp(_headRenderers[i].color, _headBaseColor, dt * 8f);
+                }
             }
 
-            if (Time.time >= _nextBeatTime)
+            switch (CurrentPhase)
             {
-                if (_pattern == null || _pattern.Length == 0) _pattern = PatternCantor;
-                int pat = _pattern[_beatCounter % _pattern.Length];
-                _beatCounter++;
-                _nextBeatTime += _beatInterval;
+                case DuelPhase.ArenaCombat:
+                    UpdateArenaCombat(dt, player);
+                    break;
 
-                ProceduralLyreAudio.Instance?.PlayRhythmBeat(pat == 2);
-                if (pat != 0)
+                case DuelPhase.StaveLeap:
+                    UpdateStaveLeap(dt);
+                    break;
+
+                case DuelPhase.StaveBarrage:
+                    UpdateStaveBarrage(dt, player);
+                    break;
+
+                case DuelPhase.CrashedStunned:
+                    UpdateCrashedStunned(dt);
+                    break;
+            }
+        }
+
+        // =========================================================
+        // PHASE 1: ACTIVE 2D ARENA COMBAT
+        // =========================================================
+        private void UpdateArenaCombat(float dt, OrpheusPlayerController player)
+        {
+            if (_isLunging)
+            {
+                _lungeTimer += dt * 3.5f;
+                if (_lungeTimer < 0.5f)
                 {
-                    SpawnStaveNote(pat == 2, _nextBeatTime + noteTravelSeconds - _beatInterval);
+                    // Charging forward along IsoRightXZ
+                    float u = _lungeTimer * 2.0f;
+                    transform.position = Vector3.Lerp(_lungeStartPos, _lungeEndPos, u);
+
+                    // Contact damage with player if not dashing
+                    if (!player.IsDashing && Vector3.Distance(transform.position, player.transform.position) < 1.65f)
+                    {
+                        player.TakeDamage(18f, transform.position);
+                        GroundShockwaveRing.Spawn(player.transform.position, 2.2f, _headBaseColor, 0.2f, upright2D: true);
+                    }
                 }
-                else if (_beatCounter % 4 == 0)
+                else
                 {
-                    // Physical 2D stage attack on rest measures so left-hand A/D + Space Dash stays engaged!
-                    Trigger2DStageHazard(player);
+                    // Dashing back to ground anchor
+                    float u = (_lungeTimer - 0.5f) * 2.0f;
+                    transform.position = Vector3.Lerp(_lungeEndPos, _bossGroundAnchor, u);
+
+                    if (_lungeTimer >= 1.0f)
+                    {
+                        _isLunging = false;
+                        transform.position = _bossGroundAnchor;
+                    }
                 }
+                return;
+            }
+
+            // Maintain ground anchor
+            transform.position = Vector3.Lerp(transform.position, _bossGroundAnchor, dt * 10f);
+
+            _combatActionTimer -= dt;
+            if (_combatActionTimer <= 0f)
+            {
+                _combatActionTimer = UnityEngine.Random.Range(2.0f, 2.8f);
+                ExecuteRandomBossAction(player);
+            }
+
+            // Check milestone transitions
+            if (!_milestone65Done && CurrentHealth <= maxHealth * 0.65f)
+            {
+                _milestone65Done = true;
+                TriggerStaveClimax();
+            }
+            else if (!_milestone30Done && CurrentHealth <= maxHealth * 0.30f)
+            {
+                _milestone30Done = true;
+                TriggerStaveClimax();
+            }
+        }
+
+        private void ExecuteRandomBossAction(OrpheusPlayerController player)
+        {
+            _combatActionIndex = (_combatActionIndex + 1) % 3;
+
+            switch (_combatActionIndex)
+            {
+                case 0: // Spectral Wing Lunge
+                    _isLunging = true;
+                    _lungeTimer = 0f;
+                    _lungeStartPos = transform.position;
+                    _lungeEndPos = player.transform.position + UnderworldCamera2D.IsoRightXZ * 0.5f;
+                    GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 1.2f, 0f), 3.2f, Color.red, 0.25f, upright2D: true);
+                    UnderworldSoundscape.Instance?.PlayImpact(true);
+                    break;
+
+                case 1: // Ground Cleave Wave
+                    StageSweepWave2D.Spawn(transform.position + new Vector3(0f, 0.65f, 0f), _stageCenter,
+                        speed: identity == BossIdentity.CerberusHoundOfHades ? 12.8f : 10.6f);
+                    UnderworldCamera2D.Instance?.AddShake(0.25f);
+                    break;
+
+                case 2: // Stygian Geyser Hazard under player
+                    StageGeyserHazard2D.Spawn(player.transform.position);
+                    break;
+            }
+        }
+
+        // =========================================================
+        // PHASE 2: STAVE RHYTHM CLIMAX IN THE RUINS
+        // =========================================================
+        public void TriggerStaveClimax()
+        {
+            if (CurrentPhase == DuelPhase.StaveLeap || CurrentPhase == DuelPhase.StaveBarrage) return;
+
+            CurrentPhase = DuelPhase.StaveLeap;
+            _isLunging = false;
+            _notes.Clear();
+
+            // Clear any lingering 2D projectiles
+            foreach (var wave in FindObjectsByType<StageSweepWave2D>(FindObjectsSortMode.None)) Destroy(wave.gameObject);
+
+            UnderworldSoundscape.Instance?.PlayImpact(true);
+            UnderworldCamera2D.Instance?.AddShake(0.55f);
+            GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 1.2f, 0f), 6.5f, new Color(2.8f, 0.4f, 0.2f, 1f), 0.45f, upright2D: true);
+
+            OrpheusHud.Instance?.ShowBanner(bossDisplayName + "  —  Stygian Hymn!", 2.8f);
+            LastJudgement = "Deflect the Stave notes! Break the Guardian's hymn!";
+        }
+
+        private void UpdateStaveLeap(float dt)
+        {
+            // Smoothly leap up to the background ruins anchor
+            transform.position = Vector3.Lerp(transform.position, _bossRuinsAnchor, dt * 5.5f);
+
+            if (Vector3.Distance(transform.position, _bossRuinsAnchor) < 0.35f)
+            {
+                transform.position = _bossRuinsAnchor;
+                CurrentPhase = DuelPhase.StaveBarrage;
+                _staveRoot.gameObject.SetActive(true);
+                _barrageNotesRemaining = 6;
+                _nextBeatTime = Time.time + 0.35f;
+            }
+        }
+
+        private void UpdateStaveBarrage(float dt, OrpheusPlayerController player)
+        {
+            if (_barrageNotesRemaining > 0 && Time.time >= _nextBeatTime)
+            {
+                bool isBoom = (_barrageNotesRemaining % 2 == 1);
+                SpawnStaveNote(isBoom, Time.time + noteTravelSeconds);
+                _barrageNotesRemaining--;
+                _nextBeatTime = Time.time + _beatInterval;
+                ProceduralLyreAudio.Instance?.PlayRhythmBeat(isBoom);
             }
 
             UpdateStaveNotes(player);
+
+            // Once all notes are resolved, the boss crashes down!
+            if (_barrageNotesRemaining <= 0 && _notes.Count == 0)
+            {
+                _staveRoot.gameObject.SetActive(false);
+                EnterCrashedStunned();
+            }
         }
 
         private void SpawnStaveNote(bool hardBoomRequired, float hitTime)
@@ -337,7 +510,7 @@ namespace OrpheusBelow
                     n.resolved = true;
                     HarmonyStreak = 0;
                     LastJudgement = "Missed Beat — Dash the Shockwave!";
-                    Spawn2DSweepWave();
+                    StageSweepWave2D.Spawn(transform.position + new Vector3(0f, 0.65f, 0f), _stageCenter, speed: 10.6f);
                     if (n.visual != null) Destroy(n.visual.gameObject);
                     _notes.RemoveAt(i);
                 }
@@ -347,6 +520,7 @@ namespace OrpheusBelow
         public void OnPlayerRhythmPulse(float intensity, bool isHardBoom)
         {
             if (UnderworldFrontEnd.BlocksGameplay || !IsBattleActive || IsDefeated) return;
+            if (CurrentPhase != DuelPhase.StaveBarrage) return;
 
             StaveBeatNote best = null;
             float bestAbs = hitWindowSeconds;
@@ -365,11 +539,11 @@ namespace OrpheusBelow
             if (best == null)
             {
                 HarmonyStreak = 0;
-                LastJudgement = "Off beat — wait for the note to reach the ring";
+                LastJudgement = "Off beat — wait for note to reach the ring";
                 if (Time.time >= _nextDiscordPenalty)
                 {
                     _nextDiscordPenalty = Time.time + 1.2f;
-                    Spawn2DSweepWave();
+                    StageSweepWave2D.Spawn(transform.position + new Vector3(0f, 0.65f, 0f), _stageCenter, speed: 10.6f);
                     UnderworldSoundscape.Instance?.PlayDryNote();
                 }
                 return;
@@ -379,24 +553,18 @@ namespace OrpheusBelow
             if (best.requiresHardBoom == isHardBoom)
             {
                 HarmonyStreak++;
-                float streakMult = 1f + Mathf.Min(HarmonyStreak, 6) * 0.08f;
-                float dmg = (isHardBoom ? 54f : 30f) * streakMult;
+                float dmg = isHardBoom ? 52f : 32f;
                 CurrentHealth = Mathf.Max(0f, CurrentHealth - dmg);
 
-                LastJudgement = isHardBoom
-                    ? $"Orphic Boom  x{HarmonyStreak}"
-                    : $"Perfect Chord  x{HarmonyStreak}";
+                LastJudgement = isHardBoom ? $"Harmonic Boom!  x{HarmonyStreak}" : $"Chord Deflected!  x{HarmonyStreak}";
 
+                // Fire radiant lance of energy from player ring into boss in the ruins!
                 if (_targetHitRing != null)
                 {
-                    GroundShockwaveRing.Spawn(_targetHitRing.position, isHardBoom ? 3.4f : 2.1f,
-                        isHardBoom ? new Color(2.9f, 0.45f, 0.25f, 1f) : new Color(2.6f, 2.1f, 0.5f, 1f), 0.26f, upright2D: true);
+                    GroundShockwaveRing.Spawn(_targetHitRing.position, 2.8f, isHardBoom ? new Color(2.9f, 0.4f, 0.2f, 1f) : new Color(2.6f, 2.2f, 0.5f, 1f), 0.22f, upright2D: true);
                 }
-                GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 1.5f, 0f), isHardBoom ? 4.8f : 2.8f,
-                    new Color(2.7f, 1.9f, 0.45f, 1f), 0.28f, upright2D: true);
-
-                foreach (var sr in _headRenderers) sr.color = new Color(3f, 3f, 3f, 1f);
-                UnderworldCamera2D.Instance?.AddShake(isHardBoom ? 0.58f : 0.20f);
+                GroundShockwaveRing.Spawn(transform.position, 3.8f, new Color(2.8f, 2.2f, 0.6f, 1f), 0.25f, upright2D: true);
+                UnderworldCamera2D.Instance?.AddShake(0.35f);
 
                 if (CurrentHealth <= 0f) DefeatGuardian();
             }
@@ -404,32 +572,75 @@ namespace OrpheusBelow
             {
                 HarmonyStreak = 0;
                 LastJudgement = best.requiresHardBoom ? "Too Soft — Needed Hard Boom" : "Too Loud — Needed Soft Note";
-                Spawn2DSweepWave();
+                StageSweepWave2D.Spawn(transform.position + new Vector3(0f, 0.65f, 0f), _stageCenter, speed: 10.6f);
             }
         }
 
+        // =========================================================
+        // PHASE 3: CRASHED & STUNNED (FLUTE EXECUTION WINDOW)
+        // =========================================================
+        private void EnterCrashedStunned()
+        {
+            CurrentPhase = DuelPhase.CrashedStunned;
+            _crashStunTimer = 5.0f;
+            transform.position = _bossGroundAnchor;
+
+            UnderworldSoundscape.Instance?.PlayImpact(true);
+            UnderworldCamera2D.Instance?.AddShake(0.75f);
+            GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.8f, 0f), 7.2f, new Color(2.8f, 2.0f, 0.4f, 1f), 0.65f, upright2D: true);
+
+            OrpheusHud.Instance?.ShowBanner("GUARDIAN CRASHED! [F] UNLEASH THE FLUTE / REQUIEM!", 4.5f);
+            LastJudgement = "GUARDIAN VULNERABLE!  (2.0x Damage from Flute & Lyre!)";
+        }
+
+        private void UpdateCrashedStunned(float dt)
+        {
+            transform.position = _bossGroundAnchor;
+            _crashStunTimer -= dt;
+
+            if (_crashStunTimer <= 0f)
+            {
+                // Boss recovers and bursts back into active combat
+                CurrentPhase = DuelPhase.ArenaCombat;
+                _combatActionTimer = 1.2f;
+                GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 1.2f, 0f), 4.8f, _headBaseColor, 0.35f, upright2D: true);
+                UnderworldSoundscape.Instance?.PlayImpact(true);
+                OrpheusHud.Instance?.ShowSubtleCallout(bossDisplayName + "  Recovered!");
+            }
+        }
+
+        // =========================================================
+        // DAMAGE RECEPTION (ACTIVE COMBAT & CRASHED PUNISH)
+        // =========================================================
         public void OnOrphicHit(float damage, float intensity, bool isHardBoom, Vector3 hitOrigin)
         {
-            // Only correctly timed stave notes damage guardians. Free projectile/boom chip
-            // previously let the player bypass the rhythm encounter entirely.
-        }
+            if (!IsBattleActive || IsDefeated) return;
 
-        private void Trigger2DStageHazard(OrpheusPlayerController player)
-        {
-            if (identity == BossIdentity.OarsmanOfStyx || (_beatCounter % 8 == 0 && identity == BossIdentity.CerberusHoundOfHades))
-            {
-                StageGeyserHazard2D.Spawn(player.transform.position);
-            }
-            else
-            {
-                Spawn2DSweepWave();
-            }
-        }
+            // Invulnerable while up in the ruins channeling the rhythm barrage
+            if (CurrentPhase == DuelPhase.StaveLeap || CurrentPhase == DuelPhase.StaveBarrage) return;
 
-        private void Spawn2DSweepWave()
-        {
-            StageSweepWave2D.Spawn(transform.position + new Vector3(0f, 0.65f, 0f), _stageCenter,
-                speed: identity == BossIdentity.CerberusHoundOfHades ? 12.8f : 10.6f);
+            float mult = (CurrentPhase == DuelPhase.CrashedStunned) ? 2.0f : 1.0f;
+            float finalDmg = damage * mult;
+
+            CurrentHealth = Mathf.Max(0f, CurrentHealth - finalDmg);
+            UnderworldSoundscape.Instance?.PlayImpact(isHardBoom);
+            UnderworldCamera2D.Instance?.AddShake(isHardBoom ? 0.38f : 0.14f);
+
+            // Flash white on hit
+            if (_headRenderers != null)
+            {
+                foreach (var sr in _headRenderers) if (sr != null) sr.color = Color.white;
+            }
+
+            if (CurrentPhase == DuelPhase.CrashedStunned)
+            {
+                OrpheusHud.Instance?.ShowSubtleCallout($"CRASHED HIT! -{Mathf.RoundToInt(finalDmg)} DMG");
+            }
+
+            if (CurrentHealth <= 0f)
+            {
+                DefeatGuardian();
+            }
         }
 
         private void DefeatGuardian()
@@ -439,13 +650,13 @@ namespace OrpheusBelow
             IsBattleActive = false;
             if (ActiveBoss == this) ActiveBoss = null;
 
+            if (_staveRoot != null) _staveRoot.gameObject.SetActive(false);
             foreach (StaveBeatNote n in _notes)
             {
                 if (n.visual != null) Destroy(n.visual.gameObject);
             }
             _notes.Clear();
 
-            // #4 Catharsis & Slumber: Guardian is charmed into peaceful golden rest rather than slaughtered
             ProceduralLyreAudio.Instance?.PlayCadenceComplete();
             ProceduralLyreAudio.Instance?.PlayShadePacified();
 
@@ -461,12 +672,12 @@ namespace OrpheusBelow
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 1.5f, 0f), 8.5f, new Color(2.7f, 2.25f, 1.15f, 0.95f), 0.65f, upright2D: true);
             PacifiedSpiritVessel.Spawn(transform.position, scaleMultiplier: 1.95f);
 
-            // Smoothly return camera & Orpheus from 2D Side-View back to 2.5D Isometric Chamber-Crawler!
+            // Return camera & Orpheus back to 2.5D Isometric Chamber-Crawler!
             UnderworldCamera2D.Instance?.ExitSide2DBossView();
             if (OrpheusPlayerController.Instance != null)
             {
                 OrpheusPlayerController.Instance.Exit2DBossStage();
-                OrpheusPlayerController.Instance.Heal(18f);
+                OrpheusPlayerController.Instance.Heal(25f);
             }
 
             OnCerberusDefeated?.Invoke();

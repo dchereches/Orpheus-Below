@@ -79,7 +79,74 @@ namespace OrpheusBelow
             Instance = this;
         }
 
+        public string CurrentMicDevice => _micDevice;
+
+        public void SetMicDevice(string device)
+        {
+            _micDevice = device;
+            if (sourceMode == SensorSourceMode.KeyboardPlusPCMicrophone)
+            {
+                StopMic();
+                StartMic();
+            }
+            SaveCalibration();
+        }
+
+        public void CycleMicDevice()
+        {
+            if (Microphone.devices == null || Microphone.devices.Length <= 1) return;
+            int idx = Array.IndexOf(Microphone.devices, _micDevice);
+            int next = (idx + 1) % Microphone.devices.Length;
+            SetMicDevice(Microphone.devices[next]);
+        }
+
+        public void SetSourceMode(SensorSourceMode mode)
+        {
+            sourceMode = mode;
+            ApplySourceMode();
+            SaveCalibration();
+        }
+
+        public void SaveCalibration()
+        {
+            PlayerPrefs.SetInt("OrpheusBelow.SensorSourceMode", (int)sourceMode);
+            PlayerPrefs.SetFloat("OrpheusBelow.MicSensitivity", micSensitivity);
+            PlayerPrefs.SetFloat("OrpheusBelow.SoftThreshold", softMinThreshold);
+            PlayerPrefs.SetFloat("OrpheusBelow.BoomThreshold", hardBoomThreshold);
+            if (!string.IsNullOrEmpty(_micDevice)) PlayerPrefs.SetString("OrpheusBelow.MicDevice", _micDevice);
+            PlayerPrefs.Save();
+        }
+
+        public void LoadCalibration()
+        {
+            if (PlayerPrefs.HasKey("OrpheusBelow.MicSensitivity"))
+            {
+                micSensitivity = Mathf.Clamp(PlayerPrefs.GetFloat("OrpheusBelow.MicSensitivity", 3.2f), 1f, 8f);
+                softMinThreshold = Mathf.Clamp(PlayerPrefs.GetFloat("OrpheusBelow.SoftThreshold", 0.14f), 0.05f, 0.40f);
+                hardBoomThreshold = Mathf.Clamp(PlayerPrefs.GetFloat("OrpheusBelow.BoomThreshold", 0.60f), 0.45f, 0.85f);
+                if (PlayerPrefs.HasKey("OrpheusBelow.SensorSourceMode"))
+                {
+                    sourceMode = (SensorSourceMode)PlayerPrefs.GetInt("OrpheusBelow.SensorSourceMode", 0);
+                }
+                if (PlayerPrefs.HasKey("OrpheusBelow.MicDevice"))
+                {
+                    string saved = PlayerPrefs.GetString("OrpheusBelow.MicDevice");
+                    if (Microphone.devices != null && Array.IndexOf(Microphone.devices, saved) >= 0)
+                    {
+                        _micDevice = saved;
+                    }
+                }
+            }
+        }
+
         private void Start()
+        {
+            LoadCalibration();
+            ApplySourceMode();
+            return;
+        }
+
+        private void IgnoreOldStart()
         {
             ApplySourceMode();
         }
@@ -92,6 +159,12 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            if (SoundCalibrationMenu.IsOpen)
+            {
+                if (sourceMode == SensorSourceMode.KeyboardPlusPCMicrophone) UpdateMicrophone();
+                return;
+            }
+
             if (UnderworldFrontEnd.BlocksGameplay)
             {
                 _isCharging = false;
@@ -230,7 +303,10 @@ namespace OrpheusBelow
         private void StartMic()
         {
             if (Microphone.devices == null || Microphone.devices.Length == 0) return;
-            _micDevice = Microphone.devices[0];
+            if (string.IsNullOrEmpty(_micDevice) || Array.IndexOf(Microphone.devices, _micDevice) < 0)
+            {
+                _micDevice = Microphone.devices[0];
+            }
             _micClip = Microphone.Start(_micDevice, true, 1, 22050);
             _micEnvelope = 0f;
             _micPeakHold = 0f;

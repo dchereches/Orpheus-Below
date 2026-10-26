@@ -155,7 +155,7 @@ namespace OrpheusBelow
             RenderPipeline2DSetup.AttachSprite(lyreGo, RenderPipeline2DSetup.RingSprite, new Color(2.4f, 1.85f, 0.40f, 1f), 16);
         }
 
-        public void Enter2DBossStage(Vector3 stageCenter, float minX = -8.2f, float maxX = 2.0f)
+        public void Enter2DBossStage(Vector3 stageCenter, float minX = -8.2f, float maxX = 4.2f)
         {
             IsIn2DBossStage = true;
             _bossStageCenter = stageCenter;

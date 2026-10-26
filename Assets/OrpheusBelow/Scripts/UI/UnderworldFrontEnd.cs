@@ -165,7 +165,7 @@ namespace OrpheusBelow
             Line(body, 72, 175, 1136, Bronze);
 
             Label(body, "I   MOVE WITH INTENT", 72, 204, 500, 28, 15, Teal, false);
-            Label(body, "W A S D  /  Arrow keys — move\nMouse — aim your lyre\nSpace / Shift — dash; two charges\nF — enter the flute stance\nEsc / controller Start — pause", 72, 250, 505, 154, 21, Ivory);
+            Label(body, "W A S D  /  Arrow keys — move\nMouse — aim your lyre\nSpace / Shift — dash; two charges\nF — enter the flute stance\nC — open sound & mic calibration\nEsc / controller Start — pause", 72, 250, 505, 175, 20, Ivory);
             Label(body, "Survive the exchange", 72, 433, 505, 35, 27, Ivory);
             Label(body, "Dodge the tell, then answer. Vary your notes:\nrepeated attacks lose their effectiveness.\nBooms spend breath; let it recover between strikes.\nUse the flute to pacify weakened shades.", 72, 480, 510, 133, 19, Muted);
 
@@ -233,6 +233,10 @@ namespace OrpheusBelow
             bool pause = (keyboard != null && keyboard.escapeKey.wasPressedThisFrame) || (pad != null && pad.startButton.wasPressedThisFrame);
             bool back = pad != null && pad.buttonEast.wasPressedThisFrame;
             if (_reloading) return;
+            if (keyboard != null && keyboard.cKey.wasPressedThisFrame && !SoundCalibrationMenu.IsOpen)
+            {
+                SoundCalibrationMenu.Instance?.ToggleOpen();
+            }
             if (pause || (_open && back))
             {
                 if (!_open) OpenMenu();
