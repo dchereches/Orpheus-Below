@@ -15,8 +15,8 @@ namespace OrpheusBelow
         private const string VolumeKey = "OrpheusBelow.MasterVolume";
         private const string MuteKey = "OrpheusBelow.Muted";
         private readonly List<AudioClip> _clips = new List<AudioClip>(16);
-        private AudioSource _effects, _feet, _ui, _wind, _water, _drone;
-        private AudioClip _impact, _armor, _hurt, _step, _splash, _portal, _dry, _move, _confirm;
+        private AudioSource _effects, _feet, _ui, _wind, _drone;
+        private AudioClip _impact, _armor, _hurt, _step, _portal, _dry, _move, _confirm;
         private float _previousVolume, _tension, _lastImpact = -1f, _lastMove = -1f;
         private bool _preferencesDirty;
 
@@ -32,19 +32,16 @@ namespace OrpheusBelow
             _feet = Source("Footfalls", false);
             _ui = Source("MenuChimes", true);
             _wind = Source("CavernWind", true);
-            _water = Source("StyxWater", true);
             _drone = Source("UnderworldDrone", true);
             _impact = CreateEffect("StoneAndFlesh", 0.27f, 0);
             _armor = CreateEffect("BronzeArmorCrack", 0.44f, 1);
             _hurt = CreateEffect("OrpheusWounded", 0.52f, 2);
             _step = CreateEffect("StoneFootfall", 0.16f, 3);
-            _splash = CreateEffect("ShallowWaterStep", 0.25f, 4);
             _portal = CreateEffect("ThresholdResonance", 1.9f, 5);
             _dry = CreateEffect("SpentBreath", 0.22f, 6);
             _move = CreateEffect("MenuMovement", 0.16f, 7);
             _confirm = CreateEffect("MenuConfirmation", 0.55f, 8);
             StartLoop(_wind, CreateAtmosphere("WindLoop", 0), 0.25f);
-            StartLoop(_water, CreateAtmosphere("WaterLoop", 1), 0.22f);
             StartLoop(_drone, CreateAtmosphere("DroneLoop", 2), 0.23f);
         }
 
@@ -76,7 +73,6 @@ namespace OrpheusBelow
             _tension = Mathf.MoveTowards(_tension, desiredTension, Time.unscaledDeltaTime * 0.15f);
             float depth = director == null ? 0f : Mathf.Clamp01(director.CurrentChamberIndex / (float)(ProceduralChamberGenerator.TotalChambers - 1));
             _wind.volume = Mathf.Lerp(0.23f, 0.34f, depth) + _tension * 0.06f;
-            _water.volume = Mathf.Lerp(0.25f, 0.11f, depth) * (1f - _tension * 0.25f);
             _drone.volume = (menu ? 0.29f : 0.21f) + _tension * 0.17f;
         }
 
@@ -109,7 +105,7 @@ namespace OrpheusBelow
         }
 
         public void PlayHurt() { Play(_effects, _hurt, 0.78f); }
-        public void PlayFootstep(bool wet = false) { Play(_feet, wet ? _splash : _step, wet ? 0.33f : 0.26f, true); }
+        public void PlayFootstep(bool wet = false) { Play(_feet, _step, 0.26f, true); }
         public void PlayPortal() { Play(_effects, _portal, 0.64f); }
         public void PlayDryNote() { Play(_effects, _dry, 0.38f); }
         public void PlayMenuMove()

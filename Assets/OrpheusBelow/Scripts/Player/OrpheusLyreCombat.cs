@@ -82,7 +82,7 @@ namespace OrpheusBelow
 
         private void Update()
         {
-            if (UnderworldFrontEnd.BlocksGameplay) return;
+            if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive) return;
             Breath.Tick(Time.deltaTime);
             if (_comboResetTimer > 0f)
             {
@@ -103,7 +103,7 @@ namespace OrpheusBelow
 
         private void HandleAttackPulse(float intensity, bool isHardBoom)
         {
-            if (UnderworldFrontEnd.BlocksGameplay) return;
+            if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive) return;
             if (_player == null || _player.IsGameOver || _player.IsVictory) return;
             if (_eurydice == null) _eurydice = Object.FindFirstObjectByType<BlurredEurydice>();
 

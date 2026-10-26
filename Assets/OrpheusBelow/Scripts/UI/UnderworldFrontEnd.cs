@@ -585,7 +585,7 @@ namespace OrpheusBelow
             _blockThroughFrame = Time.frameCount + 1;
             _events.SetSelectedGameObject(null);
             _canvasObject.SetActive(false);
-            Time.timeScale = 1f;
+            Time.timeScale = OrpheusHud.IsTutorialModalActive ? 0f : 1f;
             AudioListener.pause = false;
         }
 

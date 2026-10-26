@@ -95,7 +95,7 @@ namespace OrpheusBelow
 
         private void Update()
         {
-            if (UnderworldFrontEnd.BlocksGameplay) return;
+            if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive) return;
             if (_billboardRoot != null)
                 _billboardRoot.rotation = UnderworldCamera2D.CurrentBillboardRotation;
 

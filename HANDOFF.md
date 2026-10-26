@@ -91,13 +91,28 @@
 
 ### G. Spread-Out Progressive Learning Tutorial ("Learn as You Go")
 - Replaced the frontloaded 6-step checklist in Chamber 0 with contextual, progressive lessons:
-  1. **Chamber 0 Entrance:** Move (`WASD`) and light strike (`LMB` / `J`) introduced in the peaceful viaduct walk. Completes immediately upon moving and plucking, triggering Wave 1!
+  1. **Chamber 0 Entrance:** Move (`WASD`) and light strike (`LMB` / `J`) introduced in the peaceful viaduct walk. Completes upon moving and plucking, triggering Wave 1!
   2. **Chamber 0 Wave 1 (Fast Wretches):** Eurydice calls out to teach Double-Dash (`[Space]` / `[Shift]`) to evade lunging strikes.
   3. **Chamber 0 Wave 2 (Armored Wardens):** Eurydice teaches Hard Boom (`RMB` / `K`) to crack bronze Grief-Armor.
   4. **Chamber 1 Entrance (Shade Swarms):** Eurydice teaches Flute Stance (`[F]`) and Cataclysmic Requiem to pacify dense mobs.
   5. **Chamber 1 Exit / Boss:** Eurydice teaches Cadence [S - S - B] Hymn of Dawn piercing beam.
   6. **Chamber 2:** Eurydice whispers guidance for Cadence [B - S] Sanctuary of Eurydice.
   7. **Chamber 3:** Eurydice whispers guidance for Cadence [S - B - S] Siren's Convergence vortex.
+
+### H. Bottom Tutorial Dialogue Box & Enter-to-Continue Flow (`OrpheusHud.cs`)
+- **Fixed Bottom-Center Dialogue Anchor:** Replaced the world-anchored speech bubble above Eurydice's sprite with an elegant, fixed dialogue box anchored at the bottom of the screen (`anchorMin = (0.5, 0)`, `anchorMax = (0.5, 0)`, `pivot = (0.5, 0)`), sized `760x132px` at `pos = (0, 36px)`.
+  - **Speaker Header:** `✦   E U R Y D I C E   ✦` in bold 15pt rose-gold serif.
+  - **Dialogue Body:** Classical serif Palatino Linotype / Georgia ivory typography (17pt).
+  - **Confirmation Prompt:** `[ Press ENTER to continue ↵ ]` (or controller Ⓐ), gently pulsating in warm antique gold (`new Color(0.96f, 0.84f, 0.46f)`).
+  - **Frame Styling:** Obsidian background (`0.045, 0.018, 0.055, 0.94`) with antique gold hairline border and subtle rose outline.
+- **Enter-to-Continue Level Gating:**
+  - When any tutorial prompt or lesson is triggered, gameplay immediately halts (`Time.timeScale = 0f; OrpheusHud.IsTutorialModalActive = true;`).
+  - Player movement, dashes, lyre strikes, flute stance, and enemy attacks/movement are completely frozen, giving the player full focus to read the guidance without pressure or danger.
+  - The level pauses until the player explicitly presses **`[Enter]`** (or `[Numpad Enter]` / Gamepad South `[A]`).
+  - Upon pressing Enter, a confirmation chime sounds, the modal dismisses smoothly, `Time.timeScale = 1f;`, and gameplay resumes immediately.
+- **Complete Elimination of Water Systems:**
+  - Removed all water assets, water shaders (`StyxWater.shader`), river meshes (`StyxWaterSurface.cs`), water audio sources ("StyxWater"), shallow water footstep audio ("ShallowWaterStep"), and glowing water/river ground decals across all chambers and scripts.
+  - Chasms are now bottomless dark Stygian abysses (`AbyssPit`), fitting the bleak descent into Tartarus.
 
 ---
 
@@ -112,6 +127,7 @@
 | `S - S - B` | Cadence: Hymn of Dawn (Piercing Resonance Beam) |
 | `B - S` | Cadence: Sanctuary of Eurydice (Golden Aegis) |
 | `S - B - S` | Cadence: Siren's Convergence (Harmonic Vortex) |
+| `Enter` / `Numpad Enter` / Gamepad South | Continue / Confirm Tutorial Dialogue Prompts |
 | `E` / Gamepad South | Drink Ambrosia from Chamber Well (+35 HP) |
 | `Esc` / Gamepad Start | Pause Menu & Greek Settings (Mic Calibration, Brightness, Difficulty) |
 | `Tab` | Cycle Lyre Input (Keyboard+Mouse / Microphone / ESP32) |

@@ -666,11 +666,7 @@ namespace OrpheusBelow
             darkPit.transform.localScale = new Vector3(size.x, size.z, 1f);
             RenderPipeline2DSetup.AttachGroundDecal(darkPit, RenderPipeline2DSetup.SquareSprite, new Color(0.02f, 0.05f, 0.06f, 0.98f), 1);
 
-            GameObject riverGlow = new GameObject("StyxLavaVein");
-            riverGlow.transform.SetParent(chasm.transform, false);
-            riverGlow.transform.localPosition = new Vector3(0f, 0.022f, 0f);
-            riverGlow.transform.localScale = new Vector3(size.x * 0.78f, size.z * 0.78f, 1f);
-            RenderPipeline2DSetup.AttachGroundDecal(riverGlow, RenderPipeline2DSetup.SquareSprite, new Color(0.22f, 1.95f, 1.25f, 0.85f), 2);
+
 
             BoxCollider col = chasm.AddComponent<BoxCollider>();
             col.size = new Vector3(size.x, 3.0f, size.z);

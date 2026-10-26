@@ -103,8 +103,7 @@ namespace OrpheusBelow.EditorTools
                         if (UnderworldFrontEnd.Instance != null || director.chambers.Count != 12)
                             throw new Exception("Restored direct-entry flow or room count invalid");
                         if (GameObject.Find("AsphodelPaintedVista_25D") == null ||
-                            UnityEngine.Object.FindFirstObjectByType<UnderworldEnvironmentArt>() != null ||
-                            UnityEngine.Object.FindFirstObjectByType<StyxWaterSurface>() != null)
+                            UnityEngine.Object.FindFirstObjectByType<UnderworldEnvironmentArt>() != null)
                             throw new Exception("Restored Asphodel visual layout invalid");
                         Capture("rollback-01-asphodel");
                         break;

@@ -31,7 +31,6 @@ namespace OrpheusBelow
         private readonly List<Layer> _layers = new List<Layer>();
         private readonly List<Atmosphere> _atmosphere = new List<Atmosphere>();
         private readonly List<Mesh> _ownedMeshes = new List<Mesh>();
-        private readonly List<StyxWaterSurface> _water = new List<StyxWaterSurface>();
         private MaterialPropertyBlock _properties;
         private Sprite _panoramaSprite;
         private SpriteRenderer _panorama;
@@ -84,8 +83,6 @@ namespace OrpheusBelow
                 _panorama.sortingOrder = -100;
             }
 
-            _water.Add(StyxWaterSurface.Create(transform, new Vector3(0f, -2.7f, 0f),
-                new Vector2(width + 65f, depth + 65f), waterDeep, waterFoam));
 
             // Two receding aqueducts are real open arches: the river remains visible between their piers.
             BuildArcade("Far aqueduct", new Vector3(0f, -5.5f, depth * .5f + 18f),
@@ -108,16 +105,6 @@ namespace OrpheusBelow
             }
             AddSolidLayer("Eroded river foundations", shore, Vector3.zero, 0f, stone * .56f, 0f);
 
-            for (int side = 0; side < 2; side++)
-            {
-                StyxWaterSurface fall = StyxWaterSurface.Create(transform,
-                    new Vector3((side == 0 ? -.34f : .31f) * width, -1.1f, depth * .5f + 9f),
-                    new Vector2(2.2f + side * .8f, 8f), waterDeep, waterFoam, true);
-                _water.Add(fall);
-                AddAtmosphere("Waterfall spray", new Vector3((side == 0 ? -.34f : .31f) * width,
-                    -1.9f, depth * .5f + 8.4f), new Vector2(8f, 3f),
-                    new Color(waterFoam.r, waterFoam.g, waterFoam.b, .17f), false, side + 2f, .08f);
-            }
 
             // A few cypresses frame the near banks, with transparent foliage that yields to the player.
             for (int i = 0; i < 5; i++)
@@ -292,7 +279,6 @@ namespace OrpheusBelow
                 item.renderer.color = color;
                 item.renderer.enabled = visibility > .01f;
             }
-            for (int i = 0; i < _water.Count; i++) _water[i].SetOpacity(visibility);
         }
 
         private static Color Opaque(Color color) { color.a = 1f; return color; }

@@ -53,6 +53,7 @@ namespace OrpheusBelow
         private bool _transitioning;
         private readonly AsphodelTutorialSession _asphodelTutorial = new AsphodelTutorialSession();
         private AsphodelTutorialStep _shownTutorialStep = AsphodelTutorialStep.Complete;
+        private bool _firstTutorialTriggered;
         private bool _shownWardenHint;
 
         private void Awake()
@@ -71,7 +72,21 @@ namespace OrpheusBelow
         private void Update()
         {
             if (UnderworldFrontEnd.BlocksGameplay) return;
-            if (!_asphodelTutorial.IsActive) return;
+            if (OrpheusHud.IsTutorialModalActive) return;
+
+            if (!_asphodelTutorial.IsActive)
+            {
+                if (CurrentChamberIndex == 0 && !_asphodelTutorial.HasCompleted && !_firstTutorialTriggered)
+                {
+                    _firstTutorialTriggered = true;
+                    ChamberRuntimeData ch = chambers[0];
+                    _asphodelTutorial.TryBegin(CaptureTutorialSnapshot(), ch.playerSpawnWorld);
+                    _shownTutorialStep = AsphodelTutorialStep.Complete;
+                    ShowCurrentTutorialStep();
+                    return;
+                }
+                return;
+            }
 
             OrpheusPlayerController player = OrpheusPlayerController.Instance;
             if (player == null || player.IsGameOver || player.IsVictory || player.IsIn2DBossStage)
@@ -193,13 +208,13 @@ namespace OrpheusBelow
                 OrpheusHud.Instance?.ShowEurydiceHint("Siren's Convergence is attuned [S - B - S]. Pluck Soft · Boom · Soft to pull scattered shades into a vortex.", 5.0f);
             }
 
+            if (index == 0) _firstTutorialTriggered = false;
+
             if (ch.wave1.Count > 0)
             {
                 if (index == 0 && !_asphodelTutorial.HasCompleted)
                 {
-                    _asphodelTutorial.TryBegin(CaptureTutorialSnapshot(), ch.playerSpawnWorld);
-                    _shownTutorialStep = AsphodelTutorialStep.Complete;
-                    ShowCurrentTutorialStep();
+                    // Delay tutorial start until Update() when UnderworldFrontEnd.BlocksGameplay is false!
                 }
                 else
                 {
@@ -680,11 +695,7 @@ namespace OrpheusBelow
             darkPit.transform.localScale = new Vector3(size.x, size.z, 1f);
             RenderPipeline2DSetup.AttachGroundDecal(darkPit, RenderPipeline2DSetup.SquareSprite, new Color(0.02f, 0.05f, 0.06f, 0.98f), 1);
 
-            GameObject riverGlow = new GameObject("StyxLavaVein");
-            riverGlow.transform.SetParent(chasm.transform, false);
-            riverGlow.transform.localPosition = new Vector3(0f, 0.022f, 0f);
-            riverGlow.transform.localScale = new Vector3(size.x * 0.78f, size.z * 0.78f, 1f);
-            RenderPipeline2DSetup.AttachGroundDecal(riverGlow, RenderPipeline2DSetup.SquareSprite, new Color(0.22f, 1.95f, 1.25f, 0.85f), 2);
+
 
             BoxCollider col = chasm.AddComponent<BoxCollider>();
             col.size = new Vector3(size.x, 3.0f, size.z);

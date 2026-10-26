@@ -179,7 +179,7 @@ namespace OrpheusBelow
 
         private void Update()
         {
-            if (UnderworldFrontEnd.BlocksGameplay) return;
+            if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive) return;
             Keyboard kb = Keyboard.current;
             Gamepad pad = Gamepad.current;
             Mouse mouse = Mouse.current;
@@ -647,7 +647,7 @@ namespace OrpheusBelow
 
         public void TakeDamage(float dmg, Vector3 sourcePos)
         {
-            if (UnderworldFrontEnd.BlocksGameplay) return;
+            if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive) return;
             if (IsGameOver || IsVictory || _invulnTimer > 0f || _isDashing) return;
 
             CurrentHealth = Mathf.Max(0f, CurrentHealth - (dmg * DifficultySettings.DamageMultiplier));
@@ -685,7 +685,7 @@ namespace OrpheusBelow
             {
                 IsGameOver = true;
                 Time.timeScale = 1f;
-                GameOverReason = "Swept away by the boiling River Styx.";
+                GameOverReason = "Fell into the bottomless Stygian abyss.";
                 return;
             }
 
