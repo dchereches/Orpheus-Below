@@ -35,13 +35,17 @@ namespace OrpheusBelow
         private SpriteRenderer[] _blurRenderers;
         private SpriteRenderer _sharpCoreHead;
         private SpriteRenderer _sharpCoreRobe;
+        private SpriteRenderer _generatedSpriteRenderer;
+        private EurydiceSpriteAnimator _spriteAnimator;
         private SpriteRenderer _sanctuaryRingSr;
         private LineRenderer _tetherLine;
 
         private float _focus01;
         private float _sanctuaryTimer;
         private float _replyCooldown;
+        private float _humPoseTimer;
         private bool _shownAbductorHint;
+        private Vector3 _lastAnimationPosition;
 
         private void Start()
         {
@@ -51,6 +55,7 @@ namespace OrpheusBelow
             {
                 SnapBehindOrpheus(orpheus.position - UnderworldCamera2D.IsoUpXZ * followLagDistance);
             }
+            _lastAnimationPosition = transform.position;
         }
 
         public void SnapBehindOrpheus(Vector3 worldPos)
@@ -126,6 +131,26 @@ namespace OrpheusBelow
             headGo.transform.localPosition = new Vector3(0f, 0.68f, -0.01f);
             headGo.transform.localScale = new Vector3(0.42f, 0.42f, 1f);
             _sharpCoreHead = RenderPipeline2DSetup.AttachSprite(headGo, RenderPipeline2DSetup.CircleSprite, new Color(1.2f, 1.05f, 0.92f, 0f), 9);
+
+            GameObject spriteGo = new GameObject("EurydiceDarkCrimsonSprite");
+            spriteGo.transform.SetParent(_billboardRoot, false);
+            spriteGo.transform.localPosition = new Vector3(0f, -0.82f, -0.03f);
+            spriteGo.transform.localScale = new Vector3(1.05f, 1.05f, 1f);
+            _generatedSpriteRenderer = spriteGo.AddComponent<SpriteRenderer>();
+            _generatedSpriteRenderer.sharedMaterial = RenderPipeline2DSetup.Get2DSpriteMaterial();
+            _generatedSpriteRenderer.sortingOrder = 10;
+            _generatedSpriteRenderer.color = new Color(1f, 1f, 1f, 0.82f);
+            _spriteAnimator = spriteGo.AddComponent<EurydiceSpriteAnimator>();
+
+            if (_spriteAnimator.IsReady)
+            {
+                _sharpCoreRobe.enabled = false;
+                _sharpCoreHead.enabled = false;
+            }
+            else
+            {
+                _generatedSpriteRenderer.enabled = false;
+            }
         }
 
         public void RegisterAbductor(ShadeEnemy shade)
@@ -145,6 +170,7 @@ namespace OrpheusBelow
         public void SetTeachingPose(bool active)
         {
             IsTeachingPose = active && !IsVanished;
+            if (IsTeachingPose) _spriteAnimator?.SetState(EurydiceAnimationState.Teaching);
         }
 
         public void UnregisterAbductor(ShadeEnemy shade)
@@ -176,6 +202,7 @@ namespace OrpheusBelow
             if (_replyCooldown <= 0f)
             {
                 _replyCooldown = 0.9f;
+                _humPoseTimer = 0.85f;
                 StartCoroutine(HumReplyRoutine());
             }
         }
@@ -204,6 +231,7 @@ namespace OrpheusBelow
             if (IsVanished) return;
             IsVanished = true;
             IsTeachingPose = false;
+            _spriteAnimator?.SetState(EurydiceAnimationState.Shatter);
             _focus01 = 1f;
             if (_tetherLine != null) _tetherLine.enabled = false;
             StartCoroutine(ShatterRoutine());
@@ -237,6 +265,7 @@ namespace OrpheusBelow
 
             float dt = Time.deltaTime;
             if (_replyCooldown > 0f) _replyCooldown -= dt;
+            if (_humPoseTimer > 0f) _humPoseTimer -= dt;
             if (_sanctuaryTimer > 0f) _sanctuaryTimer -= dt;
 
             if (_sanctuaryRingSr != null)
@@ -301,6 +330,22 @@ namespace OrpheusBelow
             }
 
             UpdateBlurVisuals();
+            UpdateGeneratedSpriteAnimation(dt);
+        }
+
+        private void UpdateGeneratedSpriteAnimation(float dt)
+        {
+            if (_spriteAnimator == null || !_spriteAnimator.IsReady) return;
+
+            float speed = Vector3.Distance(transform.position, _lastAnimationPosition) / Mathf.Max(0.0001f, dt);
+            _lastAnimationPosition = transform.position;
+
+            if (IsTeachingPose || _humPoseTimer > 0f)
+                _spriteAnimator.SetState(EurydiceAnimationState.Teaching);
+            else if (speed > 0.18f)
+                _spriteAnimator.SetState(EurydiceAnimationState.Glide);
+            else
+                _spriteAnimator.SetState(EurydiceAnimationState.Idle);
         }
 
         private void UpdateSoulTetherVisual()
@@ -361,6 +406,12 @@ namespace OrpheusBelow
                 Color hc = _sharpCoreHead.color;
                 hc.a = sharpAlpha;
                 _sharpCoreHead.color = hc;
+            }
+            if (_generatedSpriteRenderer != null && _spriteAnimator != null && _spriteAnimator.IsReady)
+            {
+                Color gc = _generatedSpriteRenderer.color;
+                gc.a = Mathf.Lerp(0.78f, 1f, _focus01);
+                _generatedSpriteRenderer.color = gc;
             }
         }
     }
