@@ -70,7 +70,7 @@ namespace OrpheusBelow
 
         public event Action<ShadeEnemy> OnShadeSlain;
 
-        public bool IsVulnerableToFlute => !hasBronzeShield && (_hp <= maxHealth * 0.70f || _stunTimer > 0.05f);
+        public bool IsVulnerableToFlute => !hasBronzeShield && (_hp <= maxHealth * 0.60f || _resonance.ExposedRemaining > 0f);
         public bool HasGriefShield => hasBronzeShield;
         public bool IsFleeing { get; private set; }
 
@@ -87,6 +87,24 @@ namespace OrpheusBelow
         private SpriteRenderer _telegraphSr;
         private Color _baseColor;
         private ShadeBalance _balance;
+        private readonly ShadeResonance _resonance = new ShadeResonance();
+        private SpriteRenderer _resonanceRing;
+        private bool _paintedBody;
+        private float _threatMultiplier = 1f;
+
+        public void SetChamberPressure(int chamberIndex)
+        {
+            _threatMultiplier = 1f + Mathf.Max(0, chamberIndex) * 0.055f;
+            maxHealth *= 1.15f + Mathf.Max(0, chamberIndex) * 0.10f;
+            _hp = maxHealth;
+            UpdateHpBar();
+        }
+
+        public void ExposeToCadence()
+        {
+            _resonance.Expose();
+            if (hasBronzeShield) BreakBronzeGriefShield();
+        }
 
         private float _stunTimer;
         private float _flashTimer;
@@ -216,6 +234,26 @@ namespace OrpheusBelow
             RenderPipeline2DSetup.AttachSprite(barFill, RenderPipeline2DSetup.SquareSprite,
                 hasBronzeShield ? new Color(2.4f, 1.95f, 0.30f, 1f) : new Color(2.2f, 0.25f, 0.35f, 1f), 15);
             _hpFillBar = barFill.transform;
+
+            Sprite painted = UnderworldArtLibrary.Creature((int)type);
+            if (painted != null)
+            {
+                _paintedBody = true;
+                _baseColor = Color.white;
+                _bodySr.sprite = painted;
+                _bodySr.color = Color.white;
+                bodyGo.transform.localPosition = Vector3.zero;
+                bodyGo.transform.localScale = Vector3.one;
+                _eyesSr.enabled = false;
+                barBg.transform.localPosition += Vector3.up * 0.9f;
+                barFill.transform.localPosition += Vector3.up * 0.9f;
+            }
+            GameObject ward = new GameObject("ResonanceWard");
+            ward.transform.SetParent(transform, false);
+            ward.transform.localPosition = new Vector3(0f, 0.05f, 0f);
+            ward.transform.localScale = new Vector3(1.45f, 1.45f, 1f);
+            _resonanceRing = RenderPipeline2DSetup.AttachGroundDecal(ward, RenderPipeline2DSetup.RingSprite,
+                new Color(0.36f, 0.55f, 0.62f, 0.65f), 4);
         }
 
         /// <summary>
@@ -288,6 +326,7 @@ namespace OrpheusBelow
 
         private void BreakBronzeGriefShield()
         {
+            UnderworldSoundscape.Instance?.PlayImpact(true);
             hasBronzeShield = false;
             if (_armorAuraSr != null) Destroy(_armorAuraSr.gameObject);
             if (_hpFillBar != null) _hpFillBar.GetComponent<SpriteRenderer>().color = new Color(2.2f, 0.25f, 0.35f, 1f);
@@ -298,8 +337,8 @@ namespace OrpheusBelow
         public void OnOrphicHit(float damage, float intensity, bool isHardBoom, Vector3 hitOrigin)
         {
             if (_pacified || _hp <= 0f) return;
-
-            _eurydice?.UnregisterAbductor(this);
+            damage = _resonance.ResolveDamage(damage);
+            UnderworldSoundscape.Instance?.PlayImpact();
 
             Vector3 pushDir = transform.position - hitOrigin;
             pushDir.y = 0f;
@@ -321,14 +360,18 @@ namespace OrpheusBelow
                 BreakBronzeGriefShield();
             }
 
-            _windingUp = false;
-            _activeLungeTimer = 0f;
-            if (_telegraphLine != null) _telegraphLine.gameObject.SetActive(false);
-
             _hp -= damage;
             _flashTimer = 0.10f;
             if (_bodySr != null) _bodySr.color = new Color(2.9f, 2.9f, 2.9f, 1f);
             UpdateHpBar();
+
+            if (_hp <= 0f) { Pacify(); return; }
+            // Damage still lands, but repeated notes cannot permanently interrupt attacks.
+            if (!_resonance.TryStagger()) return;
+            _eurydice?.UnregisterAbductor(this);
+            _windingUp = false;
+            _activeLungeTimer = 0f;
+            if (_telegraphLine != null) _telegraphLine.gameObject.SetActive(false);
 
             if (isHardBoom)
             {
@@ -348,10 +391,20 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            if (UnderworldFrontEnd.BlocksGameplay) return;
             if (_pacified || IsFleeing) return;
             if (_billboardRoot != null) _billboardRoot.rotation = UnderworldCamera2D.CurrentBillboardRotation;
 
             float dt = Time.deltaTime;
+            _resonance.Tick(dt);
+            if (_paintedBody && _bodySr != null)
+            {
+                float sway = Mathf.Sin(Time.time * 3.2f + transform.GetInstanceID()) * 0.025f;
+                _bodySr.transform.localScale = new Vector3(1f + sway, 1f - sway, 1f);
+            }
+            if (_resonanceRing != null)
+                _resonanceRing.color = _resonance.ExposedRemaining > 0f
+                    ? new Color(1f, 0.81f, 0.35f, 0.95f) : new Color(0.36f, 0.55f, 0.62f, 0.65f);
             if (_frenzyTimer > 0f)
             {
                 _frenzyTimer -= dt;
@@ -459,7 +512,7 @@ namespace OrpheusBelow
                 MoveEnemyXZ(_lungeDirXZ * (18.5f * dt), checkWallSlam: false);
                 if (Vector3.Distance(transform.position, player.transform.position) < 0.98f)
                 {
-                    player.TakeDamage(_balance.ContactDamage, transform.position);
+                    player.TakeDamage(_balance.ContactDamage * _threatMultiplier, transform.position);
                     _activeLungeTimer = 0f;
                 }
                 return;
@@ -526,7 +579,7 @@ namespace OrpheusBelow
                 foreach (float ang in spread)
                 {
                     Vector3 d = Quaternion.Euler(0f, ang, 0f) * dirToPlayer;
-                    StygianOrbProjectile.Spawn(transform.position + new Vector3(0f, 0.6f, 0f) + d * 0.55f, d, 9.8f, _balance.OrbDamage);
+                    StygianOrbProjectile.Spawn(transform.position + new Vector3(0f, 0.6f, 0f) + d * 0.55f, d, 9.8f, _balance.OrbDamage * _threatMultiplier);
                 }
             }
         }

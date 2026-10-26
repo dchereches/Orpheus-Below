@@ -122,7 +122,17 @@ namespace OrpheusBelow
 
         private static void EnsureHdrpZeroExposureVolume()
         {
-            if (GameObject.Find("Orpheus_HDRP_2D_ExposureFix") != null) return;
+            GameObject existing = GameObject.Find("Orpheus_HDRP_2D_ExposureFix");
+            if (existing != null)
+            {
+                Volume existingVolume = existing.GetComponent<Volume>();
+                if (existingVolume != null && existingVolume.sharedProfile != null)
+                {
+                    AddClarityOverride(existingVolume.sharedProfile, "MotionBlur", "intensity", 0f);
+                    AddClarityOverride(existingVolume.sharedProfile, "DepthOfField", "focusMode", 0);
+                    return;
+                }
+            }
 
             Type exposureType = Type.GetType("UnityEngine.Rendering.HighDefinition.Exposure, Unity.RenderPipelines.HighDefinition.Runtime");
             Type visEnvType = Type.GetType("UnityEngine.Rendering.HighDefinition.VisualEnvironment, Unity.RenderPipelines.HighDefinition.Runtime");
@@ -141,6 +151,10 @@ namespace OrpheusBelow
             SetVolumeParamEnumOrValue(exposureType, expComp, "mode", 0); // ExposureMode.Fixed
             SetVolumeParamEnumOrValue(exposureType, expComp, "fixedExposure", 0f);
             profile.components.Add(expComp);
+
+            // Crisp sprites, note tells and text must stay readable during camera moves and hitstop.
+            AddClarityOverride(profile, "MotionBlur", "intensity", 0f);
+            AddClarityOverride(profile, "DepthOfField", "focusMode", 0);
 
             if (visEnvType != null)
             {
@@ -169,6 +183,20 @@ namespace OrpheusBelow
                     : Convert.ChangeType(rawVal, valProp.PropertyType);
                 valProp.SetValue(paramObj, converted);
             }
+        }
+
+        private static void AddClarityOverride(VolumeProfile profile, string componentName, string parameter, object value)
+        {
+            Type type = Type.GetType("UnityEngine.Rendering.HighDefinition." + componentName + ", Unity.RenderPipelines.HighDefinition.Runtime");
+            if (type == null) return;
+            VolumeComponent component = profile.components.Find(c => c != null && c.GetType() == type);
+            if (component == null)
+            {
+                component = (VolumeComponent)ScriptableObject.CreateInstance(type);
+                profile.components.Add(component);
+            }
+            component.active = true;
+            SetVolumeParamEnumOrValue(type, component, parameter, value);
         }
 
         /// <summary>

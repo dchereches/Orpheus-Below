@@ -38,6 +38,8 @@ namespace OrpheusBelow
         public string CurrentCadenceDisplay { get; private set; } = "";
         public int SoftNoteCount { get; private set; }
         public int HardBoomCount { get; private set; }
+        public int CadenceCount { get; private set; }
+        public OrphicBreath Breath { get; } = new OrphicBreath();
 
         private OrpheusPlayerController _player;
         private BlurredEurydice _eurydice;
@@ -48,6 +50,7 @@ namespace OrpheusBelow
         private readonly List<char> _cadenceBuffer = new List<char>(4);
         private float _cadenceTimer;
         private float _nextAmbientPingTime;
+        private float _nextDryHint;
 
         private static readonly Collider[] HitBuf = new Collider[48];
 
@@ -79,6 +82,8 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            if (UnderworldFrontEnd.BlocksGameplay) return;
+            Breath.Tick(Time.deltaTime);
             if (_comboResetTimer > 0f)
             {
                 _comboResetTimer -= Time.deltaTime;
@@ -98,6 +103,7 @@ namespace OrpheusBelow
 
         private void HandleAttackPulse(float intensity, bool isHardBoom)
         {
+            if (UnderworldFrontEnd.BlocksGameplay) return;
             if (_player == null || _player.IsGameOver || _player.IsVictory) return;
             if (_eurydice == null) _eurydice = Object.FindFirstObjectByType<BlurredEurydice>();
 
@@ -109,6 +115,18 @@ namespace OrpheusBelow
             }
 
             bool dashStrike = _player.IsInDashStrikeWindow;
+
+            // The guardian's timed score has its own rules; exploration costs never block it.
+            if (!_player.IsIn2DBossStage && !Breath.TryPlay(isHardBoom))
+            {
+                if (Breath.RecoveryRemaining <= 0f && Time.time >= _nextDryHint)
+                {
+                    _nextDryHint = Time.time + 1.5f;
+                    UnderworldSoundscape.Instance?.PlayDryNote();
+                    OrpheusHud.Instance?.ShowSubtleCallout("Out of breath — dodge and let it recover", 1.4f);
+                }
+                return;
+            }
 
             if (CerberusRhythmBoss.ActiveBoss != null && CerberusRhythmBoss.ActiveBoss.IsBattleActive)
             {
@@ -237,6 +255,7 @@ namespace OrpheusBelow
 
         private void ExecuteHymnOfDawnBeam()
         {
+            RewardCadence();
             ProceduralLyreAudio.Instance?.PlayCadenceComplete();
             OrpheusHud.Instance?.ShowSubtleCallout("Hymn of Dawn  (S - S - B)");
 
@@ -244,9 +263,9 @@ namespace OrpheusBelow
             if (aimDir.sqrMagnitude < 0.001f) aimDir = UnderworldCamera2D.IsoUpXZ;
             aimDir.Normalize();
 
-            const float beamLength = 15.5f;
-            const float beamRadius = 1.15f;
-            const float beamDamage = 68f;
+            const float beamLength = 20f;
+            const float beamRadius = 1.7f;
+            const float beamDamage = 105f;
 
             Vector3 startPos = transform.position + aimDir * 0.6f;
             GoldenResonanceBeamVfx.Spawn(startPos, aimDir, beamLength);
@@ -271,6 +290,7 @@ namespace OrpheusBelow
                 IOrphicTarget tgt = c.GetComponentInParent<IOrphicTarget>();
                 if (tgt != null && visited.Add(tgt))
                 {
+                    c.GetComponentInParent<ShadeEnemy>()?.ExposeToCadence();
                     tgt.OnOrphicHit(beamDamage, 0.92f, isHardBoom: true, transform.position);
                 }
             }
@@ -278,6 +298,7 @@ namespace OrpheusBelow
 
         private void ExecuteSanctuaryOfEurydice()
         {
+            RewardCadence();
             ProceduralLyreAudio.Instance?.PlayCadenceComplete();
             OrpheusHud.Instance?.ShowSubtleCallout("Sanctuary of Eurydice  (B - S)");
 
@@ -290,6 +311,7 @@ namespace OrpheusBelow
 
         private void ExecuteSirensConvergenceVortex()
         {
+            RewardCadence();
             ProceduralLyreAudio.Instance?.PlayCadenceComplete();
             OrpheusHud.Instance?.ShowSubtleCallout("Siren's Convergence  (S - B - S)");
 
@@ -320,6 +342,7 @@ namespace OrpheusBelow
                 ShadeEnemy shade = c.GetComponentInParent<ShadeEnemy>();
                 if (shade != null)
                 {
+                    shade.ExposeToCadence();
                     shade.PullToward(vortexCenter, stripShield: true);
                 }
 
@@ -329,6 +352,12 @@ namespace OrpheusBelow
                     tgt.OnOrphicHit(38f, 0.78f, isHardBoom: false, vortexCenter);
                 }
             }
+        }
+
+        private void RewardCadence()
+        {
+            CadenceCount++;
+            Breath.CompleteCadence();
         }
 
         private void ExecuteSoftComboStrike(float intensity, bool isDashStrike)
@@ -351,6 +380,7 @@ namespace OrpheusBelow
             float comboScale = _comboStep == 2 ? 1.25f : 1.0f;
             float dmg = softBaseDamage * comboScale * Mathf.Lerp(0.90f, 1.30f, intensity / 0.6f);
             if (isDashStrike) dmg *= dashStrikeMultiplier;
+            if (!_player.IsIn2DBossStage) dmg *= Breath.DamageMultiplier;
 
             Vector3 slashOrigin = transform.position + new Vector3(0f, 0.06f, 0f);
             float reach = isDashStrike ? meleeSlashRadius * 1.22f : meleeSlashRadius;
@@ -390,6 +420,7 @@ namespace OrpheusBelow
             float t = Mathf.InverseLerp(0.60f, 1.0f, intensity);
             float radius = Mathf.Lerp(hardBoomMinRadius, hardBoomMaxRadius, t);
             float dmg = Mathf.Lerp(hardBoomMinDamage, hardBoomMaxDamage, t) * (isDashStrike ? 1.2f : 1.0f);
+            if (!_player.IsIn2DBossStage) dmg *= Breath.DamageMultiplier;
             bool in2D = _player.IsIn2DBossStage;
 
             Vector3 vfxCenter = in2D
@@ -501,7 +532,7 @@ namespace OrpheusBelow
             _inHitstop = true;
             if (Time.timeScale > 0.2f) Time.timeScale = 0.05f;
             yield return new WaitForSecondsRealtime(realSeconds);
-            if (_player != null && !_player.IsGameOver && _player.LookBackProgress01 <= 0.01f)
+            if (!UnderworldFrontEnd.BlocksGameplay && _player != null && !_player.IsGameOver && _player.LookBackProgress01 <= 0.01f)
             {
                 Time.timeScale = 1f;
             }

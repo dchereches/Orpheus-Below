@@ -92,6 +92,13 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            if (UnderworldFrontEnd.BlocksGameplay)
+            {
+                _isCharging = false;
+                _chargeHoldTime = 0f;
+                while (_serialPulseQueue.TryDequeue(out _)) { }
+                return;
+            }
             if (_cooldownTimer > 0f) _cooldownTimer -= Time.unscaledDeltaTime;
 
             Keyboard kb = Keyboard.current;

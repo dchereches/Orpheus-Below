@@ -36,10 +36,10 @@ namespace OrpheusBelow.Tests
         }
 
         [Test]
-        public void AsphodelUsesFiveEnemiesInEachWave()
+        public void AsphodelEscalatesFromFiveToEightEnemies()
         {
             Assert.That(ProceduralChamberGenerator.GetAsphodelWaveSpecs(1), Has.Count.EqualTo(5));
-            Assert.That(ProceduralChamberGenerator.GetAsphodelWaveSpecs(2), Has.Count.EqualTo(5));
+            Assert.That(ProceduralChamberGenerator.GetAsphodelWaveSpecs(2), Has.Count.EqualTo(8));
         }
     }
 }

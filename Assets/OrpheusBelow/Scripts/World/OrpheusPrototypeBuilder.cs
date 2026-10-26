@@ -32,11 +32,12 @@ namespace OrpheusBelow
             public ChamberExitDoor exitDoor;
             public CerberusRhythmBoss guardianBoss;
             public Transform interiorObstaclesRoot;
+            public GameObject roomRoot;
             public List<WaveSpawnSpec> wave1 = new List<WaveSpawnSpec>();
             public List<WaveSpawnSpec> wave2 = new List<WaveSpawnSpec>();
         }
 
-        public const int PrototypeBuildVersion = 6;
+        public const int PrototypeBuildVersion = 7;
 
         public int buildVersion = PrototypeBuildVersion;
         public List<ChamberRuntimeData> chambers = new List<ChamberRuntimeData>();
@@ -69,6 +70,7 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            if (UnderworldFrontEnd.BlocksGameplay) return;
             if (!_asphodelTutorial.IsActive) return;
 
             OrpheusPlayerController player = OrpheusPlayerController.Instance;
@@ -112,15 +114,18 @@ namespace OrpheusBelow
             _transitioning = true;
             while (ScreenFadeAlpha < 1f)
             {
+                if (UnderworldFrontEnd.BlocksGameplay) { yield return null; continue; }
                 ScreenFadeAlpha = Mathf.MoveTowards(ScreenFadeAlpha, 1f, Time.unscaledDeltaTime * 4.8f);
                 yield return null;
             }
 
+            while (UnderworldFrontEnd.BlocksGameplay) yield return null;
             EnterChamberImmediate(nextIndex);
             yield return new WaitForSecondsRealtime(0.08f);
 
             while (ScreenFadeAlpha > 0f)
             {
+                if (UnderworldFrontEnd.BlocksGameplay) { yield return null; continue; }
                 ScreenFadeAlpha = Mathf.MoveTowards(ScreenFadeAlpha, 0f, Time.unscaledDeltaTime * 3.8f);
                 yield return null;
             }
@@ -141,6 +146,10 @@ namespace OrpheusBelow
             }
 
             ChamberRuntimeData ch = chambers[index];
+            for (int i = 0; i < chambers.Count; i++)
+                if (chambers[i].roomRoot != null) chambers[i].roomRoot.SetActive(i == index);
+            OrpheusLyreCombat.Instance?.Breath.Refill();
+            UnderworldSoundscape.Instance?.PlayPortal();
             if (ch.interiorObstaclesRoot != null) ch.interiorObstaclesRoot.gameObject.SetActive(true);
 
             OrpheusPlayerController player = OrpheusPlayerController.Instance;
@@ -217,6 +226,7 @@ namespace OrpheusBelow
                 go.transform.position = spawnPos;
                 ShadeEnemy shade = go.AddComponent<ShadeEnemy>();
                 shade.SetupArchetype(s.archetype);
+                shade.SetChamberPressure(CurrentChamberIndex);
                 shade.OnShadeSlain += OnShadeKilled;
                 _aliveShades.Add(shade);
 
@@ -290,7 +300,8 @@ namespace OrpheusBelow
                 player != null ? player.DashUseCount : 0,
                 combat != null ? combat.SoftNoteCount : 0,
                 combat != null ? combat.HardBoomCount : 0,
-                flute != null ? flute.StanceEntryCount : 0);
+                flute != null ? flute.StanceEntryCount : 0,
+                combat != null ? combat.CadenceCount : 0);
         }
 
         private void ShowCurrentTutorialStep()
@@ -312,10 +323,13 @@ namespace OrpheusBelow
                     text = "Tap LMB or J — or play below 60% — for a Soft Note.";
                     break;
                 case AsphodelTutorialStep.HardBoom:
-                    text = "RMB, K, or a strong pulse makes a Hard Boom. It breaks bronze grief-armor.";
+                    text = "RMB, K, hold LMB, or a strong pulse makes a Hard Boom. It breaks bronze armor, but costs breath.";
                     break;
                 case AsphodelTutorialStep.Flute:
                     text = "Press F or the left trigger for the Aulos. Weaken Shades, then follow its four-note phrase.";
+                    break;
+                case AsphodelTutorialStep.Cadence:
+                    text = "Put the flute away (F). Aim and tap J, J, K with a short beat between notes: Soft · Soft · Boom. Cadences break wards and restore breath.";
                     break;
                 default:
                     OrpheusHud.Instance?.HideEurydiceTutorial();
@@ -378,6 +392,27 @@ namespace OrpheusBelow
 
     public static class OrpheusPrototypeBuilder
     {
+        public static void RestartDescent(bool skipTitle)
+        {
+            UnderworldFrontEnd.SkipTitleOnce = skipTitle;
+            Time.timeScale = 1f;
+            AudioListener.pause = false;
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (!string.IsNullOrEmpty(scene.path) && scene.buildIndex >= 0)
+                UnityEngine.SceneManagement.SceneManager.LoadScene(scene.buildIndex);
+            else
+            {
+                // An unsaved editor scene has no build index. Rebuild its generated world in place.
+                foreach (StygianOrbProjectile orb in Object.FindObjectsByType<StygianOrbProjectile>(FindObjectsSortMode.None))
+                    Object.Destroy(orb.gameObject);
+                foreach (StageSweepWave2D wave in Object.FindObjectsByType<StageSweepWave2D>(FindObjectsSortMode.None))
+                    Object.Destroy(wave.gameObject);
+                foreach (StageGeyserHazard2D geyser in Object.FindObjectsByType<StageGeyserHazard2D>(FindObjectsSortMode.None))
+                    Object.Destroy(geyser.gameObject);
+                BuildPrototypeWorld();
+            }
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoBootstrapIfNeeded()
         {
@@ -410,6 +445,7 @@ namespace OrpheusBelow
             sysGo.transform.SetParent(root.transform, false);
             sysGo.AddComponent<SensorPulseInput>();
             sysGo.AddComponent<ProceduralLyreAudio>();
+            sysGo.AddComponent<UnderworldSoundscape>();
             sysGo.AddComponent<OrpheusHud>();
 
             HadesChamberDirector director = root.AddComponent<HadesChamberDirector>();
@@ -445,7 +481,7 @@ namespace OrpheusBelow
             Transform chambersRoot = new GameObject("Chambers_25D_And_Parallax2D").transform;
             chambersRoot.SetParent(root.transform, false);
 
-            const int totalChambers = 8;
+            const int totalChambers = ProceduralChamberGenerator.TotalChambers;
             for (int i = 0; i < totalChambers; i++)
             {
                 Vector3 center = new Vector3(i * 90f, 0f, i * 90f);
@@ -453,6 +489,7 @@ namespace OrpheusBelow
                 director.chambers.Add(chamberData);
             }
 
+            sysGo.AddComponent<UnderworldFrontEnd>();
             return root;
         }
 

@@ -179,14 +179,14 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            if (UnderworldFrontEnd.BlocksGameplay) return;
             Keyboard kb = Keyboard.current;
             Gamepad pad = Gamepad.current;
             Mouse mouse = Mouse.current;
 
             if (kb != null && kb.rKey.wasPressedThisFrame)
             {
-                Time.timeScale = 1f;
-                UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+                OrpheusPrototypeBuilder.RestartDescent(true);
                 return;
             }
 
@@ -393,8 +393,9 @@ namespace OrpheusBelow
                     _footstepDustTimer -= dt;
                     if (_footstepDustTimer <= 0f)
                     {
-                        _footstepDustTimer = 0.14f;
+                        _footstepDustTimer = 0.28f;
                         SpawnFootstepDust();
+                        UnderworldSoundscape.Instance?.PlayFootstep(IsOverChasm(transform.position));
                     }
                 }
 
@@ -646,9 +647,11 @@ namespace OrpheusBelow
 
         public void TakeDamage(float dmg, Vector3 sourcePos)
         {
+            if (UnderworldFrontEnd.BlocksGameplay) return;
             if (IsGameOver || IsVictory || _invulnTimer > 0f || _isDashing) return;
 
             CurrentHealth = Mathf.Max(0f, CurrentHealth - dmg);
+            UnderworldSoundscape.Instance?.PlayHurt();
             _invulnTimer = 0.68f;
 
             OrpheusFluteChannel.Instance?.InterruptByDamage();

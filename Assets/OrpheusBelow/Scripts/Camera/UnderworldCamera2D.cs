@@ -118,6 +118,9 @@ namespace OrpheusBelow
             if (target == null) return;
             _inSide2DBossMode = false;
             SideViewBlend01 = 0f;
+            _lookBackBlend = 0f;
+            _trauma = 0f;
+            CurrentSideParallaxOffset = 0f;
             CurrentBillboardRotation = RenderPipeline2DSetup.IsoCameraRotation;
             _focusPoint = target.position;
             _focusVel = Vector3.zero;

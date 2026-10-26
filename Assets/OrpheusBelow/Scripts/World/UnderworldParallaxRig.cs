@@ -157,7 +157,10 @@ namespace OrpheusBelow
             GameObject go = new GameObject(name);
             go.transform.SetParent(plane.root, false);
             go.transform.localPosition = localPos;
-            go.transform.localScale = scale;
+            // Treat scale as desired world dimensions, independent of imported pixels/PPU.
+            Vector2 nativeSize = sprite.bounds.size;
+            go.transform.localScale = new Vector3(scale.x / Mathf.Max(0.001f, nativeSize.x),
+                scale.y / Mathf.Max(0.001f, nativeSize.y), scale.z);
             SpriteRenderer sr = RenderPipeline2DSetup.AttachSprite(go, sprite, col, sortOrder);
             plane.renderers.Add(sr);
             plane.baseAlphas.Add(col.a);

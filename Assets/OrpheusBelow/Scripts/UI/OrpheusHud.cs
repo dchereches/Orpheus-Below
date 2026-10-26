@@ -25,6 +25,11 @@ namespace OrpheusBelow
         private Image _pulseFillImg;
         private Text _cadenceLabel;
         private Text _sensorModeLabel;
+        private RectTransform _breathFill;
+        private Image _breathImage;
+        private Text _breathLabel;
+        private Text _routeLabel;
+        private Text _combatAdvice;
 
         // Top-center subtle banners & Guardian Rhythm bar
         private CanvasGroup _bannerGroup;
@@ -52,6 +57,7 @@ namespace OrpheusBelow
         private RectTransform _canvasRoot;
         private GameObject _eurydiceBubbleRoot;
         private RectTransform _eurydiceBubbleRect;
+        private RectTransform _eurydiceBubbleTail;
         private Text _eurydiceBubbleText;
         private float _eurydiceBubbleTimer;
         private bool _eurydiceBubblePersistent;
@@ -186,7 +192,23 @@ namespace OrpheusBelow
             _canvasRoot = root;
 
             // --- 1. BOTTOM-LEFT: VITALITY, DASH GEMS, SENSOR PULSE & PHYSICAL CADENCES ---
-            RectTransform bl = CreateRect("BottomLeftCluster", root, Vector2.zero, Vector2.zero, Vector2.zero, new Vector2(42f, 30f), new Vector2(480f, 114f));
+            RectTransform bl = CreateRect("BottomLeftCluster", root, Vector2.zero, Vector2.zero, Vector2.zero, new Vector2(42f, 30f), new Vector2(560f, 205f));
+            RectTransform backing = CreateRect("ObsidianHudBacking", bl, Vector2.zero, Vector2.zero, Vector2.zero,
+                new Vector2(-18f, -16f), new Vector2(580f, 218f));
+            Image backingImage = backing.gameObject.AddComponent<Image>();
+            backingImage.color = new Color(0.018f, 0.035f, 0.052f, 0.84f);
+            backingImage.raycastTarget = false;
+            CreateSerifText("VitalityName", bl, new Vector2(0f, 86f), new Vector2(240f, 22f),
+                14, FontStyle.Normal, TextAnchor.LowerLeft, new Color(0.88f, 0.72f, 0.66f)).text = "Vitality";
+            CreateBarBg(bl, new Vector2(0f, 124f), new Vector2(BarWidth, 7f), new Color(0.08f, 0.2f, 0.23f, 1f));
+            _breathFill = CreateBarFill(bl, "BreathFill", new Vector2(0f, 124f), new Vector2(BarWidth, 7f), new Color(0.40f, 0.79f, 0.76f), out _breathImage);
+            _breathLabel = CreateSerifText("BreathLabel", bl, new Vector2(0f, 137f), new Vector2(510f, 24f),
+                16, FontStyle.Normal, TextAnchor.LowerLeft, new Color(0.71f, 0.88f, 0.84f));
+            _combatAdvice = CreateSerifText("CombatAdvice", bl, new Vector2(0f, 170f), new Vector2(530f, 26f),
+                16, FontStyle.Italic, TextAnchor.LowerLeft, new Color(0.93f, 0.82f, 0.57f));
+            _routeLabel = CreateSerifText("DescentProgress", root, new Vector2(42f, -32f), new Vector2(600f, 60f),
+                20, FontStyle.Normal, TextAnchor.UpperLeft, new Color(0.92f, 0.86f, 0.71f),
+                anchorMin: new Vector2(0f, 1f), anchorMax: new Vector2(0f, 1f), pivot: new Vector2(0f, 1f));
 
             // Vitality hairline
             CreateBarBg(bl, new Vector2(0f, 78f), new Vector2(BarWidth, 5f), new Color(0.18f, 0.06f, 0.10f, 0.72f));
@@ -281,6 +303,7 @@ namespace OrpheusBelow
                 new Vector2(0.18f, 0f), new Vector2(0.18f, 0f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, -9f), new Vector2(20f, 20f));
             tail.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            _eurydiceBubbleTail = tail;
             Image tailImage = tail.gameObject.AddComponent<Image>();
             tailImage.color = bubbleBg.color;
             tailImage.raycastTarget = false;
@@ -370,6 +393,7 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            if (UnderworldFrontEnd.BlocksGameplay) return;
             Keyboard kb = Keyboard.current;
             if (kb != null && kb.hKey.wasPressedThisFrame)
             {
@@ -382,6 +406,15 @@ namespace OrpheusBelow
             OrpheusLyreCombat combat = OrpheusLyreCombat.Instance;
             SensorPulseInput sensor = SensorPulseInput.Instance;
             HadesChamberDirector dir = HadesChamberDirector.Instance;
+            if (_routeLabel != null && dir != null)
+                _routeLabel.text = dir.GetCurrentChamberTitle() + "\n" + (dir.CurrentChamberIndex + 1) + " / " + dir.chambers.Count + "   •   " + dir.ActiveEnemyCount + " shades remain";
+            if (combat != null && _breathFill != null)
+            {
+                _breathFill.sizeDelta = new Vector2(BarWidth * combat.Breath.Breath / 100f, 7f);
+                _breathImage.color = combat.Breath.Breath < 28f ? new Color(0.96f, 0.39f, 0.27f) : new Color(0.40f, 0.79f, 0.76f);
+                _breathLabel.text = player != null && player.IsIn2DBossStage ? "Follow the stave — breath is free during duels" : "Breath  " + Mathf.CeilToInt(combat.Breath.Breath) + " / 100";
+                _combatAdvice.text = combat.Breath.RepeatedNotes >= 3 ? "Your note is fading. Change the phrase." : "Soft · Soft · Boom — breaks wards, restores breath";
+            }
             if (_eurydice == null) _eurydice = Object.FindFirstObjectByType<BlurredEurydice>();
             UpdateEurydiceBubble(dt, player);
 
@@ -566,15 +599,18 @@ namespace OrpheusBelow
             Camera cam = Camera.main;
             if (cam == null) return;
 
-            Vector3 screen = cam.WorldToScreenPoint(_eurydice.transform.position + new Vector3(0f, 2.35f, 0f));
-            if (screen.z <= 0f) return;
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_canvasRoot, screen, null, out Vector2 local)) return;
-
+            Vector3 viewport = cam.WorldToViewportPoint(_eurydice.transform.position + new Vector3(0f, 1.9f, 0f));
+            if (viewport.z <= 0f) return;
             Rect bounds = _canvasRoot.rect;
             Vector2 half = _eurydiceBubbleRect.sizeDelta * 0.5f;
+            float side = viewport.x < .55f ? 1f : -1f;
+            Vector2 local = new Vector2(bounds.xMin + viewport.x * bounds.width + side * (half.x + 56f),
+                bounds.yMin + viewport.y * bounds.height + 18f);
             local.x = Mathf.Clamp(local.x, bounds.xMin + half.x + 32f, bounds.xMax - half.x - 32f);
-            local.y = Mathf.Clamp(local.y + 48f, bounds.yMin + 32f, bounds.yMax - _eurydiceBubbleRect.sizeDelta.y - 32f);
+            local.y = Mathf.Clamp(local.y, bounds.yMin + (side < 0f ? 250f : 32f), bounds.yMax - _eurydiceBubbleRect.sizeDelta.y - 32f);
             _eurydiceBubbleRect.anchoredPosition = local;
+            if (_eurydiceBubbleTail != null)
+                _eurydiceBubbleTail.anchorMin = _eurydiceBubbleTail.anchorMax = new Vector2(side > 0f ? .06f : .94f, 0f);
         }
 
         private static RectTransform CreateRect(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 anchoredPos, Vector2 sizeDelta)
