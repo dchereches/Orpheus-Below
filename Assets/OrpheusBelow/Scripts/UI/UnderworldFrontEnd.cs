@@ -227,7 +227,7 @@ namespace OrpheusBelow
             _eyebrow = Label(main, "The descent", 92, 118, 360, 24, 14, Gold, false);
             Label(main, "Orpheus", 86, 159, 410, 86, 70, Ivory);
             Label(main, "Below", 92, 242, 360, 46, 36, Ivory);
-            _premise = Label(main, "Lead Eurydice out of Hades.\nTrust her voice. Do not look back.", 94, 306, 360, 62, 18, Muted, false);
+            _premise = Label(main, "Descend alone to the deepest throne.\nRescue Eurydice, then bring her home.", 94, 306, 360, 82, 18, Muted, false);
 
             // 3 GREEK BUTTONS: [ NEW GAME ], [ SETTINGS ], [ QUIT ]
             _primary = MakeGreekButton(main, "NewGameBtn", "Begin descent", 92, 400, 352, 52, BeginOrResume, out _primaryLabel, true);
@@ -595,12 +595,12 @@ namespace OrpheusBelow
             _main.SetActive(true);
             _settings.SetActive(false);
 
-            _eyebrow.text = _inRun ? "The song is held" : "The descent";
+            _eyebrow.text = _inRun ? UnderworldJourney.ProgressLabel : "The descent";
             _primaryLabel.text = _inRun ? "Resume journey" : "Begin descent";
             _leaveLabel.text = _inRun ? "Return to title" : "Quit";
             _premise.text = _inRun
-                ? "The underworld waits. Take a breath.\nYour journey resumes exactly where you left it."
-                : "Lead Eurydice out of Hades.\nTrust her voice. Do not look back.";
+                ? UnderworldJourney.Objective
+                : "Descend alone to the deepest throne.\nRescue Eurydice, then bring her home.";
 
             SyncAudioControls();
             Select(_primary);

@@ -37,6 +37,9 @@ namespace OrpheusBelow
         public StairZone[] stairs = Array.Empty<StairZone>();
         public Vector2 entrance;
         public Vector2 exit;
+        public Vector2 returnExit;
+        public Vector2 returnSpawn;
+        public Vector2 reunionPoint;
         public Vector2 well;
         public Vector2 encounterCenter;
         public Vector2[] enemySpawns;

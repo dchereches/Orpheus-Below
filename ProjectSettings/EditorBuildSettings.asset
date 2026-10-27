@@ -21,6 +21,15 @@ EditorBuildSettings:
     path: Assets/OrpheusBelow/Scenes/PaintedChamber_04.unity
     guid: 84a1c10feae62224584870fbc35bf514
   - enabled: 1
+    path: Assets/OrpheusBelow/Scenes/PaintedChamber_05.unity
+    guid: e01df63224918c545ad0a7b83ff5b4e3
+  - enabled: 1
+    path: Assets/OrpheusBelow/Scenes/PaintedChamber_06.unity
+    guid: eae26057f3544ac4186f2f255d547e03
+  - enabled: 1
+    path: Assets/OrpheusBelow/Scenes/PaintedChamber_07.unity
+    guid: 37ca5edecbe0ce84dab1a8dbc09ff59f
+  - enabled: 1
     path: Assets/OrpheusBelow/Scenes/OrpheusPrototype.unity
     guid: 5f11910c894fc3141b34c29bac95c1e0
   - enabled: 1

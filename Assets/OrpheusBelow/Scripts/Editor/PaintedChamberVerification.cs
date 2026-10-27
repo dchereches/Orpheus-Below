@@ -31,6 +31,7 @@ namespace OrpheusBelow.EditorTools
 
         public static void RunBatch()
         {
+            if (ProceduralChamberGenerator.TotalChambers == 8) { JourneyCourseVerification.RunBatch(); return; }
             if (!Application.isBatchMode) throw new InvalidOperationException("Use a batch editor for render verification.");
             Directory.CreateDirectory(Output);
             EditorSceneManager.OpenScene(PaintedChamberScene.ScenePath(0));
@@ -54,6 +55,7 @@ namespace OrpheusBelow.EditorTools
             var cameras = new Camera[canvases.Length];
             var distances = new float[canvases.Length];
             var enabled = new bool[canvases.Length];
+            var orders = new int[canvases.Length];
             var profile = GameObject.Find("Orpheus_HDRP_2D_ExposureFix").GetComponent<Volume>().sharedProfile;
             typeof(RenderPipeline2DSetup).GetMethod("AddClarityOverride", BindingFlags.NonPublic | BindingFlags.Static)
                 .Invoke(null, new object[] { profile, "Bloom", "intensity", 0f });
@@ -61,10 +63,13 @@ namespace OrpheusBelow.EditorTools
             for (int i = 0; i < canvases.Length; i++)
             {
                 modes[i] = canvases[i].renderMode; cameras[i] = canvases[i].worldCamera;
+                orders[i] = canvases[i].sortingOrder;
                 distances[i] = canvases[i].planeDistance; enabled[i] = canvases[i].enabled;
                 if (!hud) { canvases[i].enabled = false; continue; }
                 if (modes[i] != RenderMode.ScreenSpaceOverlay) continue;
                 canvases[i].renderMode = RenderMode.ScreenSpaceCamera; canvases[i].worldCamera = camera; canvases[i].planeDistance = 1f;
+                // Preserve overlay priority while capturing UI through the world camera.
+                canvases[i].sortingOrder = 30000 + orders[i];
             }
             foreach (var actor in UnityEngine.Object.FindObjectsByType<PaintedActorDepth>(FindObjectsSortMode.None))
                 Invoke(actor, "LateUpdate");
@@ -86,6 +91,7 @@ namespace OrpheusBelow.EditorTools
             {
                 canvases[i].renderMode = modes[i]; canvases[i].worldCamera = cameras[i];
                 canvases[i].planeDistance = distances[i]; canvases[i].enabled = enabled[i];
+                canvases[i].sortingOrder = orders[i];
             }
             camera.targetTexture = originalTarget; camera.aspect = aspect;
             RenderTexture.active = active; RenderTexture.ReleaseTemporary(target);

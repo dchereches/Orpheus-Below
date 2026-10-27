@@ -25,7 +25,8 @@ namespace OrpheusBelow
 
         public static bool Travel(int index, bool wardenHint)
         {
-            if (index < 0 || index >= 5 || !Application.CanStreamedLevelBeLoaded(ScenePath(index))) return false;
+            if (index < 0 || index >= UnderworldJourney.ChamberCount || !Application.CanStreamedLevelBeLoaded(ScenePath(index))) return false;
+            UnderworldJourney.Progress.Visit(index);
             _travelling = true;
             _health = OrpheusPlayerController.Instance != null ? OrpheusPlayerController.Instance.CurrentHealth : 100f;
             _cadenceTier = OrpheusLyreCombat.Instance != null ? OrpheusLyreCombat.Instance.UnlockedCadenceTier : 1;
@@ -51,6 +52,7 @@ namespace OrpheusBelow
             if (Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_00") == null ||
                 !Application.CanStreamedLevelBeLoaded(ScenePath(0))) return false;
             _travelling = false;
+            UnderworldJourney.Reset();
             UnderworldFrontEnd.SkipTitleOnce = skipTitle;
             Time.timeScale = 1f; AudioListener.pause = false;
             SceneManager.LoadScene(ScenePath(0));

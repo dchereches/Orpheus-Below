@@ -12,12 +12,8 @@ namespace OrpheusBelow
     /// </summary>
     public static class ProceduralChamberGenerator
     {
-        public const int TotalChambers = 5;
-        public static readonly string[] ChamberNames =
-        {
-            "Asphodel Viaduct", "Vault of the Ferryman", "Phlegethon Foundry",
-            "Cocytus Mirror Tarn", "The Gates of Styx"
-        };
+        public const int TotalChambers = UnderworldJourney.ChamberCount;
+        public static readonly string[] ChamberNames = UnderworldJourney.ChamberNames;
         public static Vector2 GetChamberSize(int index) => index == 0 ? new Vector2(9.2f, 24.5f)
             : new Vector2(34f + (index % 3) * 5f, 38f + (index % 2) * 8f);
         public struct BiomeTheme
