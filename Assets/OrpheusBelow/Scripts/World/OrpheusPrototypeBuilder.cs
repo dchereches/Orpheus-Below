@@ -39,7 +39,7 @@ namespace OrpheusBelow
             public List<WaveSpawnSpec> wave2 = new List<WaveSpawnSpec>();
         }
 
-        public const int PrototypeBuildVersion = 12;
+        public const int PrototypeBuildVersion = 13;
         public int initialChamberIndex;
 
         public int buildVersion = PrototypeBuildVersion;
@@ -447,6 +447,7 @@ namespace OrpheusBelow
 
             if (ch.guardianBoss != null)
             {
+                PaintedEnemyProjectile.ClearAll();
                 // Retract interior 3D obstacles so the 2D Side-View Rhythm Stage is 100% clean & unobstructed!
                 if (ch.interiorObstaclesRoot != null) ch.interiorObstaclesRoot.gameObject.SetActive(false);
 

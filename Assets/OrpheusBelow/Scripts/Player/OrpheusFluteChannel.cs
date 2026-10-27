@@ -280,6 +280,7 @@ namespace OrpheusBelow
                 new Color(3.5f, 3.5f, 3.5f, 1f), 0.25f);
 
             // Shatter all enemy projectiles across the chamber
+            PaintedEnemyProjectile.ClearAll();
             StygianOrbProjectile[] orbs = Object.FindObjectsByType<StygianOrbProjectile>(FindObjectsSortMode.None);
             for (int i = 0; i < orbs.Length; i++)
             {

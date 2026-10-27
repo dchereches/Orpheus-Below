@@ -39,9 +39,10 @@ namespace OrpheusBelow.EditorTools
             d.painting = Resources.Load<Texture2D>("PaintedChambers/Chamber_" + i.ToString("D2"));
             if (d.painting == null) throw new FileNotFoundException("Missing supplied chamber painting " + i);
             d.imageWidth = 72f; d.imageHeight = 48f; d.zoom = 11f;
-            d.hasGuardian = i == 1 || i == 3 || i == 5 || i == 6;
-            d.guardian = i == 1 ? BossIdentity.CantorOfFury : i == 3 ? BossIdentity.OarsmanOfStyx
-                : i == 5 ? BossIdentity.SirenOfAcheron : BossIdentity.CerberusHoundOfHades;
+            d.hasGuardian = i >= 1 && i <= 6;
+            d.guardian = i == 1 ? BossIdentity.Tripod : i == 2 ? BossIdentity.MaskedMonk
+                : i == 3 ? BossIdentity.MysticEyeWarden : i == 4 ? BossIdentity.WingedSentinel
+                : i == 5 ? BossIdentity.Shepherd : BossIdentity.CerberusHoundOfHades;
             switch (i)
             {
                 case 0:

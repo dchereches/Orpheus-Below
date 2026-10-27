@@ -281,6 +281,8 @@ namespace OrpheusBelow
             for (int i = 0; i < count; i++)
             {
                 Collider c = HitBuf[i];
+                PaintedEnemyProjectile painted = c.GetComponent<PaintedEnemyProjectile>();
+                if (painted != null) { painted.Remove(); continue; }
                 StygianOrbProjectile orb = c.GetComponent<StygianOrbProjectile>();
                 if (orb != null)
                 {
@@ -333,6 +335,8 @@ namespace OrpheusBelow
             for (int i = 0; i < count; i++)
             {
                 Collider c = HitBuf[i];
+                PaintedEnemyProjectile painted = c.GetComponent<PaintedEnemyProjectile>();
+                if (painted != null) { painted.Remove(); continue; }
                 StygianOrbProjectile orb = c.GetComponent<StygianOrbProjectile>();
                 if (orb != null)
                 {
@@ -454,6 +458,8 @@ namespace OrpheusBelow
             {
                 Collider c = HitBuf[i];
 
+                PaintedEnemyProjectile painted = c.GetComponent<PaintedEnemyProjectile>();
+                if (painted != null) { painted.Remove(); continue; }
                 StygianOrbProjectile orb = c.GetComponent<StygianOrbProjectile>();
                 if (orb != null)
                 {
@@ -485,6 +491,8 @@ namespace OrpheusBelow
             {
                 Collider c = HitBuf[i];
 
+                PaintedEnemyProjectile painted = c.GetComponent<PaintedEnemyProjectile>();
+                if (painted != null) { painted.Remove(); continue; }
                 StygianOrbProjectile orb = c.GetComponent<StygianOrbProjectile>();
                 if (orb != null)
                 {

@@ -21,7 +21,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: -9162546511238450489
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -1358,7 +1358,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: -5981616246134946290
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -2537,7 +2537,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: -4609679531335341207
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -2747,7 +2747,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: -4504750562991921127
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -4328,7 +4328,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: -1087094106470035247
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -4538,7 +4538,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: -942494107756652249
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -5216,7 +5216,7 @@ MonoBehaviour:
   - {x: 1003, y: 780}
   - {x: 1158, y: 829}
   hasGuardian: 1
-  guardian: 2
+  guardian: 5
 --- !u!21 &126391000640043024
 Material:
   serializedVersion: 8
@@ -5271,7 +5271,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: 177936783201343497
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -5481,7 +5481,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: 185133067723105777
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -5902,7 +5902,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: 883411045504525474
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -6679,7 +6679,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: 1937700118720069337
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -7423,7 +7423,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: 2539830533013697254
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -8424,7 +8424,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: 4814417552495746096
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -8667,7 +8667,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: 5074827918302301366
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -9358,7 +9358,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: 6420184672359240355
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -10504,7 +10504,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: 7732959306338044327
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -10793,7 +10793,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: 8126583307488040203
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -11359,7 +11359,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    10dbc27cdf7fc0e439c82a6f83357280: 8570971794939498938
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:

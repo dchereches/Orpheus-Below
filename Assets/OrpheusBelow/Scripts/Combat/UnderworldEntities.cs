@@ -13,7 +13,8 @@ namespace OrpheusBelow
         WretchLunger,
         BrimstoneCaster,
         ArmoredWarden,
-        MourningAbductor
+        MourningAbductor,
+        SummonedSheep
     }
 
     public readonly struct ShadeBalance
@@ -48,6 +49,8 @@ namespace OrpheusBelow
                     return new ShadeBalance(78f, 3.8f, 0f, 0f, 0.34f, 17f, 1.12f);
                 case ShadeArchetype.ArmoredWarden:
                     return new ShadeBalance(150f, 4.3f, 24f, 0.68f, 0.34f, 0f, 0f);
+                case ShadeArchetype.SummonedSheep:
+                    return new ShadeBalance(36f, 7f, 14f, .9f, .7f, 0f, 0f);
                 default:
                     return new ShadeBalance(82f, 4.6f, 0f, 0f, 0.34f, 0f, 0f);
             }
@@ -89,6 +92,7 @@ namespace OrpheusBelow
         private SpriteRenderer _telegraphSr;
         private Color _baseColor;
         private ShadeBalance _balance;
+        private PaintedEnemyActor _paintedActor;
         private readonly ShadeResonance _resonance = new ShadeResonance();
         private float _threatMultiplier = 1f;
 
@@ -235,8 +239,18 @@ namespace OrpheusBelow
             RenderPipeline2DSetup.AttachSprite(barFill, RenderPipeline2DSetup.SquareSprite,
                 hasBronzeShield ? new Color(2.4f, 1.95f, 0.30f, 1f) : new Color(2.2f, 0.25f, 0.35f, 1f), 15);
             _hpFillBar = barFill.transform;
-
-
+            var kind = type == ShadeArchetype.MourningAbductor ? PaintedEnemyKind.RoosterRider
+                : type == ShadeArchetype.SummonedSheep ? PaintedEnemyKind.Sheep : PaintedEnemyKind.HoodedSkeleton;
+            _paintedActor = gameObject.AddComponent<PaintedEnemyActor>();
+            _paintedActor.Configure(kind, shade: this, createPattern: type == ShadeArchetype.BrimstoneCaster || type == ShadeArchetype.MourningAbductor || type == ShadeArchetype.SummonedSheep);
+            if (_paintedActor.Art.IsReady)
+            {
+                _bodySr.enabled = false; _eyesSr.enabled = false;
+                if (_armorAuraSr != null) _armorAuraSr.enabled = false;
+                float top = _paintedActor.Art.Library.visibleHeight + .2f;
+                barBg.transform.localPosition = new Vector3(0, top, -.02f);
+                barFill.transform.localPosition = new Vector3(0, top, -.03f);
+            }
         }
 
         /// <summary>
@@ -263,6 +277,7 @@ namespace OrpheusBelow
         public void ConvinceToFlee()
         {
             if (_pacified || IsFleeing || _hp <= 0f) return;
+            _paintedActor?.Cancel(true);
             IsFleeing = true;
 
             _eurydice?.UnregisterAbductor(this);
@@ -289,6 +304,7 @@ namespace OrpheusBelow
         public void PullToward(Vector3 vortexCenterXZ, bool stripShield)
         {
             if (_pacified || _hp <= 0f) return;
+            _paintedActor?.Cancel();
 
             _eurydice?.UnregisterAbductor(this);
             _windingUp = false;
@@ -310,6 +326,8 @@ namespace OrpheusBelow
         public void ApplyStun(float duration, bool breakShield = false)
         {
             if (_pacified || _hp <= 0f) return;
+            _paintedActor?.Cancel();
+            _paintedActor?.Art.Play(EnemyMotion.Hurt, Mathf.Max(.2f, duration));
             if (breakShield && hasBronzeShield)
             {
                 BreakBronzeGriefShield();
@@ -365,6 +383,8 @@ namespace OrpheusBelow
             if (_hp <= 0f) { Pacify(); return; }
             // Damage still lands, but repeated notes cannot permanently interrupt attacks.
             if (!_resonance.TryStagger()) return;
+            _paintedActor?.Cancel();
+            _paintedActor?.Art.Play(EnemyMotion.Hurt, .3f);
             _eurydice?.UnregisterAbductor(this);
             _windingUp = false;
             _activeLungeTimer = 0f;
@@ -432,7 +452,13 @@ namespace OrpheusBelow
             }
 
             OrpheusPlayerController player = OrpheusPlayerController.Instance;
-            if (player == null || player.IsGameOver || player.IsVictory) return;
+            if (player == null || player.IsGameOver || player.IsVictory) { _paintedActor?.Cancel(); return; }
+
+            if (_paintedActor != null && _paintedActor.Pattern != null)
+            {
+                _paintedActor.Tick(dt);
+                return;
+            }
 
             if (archetype == ShadeArchetype.MourningAbductor)
             {
@@ -452,6 +478,13 @@ namespace OrpheusBelow
             else
             {
                 UpdateMeleeLunger(dt, player, dirToPlayer, dist);
+                if (_paintedActor != null)
+                {
+                    EnemyMotion pose = _activeLungeTimer > 0 ? EnemyMotion.Attack : _windingUp ? EnemyMotion.Windup : dist > 1.5f ? EnemyMotion.Move : EnemyMotion.Idle;
+                    _paintedActor.Face(player.transform.position);
+                    if (_paintedActor.Art.Motion != pose) _paintedActor.Art.Play(pose, pose == EnemyMotion.Windup ? _balance.LungeTelegraph : .65f,
+                        pose == EnemyMotion.Move || pose == EnemyMotion.Idle);
+                }
             }
         }
 
@@ -633,6 +666,8 @@ namespace OrpheusBelow
         {
             if (_pacified) return;
             _pacified = true;
+            _paintedActor?.Cancel(true);
+            var collision = GetComponent<Collider>(); if (collision != null) collision.enabled = false;
 
             _eurydice?.UnregisterAbductor(this);
             ProceduralLyreAudio.Instance?.PlayShadePacified();
@@ -642,7 +677,7 @@ namespace OrpheusBelow
 
             OnShadeSlain?.Invoke(this);
             OnShadeSlain = null;
-            Destroy(gameObject);
+            Destroy(gameObject, .85f);
         }
     }
 

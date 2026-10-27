@@ -2,6 +2,16 @@
 
 ## Latest revision — 27 October 2026
 
+### Painted bestiary (current)
+
+The newest TEST character sheets (filenames 20:18:00–20:18:01, saved 21:39:06) now supply **eight animated enemy designs plus summoned sheep**. One dedicated subagent worked on each requested creature. The imported libraries contain **318 body sprites and 208 FX entries**; 24 sheep FX entries intentionally reuse the Shepherd's paintings, for **502 distinct generated frames**. Exact prompts, source paths, grids and optional source rectangles are preserved in `Resources/Enemies/<Actor>/Generation.md` and `AtlasLayout.json`. All generated PNGs retain their original pixels.
+
+The descending guardian roster is **Tripod (depth 1, first boss) → Masked Monk (2, mini-boss) → Mystic Eye Warden (3, second boss) → Winged Sentinel (4, mini-boss) → Shepherd (5, mini-boss) → Cerberus (6)**. The throne rescue remains at depth 7; these guardians stay pacified on ascent. Skeleton casters use animated pistol shots, bullets and muzzle effects. Rooster riders replace the ascent abductors, dash toward Eurydice and drag her toward the actual deeper exit. Existing ordinary melee and armored roles remain, with painted poses.
+
+Cerberus waits and visibly winds up before biting or tail-whipping. The Monk marks locked circular shadows before boulders fall; the Sentinel warns its wide sword area before swinging. The Eye throws its painted staff instead of the old colored sweep. Tripod sonic waves respect dash invulnerability. The Shepherd summons at most three living, attackable sheep with warned dashes. Stun, defeat, guardian phase changes and terminal player states cancel pending attacks and owned hazards; pausing freezes frames and attacks. Musical progression and flute/lyre interactions remain integrated.
+
+Bootstrap version is **13**. Use **Orpheus Below/Bake Painted Bestiary** to rebuild the saved sprite libraries and encounter metadata. See [bestiary assets, combat behavior and verification](docs/painted-bestiary-2026-10-27.md). The previous four-guardian roster below is superseded by this section.
+
 ### Eight-room descent, rescue and return (current)
 
 Open `Assets/OrpheusBelow/Scenes/PaintedChamber_00.unity`. Bootstrap version is **12**. Eight supplied TEST paintings are now eight saved chamber scenes, registered first in Build Settings. The source filenames are 18:57:54–18:57:55 with filesystem saves at 19:09; this was the latest eight-image batch containing the requested throne room. Source bytes are unchanged.
@@ -44,7 +54,7 @@ See [the visual revision notes and exact image prompts](docs/visual-overhaul-202
 - **Repository Root:** `C:\Users\chere\OneDrive\Desktop\Orpheus Below`
 - **GitHub Remote:** `https://github.com/dchereches/Orpheus-Below.git` (`main` branch)
 - **Engine & Version:** Unity 6 (`6000.3.10f1`), High Definition Render Pipeline (HDRP `17.3.0`), New Input System (`1.18.0`), `.NET Standard 2.1`.
-- **Runtime Bootstrap Version:** `12` (auto-rebuilds and upgrades generated scenes on Play mode).
+- **Runtime Bootstrap Version:** `13` (auto-rebuilds and upgrades generated scenes on Play mode).
 - **Core Premise:** A distinctive mythic Hellenic chamber-crawler based on **sound, breath, and grief**. Orpheus descends into the Underworld with his Lyre and Flute (Aulos) to lead Eurydice to the upper light. Features dual-perspective camera geometry, zero RNG stat boons, procedural 2.5D background-plate chamber generation, and deterministic musical progression.
 
 ---

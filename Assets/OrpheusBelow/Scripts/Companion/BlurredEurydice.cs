@@ -306,6 +306,9 @@ namespace OrpheusBelow
 
             float dt = Time.deltaTime;
             if (dt <= 0) { _lastAnimationPosition = transform.position; return; }
+            var livingLeader = OrpheusPlayerController.Instance;
+            if (livingLeader != null && (livingLeader.IsGameOver || livingLeader.IsVictory))
+                _activeAbductors.Clear();
             if (_replyCooldown > 0f) _replyCooldown -= dt;
             if (_humPoseTimer > 0f) _humPoseTimer -= dt;
             if (_sanctuaryTimer > 0f) _sanctuaryTimer -= dt;
@@ -347,9 +350,15 @@ namespace OrpheusBelow
                 }
                 else if (_activeAbductors.Count > 0 && _sanctuaryTimer <= 0f)
                 {
-                    // Being dragged backward toward the SW abyss by Mourning Abductors!
+                    // The rider leads toward the actual deeper passage; both actors respect cover.
                     Vector3 dragDir = -UnderworldCamera2D.IsoUpXZ;
-                    transform.position += dragDir * (1.55f * dt);
+                    foreach (var abductor in _activeAbductors)
+                    {
+                        var rider = abductor != null ? abductor.GetComponent<RoosterRiderAttack>() : null;
+                        if (rider != null && rider.IsDragging && rider.DragTarget == this)
+                        { dragDir = rider.RetreatDirection; break; }
+                    }
+                    MoveOnGround(transform.position + dragDir * (1.55f * dt));
                     AbductionDanger01 = Mathf.MoveTowards(AbductionDanger01, 1f, dt / 6.8f);
 
                     if (AbductionDanger01 >= 1f && pc != null && !pc.IsGameOver)

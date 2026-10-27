@@ -9,7 +9,12 @@ namespace OrpheusBelow
         CantorOfFury,         // Chamber I Mini-Boss (98 BPM)
         OarsmanOfStyx,        // Chamber II Mini-Boss (110 BPM)
         SirenOfAcheron,       // Chamber III Mini-Boss (118 BPM)
-        CerberusHoundOfHades  // Chamber IV Final Boss (126 BPM)
+        CerberusHoundOfHades,
+        MaskedMonk,
+        Shepherd,
+        Tripod = CantorOfFury,
+        MysticEyeWarden = OarsmanOfStyx,
+        WingedSentinel = SirenOfAcheron
     }
 
     public enum DuelPhase
@@ -65,6 +70,7 @@ namespace OrpheusBelow
         private float _combatActionTimer = 1.8f;
         private int _combatActionIndex = 0;
         private bool _isLunging;
+        private PaintedEnemyActor _paintedActor;
         private float _lungeTimer;
         private Vector3 _lungeStartPos;
         private Vector3 _lungeEndPos;
@@ -108,7 +114,7 @@ namespace OrpheusBelow
             switch (id)
             {
                 case BossIdentity.CantorOfFury:
-                    bossDisplayName = "Alecto's Cantor";
+                    bossDisplayName = "Tripod, Voice of the Deep";
                     maxHealth = 220f;
                     bpm = 110f;
                     noteTravelSeconds = 1.20f;
@@ -116,7 +122,7 @@ namespace OrpheusBelow
                     break;
 
                 case BossIdentity.OarsmanOfStyx:
-                    bossDisplayName = "Warden of the Oar";
+                    bossDisplayName = "Mystic Eye Warden";
                     maxHealth = 280f;
                     bpm = 116f;
                     noteTravelSeconds = 1.15f;
@@ -124,7 +130,7 @@ namespace OrpheusBelow
                     break;
 
                 case BossIdentity.SirenOfAcheron:
-                    bossDisplayName = "Siren of Acheron";
+                    bossDisplayName = "Winged Sentinel";
                     maxHealth = 330f;
                     bpm = 122f;
                     noteTravelSeconds = 1.10f;
@@ -138,6 +144,12 @@ namespace OrpheusBelow
                     noteTravelSeconds = 1.05f;
                     _headBaseColor = new Color(1.75f, 0.20f, 0.22f, 1f);
                     break;
+                case BossIdentity.MaskedMonk:
+                    bossDisplayName = "Masked Monk"; maxHealth = 240f; bpm = 112f; noteTravelSeconds = 1.2f;
+                    _headBaseColor = new Color(.6f, .65f, .4f); break;
+                case BossIdentity.Shepherd:
+                    bossDisplayName = "Shepherd of the Lost Flock"; maxHealth = 310f; bpm = 120f; noteTravelSeconds = 1.1f;
+                    _headBaseColor = new Color(.9f, .7f, .3f); break;
             }
 
             maxHealth *= 1.20f;
@@ -152,6 +164,14 @@ namespace OrpheusBelow
             sc.center = new Vector3(0f, 1.3f, 0f);
 
             BuildBossVisuals();
+            _paintedActor = gameObject.AddComponent<PaintedEnemyActor>();
+            var kind = id == BossIdentity.CantorOfFury ? PaintedEnemyKind.Tripod
+                : id == BossIdentity.OarsmanOfStyx ? PaintedEnemyKind.MysticEyeWarden
+                : id == BossIdentity.SirenOfAcheron ? PaintedEnemyKind.WingedSentinel
+                : id == BossIdentity.MaskedMonk ? PaintedEnemyKind.MaskedMonk
+                : id == BossIdentity.Shepherd ? PaintedEnemyKind.Shepherd : PaintedEnemyKind.Cerberus;
+            _paintedActor.Configure(kind, boss: this, stageCenter: _stageCenter);
+            if (_paintedActor.Art.IsReady) _billboardRoot.gameObject.SetActive(false);
             gameObject.SetActive(false);
         }
 
@@ -263,7 +283,7 @@ namespace OrpheusBelow
             if (IsDefeated || !IsBattleActive) return;
 
             OrpheusPlayerController player = OrpheusPlayerController.Instance;
-            if (player == null || player.IsGameOver || player.IsVictory) return;
+            if (player == null || player.IsGameOver || player.IsVictory) { _paintedActor?.Cancel(); return; }
 
             float dt = Time.deltaTime;
 
@@ -316,6 +336,12 @@ namespace OrpheusBelow
         // =========================================================
         private void UpdateArenaCombat(float dt, OrpheusPlayerController player)
         {
+            if (_paintedActor != null && _paintedActor.Pattern != null)
+            {
+                _paintedActor.Tick(dt);
+                CheckMilestones();
+                return;
+            }
             if (_isLunging)
             {
                 _lungeTimer += dt * 3.5f;
@@ -357,7 +383,12 @@ namespace OrpheusBelow
                 ExecuteRandomBossAction(player);
             }
 
-            // Check milestone transitions
+            CheckMilestones();
+        }
+
+        private void CheckMilestones()
+        {
+            // Musical milestones interrupt and cancel any pending physical attack.
             if (!_milestone65Done && CurrentHealth <= maxHealth * 0.65f)
             {
                 _milestone65Done = true;
@@ -405,6 +436,9 @@ namespace OrpheusBelow
             if (CurrentPhase == DuelPhase.StaveLeap || CurrentPhase == DuelPhase.StaveBarrage) return;
 
             CurrentPhase = DuelPhase.StaveLeap;
+            _paintedActor?.Cancel();
+            _paintedActor?.Art.Play(EnemyMotion.Windup, .75f);
+            PaintedEnemyProjectile.ClearAll();
             _isLunging = false;
             _notes.Clear();
 
@@ -582,6 +616,8 @@ namespace OrpheusBelow
         private void EnterCrashedStunned()
         {
             CurrentPhase = DuelPhase.CrashedStunned;
+            _paintedActor?.Cancel();
+            _paintedActor?.Art.Play(EnemyMotion.Hurt, 5f);
             _crashStunTimer = 5.0f;
             transform.position = _bossGroundAnchor;
 
@@ -602,6 +638,7 @@ namespace OrpheusBelow
             {
                 // Boss recovers and bursts back into active combat
                 CurrentPhase = DuelPhase.ArenaCombat;
+                _paintedActor?.Art.Play(EnemyMotion.Recover, .8f);
                 _combatActionTimer = 1.2f;
                 GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 1.2f, 0f), 4.8f, _headBaseColor, 0.35f, upright2D: true);
                 UnderworldSoundscape.Instance?.PlayImpact(true);
@@ -648,6 +685,7 @@ namespace OrpheusBelow
             if (IsDefeated) return;
             IsDefeated = true;
             IsBattleActive = false;
+            _paintedActor?.Cancel(true);
             if (ActiveBoss == this) ActiveBoss = null;
 
             if (_staveRoot != null) _staveRoot.gameObject.SetActive(false);
@@ -681,7 +719,7 @@ namespace OrpheusBelow
             }
 
             OnCerberusDefeated?.Invoke();
-            Destroy(gameObject, 0.35f);
+            Destroy(gameObject, .95f);
         }
     }
 

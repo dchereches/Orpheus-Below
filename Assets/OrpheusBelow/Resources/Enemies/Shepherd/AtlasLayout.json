@@ -1,0 +1,1723 @@
+{
+  "bodyColumns": 4,
+  "bodyRows": 8,
+  "effectColumns": 6,
+  "effectRows": 4,
+  "rowOrder": "top-to-bottom",
+  "frameOrder": "left-to-right",
+  "unchangedGeneratedPng": true,
+  "note": "32 separate main opaque silhouettes. Explicit variable cuts follow clear gaps; source PNGs unchanged. Pivot is center and foot of main silhouette. Low-alpha warm brush fringes preserved.",
+  "motionFrameCounts": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+  ],
+  "body": {
+    "width": 887,
+    "height": 1774,
+    "sha256": "f672b1dea73c9a80ece116eb2bbdf6afd281fbd17a2e364d726b304c4d1f21ed",
+    "frames": [
+      {
+        "row": 0,
+        "column": 0,
+        "rectTopLeft": [
+          0,
+          0,
+          220,
+          220
+        ],
+        "rectUnity": [
+          0,
+          1554,
+          220,
+          220
+        ],
+        "pivot": [
+          0.525,
+          0.031818181818181815
+        ],
+        "mainOpaqueBounds": [
+          63,
+          14,
+          168,
+          213
+        ],
+        "opaquePixels": 12217,
+        "alphaBoundsInCell": [
+          63,
+          14,
+          168,
+          213
+        ]
+      },
+      {
+        "row": 0,
+        "column": 1,
+        "rectTopLeft": [
+          220,
+          0,
+          225,
+          220
+        ],
+        "rectUnity": [
+          220,
+          1554,
+          225,
+          220
+        ],
+        "pivot": [
+          0.5022222222222222,
+          0.031818181818181815
+        ],
+        "mainOpaqueBounds": [
+          271,
+          12,
+          395,
+          213
+        ],
+        "opaquePixels": 12884,
+        "alphaBoundsInCell": [
+          51,
+          12,
+          175,
+          213
+        ]
+      },
+      {
+        "row": 0,
+        "column": 2,
+        "rectTopLeft": [
+          445,
+          0,
+          211,
+          220
+        ],
+        "rectUnity": [
+          445,
+          1554,
+          211,
+          220
+        ],
+        "pivot": [
+          0.504739336492891,
+          0.03636363636363636
+        ],
+        "mainOpaqueBounds": [
+          495,
+          14,
+          608,
+          212
+        ],
+        "opaquePixels": 12328,
+        "alphaBoundsInCell": [
+          50,
+          14,
+          163,
+          212
+        ]
+      },
+      {
+        "row": 0,
+        "column": 3,
+        "rectTopLeft": [
+          656,
+          0,
+          231,
+          220
+        ],
+        "rectUnity": [
+          656,
+          1554,
+          231,
+          220
+        ],
+        "pivot": [
+          0.47835497835497837,
+          0.04090909090909091
+        ],
+        "mainOpaqueBounds": [
+          705,
+          15,
+          828,
+          211
+        ],
+        "opaquePixels": 12560,
+        "alphaBoundsInCell": [
+          49,
+          15,
+          172,
+          211
+        ]
+      },
+      {
+        "row": 1,
+        "column": 0,
+        "rectTopLeft": [
+          0,
+          220,
+          216,
+          216
+        ],
+        "rectUnity": [
+          0,
+          1338,
+          216,
+          216
+        ],
+        "pivot": [
+          0.5115740740740741,
+          0.037037037037037035
+        ],
+        "mainOpaqueBounds": [
+          42,
+          229,
+          179,
+          428
+        ],
+        "opaquePixels": 14499,
+        "alphaBoundsInCell": [
+          42,
+          9,
+          179,
+          208
+        ]
+      },
+      {
+        "row": 1,
+        "column": 1,
+        "rectTopLeft": [
+          216,
+          220,
+          223,
+          216
+        ],
+        "rectUnity": [
+          216,
+          1338,
+          223,
+          216
+        ],
+        "pivot": [
+          0.484304932735426,
+          0.037037037037037035
+        ],
+        "mainOpaqueBounds": [
+          252,
+          228,
+          396,
+          428
+        ],
+        "opaquePixels": 14632,
+        "alphaBoundsInCell": [
+          36,
+          8,
+          180,
+          208
+        ]
+      },
+      {
+        "row": 1,
+        "column": 2,
+        "rectTopLeft": [
+          439,
+          220,
+          223,
+          216
+        ],
+        "rectUnity": [
+          439,
+          1338,
+          223,
+          216
+        ],
+        "pivot": [
+          0.515695067264574,
+          0.037037037037037035
+        ],
+        "mainOpaqueBounds": [
+          482,
+          228,
+          626,
+          428
+        ],
+        "opaquePixels": 14559,
+        "alphaBoundsInCell": [
+          43,
+          8,
+          187,
+          208
+        ]
+      },
+      {
+        "row": 1,
+        "column": 3,
+        "rectTopLeft": [
+          662,
+          220,
+          225,
+          216
+        ],
+        "rectUnity": [
+          662,
+          1338,
+          225,
+          216
+        ],
+        "pivot": [
+          0.4777777777777778,
+          0.037037037037037035
+        ],
+        "mainOpaqueBounds": [
+          699,
+          227,
+          840,
+          428
+        ],
+        "opaquePixels": 14287,
+        "alphaBoundsInCell": [
+          37,
+          7,
+          178,
+          208
+        ]
+      },
+      {
+        "row": 2,
+        "column": 0,
+        "rectTopLeft": [
+          0,
+          436,
+          231,
+          230
+        ],
+        "rectUnity": [
+          0,
+          1108,
+          231,
+          230
+        ],
+        "pivot": [
+          0.538961038961039,
+          0.043478260869565216
+        ],
+        "mainOpaqueBounds": [
+          52,
+          452,
+          197,
+          656
+        ],
+        "opaquePixels": 14348,
+        "alphaBoundsInCell": [
+          52,
+          16,
+          197,
+          220
+        ]
+      },
+      {
+        "row": 2,
+        "column": 1,
+        "rectTopLeft": [
+          231,
+          436,
+          207,
+          230
+        ],
+        "rectUnity": [
+          231,
+          1108,
+          207,
+          230
+        ],
+        "pivot": [
+          0.5024154589371981,
+          0.04782608695652174
+        ],
+        "mainOpaqueBounds": [
+          265,
+          453,
+          405,
+          655
+        ],
+        "opaquePixels": 14857,
+        "alphaBoundsInCell": [
+          34,
+          17,
+          174,
+          219
+        ]
+      },
+      {
+        "row": 2,
+        "column": 2,
+        "rectTopLeft": [
+          438,
+          436,
+          218,
+          230
+        ],
+        "rectUnity": [
+          438,
+          1108,
+          218,
+          230
+        ],
+        "pivot": [
+          0.5068807339449541,
+          0.04782608695652174
+        ],
+        "mainOpaqueBounds": [
+          471,
+          454,
+          626,
+          655
+        ],
+        "opaquePixels": 15508,
+        "alphaBoundsInCell": [
+          33,
+          18,
+          188,
+          219
+        ]
+      },
+      {
+        "row": 2,
+        "column": 3,
+        "rectTopLeft": [
+          656,
+          436,
+          231,
+          230
+        ],
+        "rectUnity": [
+          656,
+          1108,
+          231,
+          230
+        ],
+        "pivot": [
+          0.4393939393939394,
+          0.04782608695652174
+        ],
+        "mainOpaqueBounds": [
+          686,
+          444,
+          829,
+          655
+        ],
+        "opaquePixels": 15205,
+        "alphaBoundsInCell": [
+          30,
+          8,
+          173,
+          219
+        ]
+      },
+      {
+        "row": 3,
+        "column": 0,
+        "rectTopLeft": [
+          0,
+          666,
+          228,
+          217
+        ],
+        "rectUnity": [
+          0,
+          891,
+          228,
+          217
+        ],
+        "pivot": [
+          0.5087719298245614,
+          0.041474654377880185
+        ],
+        "mainOpaqueBounds": [
+          31,
+          676,
+          201,
+          874
+        ],
+        "opaquePixels": 15950,
+        "alphaBoundsInCell": [
+          31,
+          10,
+          201,
+          208
+        ]
+      },
+      {
+        "row": 3,
+        "column": 1,
+        "rectTopLeft": [
+          228,
+          666,
+          204,
+          217
+        ],
+        "rectUnity": [
+          228,
+          891,
+          204,
+          217
+        ],
+        "pivot": [
+          0.5220588235294118,
+          0.041474654377880185
+        ],
+        "mainOpaqueBounds": [
+          255,
+          677,
+          414,
+          874
+        ],
+        "opaquePixels": 15612,
+        "alphaBoundsInCell": [
+          27,
+          11,
+          190,
+          208
+        ]
+      },
+      {
+        "row": 3,
+        "column": 2,
+        "rectTopLeft": [
+          432,
+          666,
+          220,
+          217
+        ],
+        "rectUnity": [
+          432,
+          891,
+          220,
+          217
+        ],
+        "pivot": [
+          0.4863636363636364,
+          0.041474654377880185
+        ],
+        "mainOpaqueBounds": [
+          451,
+          678,
+          627,
+          874
+        ],
+        "opaquePixels": 17281,
+        "alphaBoundsInCell": [
+          19,
+          12,
+          195,
+          208
+        ]
+      },
+      {
+        "row": 3,
+        "column": 3,
+        "rectTopLeft": [
+          652,
+          666,
+          235,
+          217
+        ],
+        "rectUnity": [
+          652,
+          891,
+          235,
+          217
+        ],
+        "pivot": [
+          0.4957446808510638,
+          0.041474654377880185
+        ],
+        "mainOpaqueBounds": [
+          678,
+          677,
+          859,
+          874
+        ],
+        "opaquePixels": 18187,
+        "alphaBoundsInCell": [
+          26,
+          11,
+          207,
+          208
+        ]
+      },
+      {
+        "row": 4,
+        "column": 0,
+        "rectTopLeft": [
+          0,
+          883,
+          218,
+          219
+        ],
+        "rectUnity": [
+          0,
+          672,
+          218,
+          219
+        ],
+        "pivot": [
+          0.5,
+          0.0319634703196347
+        ],
+        "mainOpaqueBounds": [
+          35,
+          892,
+          183,
+          1095
+        ],
+        "opaquePixels": 14871,
+        "alphaBoundsInCell": [
+          35,
+          9,
+          183,
+          212
+        ]
+      },
+      {
+        "row": 4,
+        "column": 1,
+        "rectTopLeft": [
+          218,
+          883,
+          226,
+          219
+        ],
+        "rectUnity": [
+          218,
+          672,
+          226,
+          219
+        ],
+        "pivot": [
+          0.5331858407079646,
+          0.0319634703196347
+        ],
+        "mainOpaqueBounds": [
+          253,
+          893,
+          424,
+          1095
+        ],
+        "opaquePixels": 15813,
+        "alphaBoundsInCell": [
+          35,
+          10,
+          206,
+          212
+        ]
+      },
+      {
+        "row": 4,
+        "column": 2,
+        "rectTopLeft": [
+          444,
+          883,
+          219,
+          219
+        ],
+        "rectUnity": [
+          444,
+          672,
+          219,
+          219
+        ],
+        "pivot": [
+          0.4908675799086758,
+          0.0319634703196347
+        ],
+        "mainOpaqueBounds": [
+          463,
+          892,
+          640,
+          1095
+        ],
+        "opaquePixels": 16346,
+        "alphaBoundsInCell": [
+          19,
+          9,
+          196,
+          212
+        ]
+      },
+      {
+        "row": 4,
+        "column": 3,
+        "rectTopLeft": [
+          663,
+          883,
+          224,
+          219
+        ],
+        "rectUnity": [
+          663,
+          672,
+          224,
+          219
+        ],
+        "pivot": [
+          0.47098214285714285,
+          0.0319634703196347
+        ],
+        "mainOpaqueBounds": [
+          686,
+          893,
+          851,
+          1095
+        ],
+        "opaquePixels": 15759,
+        "alphaBoundsInCell": [
+          23,
+          10,
+          188,
+          212
+        ]
+      },
+      {
+        "row": 5,
+        "column": 0,
+        "rectTopLeft": [
+          0,
+          1102,
+          228,
+          222
+        ],
+        "rectUnity": [
+          0,
+          450,
+          228,
+          222
+        ],
+        "pivot": [
+          0.5219298245614035,
+          0.036036036036036036
+        ],
+        "mainOpaqueBounds": [
+          43,
+          1110,
+          195,
+          1316
+        ],
+        "opaquePixels": 15347,
+        "alphaBoundsInCell": [
+          43,
+          8,
+          195,
+          214
+        ]
+      },
+      {
+        "row": 5,
+        "column": 1,
+        "rectTopLeft": [
+          228,
+          1102,
+          214,
+          222
+        ],
+        "rectUnity": [
+          228,
+          450,
+          214,
+          222
+        ],
+        "pivot": [
+          0.47897196261682246,
+          0.036036036036036036
+        ],
+        "mainOpaqueBounds": [
+          260,
+          1117,
+          401,
+          1316
+        ],
+        "opaquePixels": 14385,
+        "alphaBoundsInCell": [
+          32,
+          15,
+          173,
+          214
+        ]
+      },
+      {
+        "row": 5,
+        "column": 2,
+        "rectTopLeft": [
+          442,
+          1102,
+          215,
+          222
+        ],
+        "rectUnity": [
+          442,
+          450,
+          215,
+          222
+        ],
+        "pivot": [
+          0.4697674418604651,
+          0.036036036036036036
+        ],
+        "mainOpaqueBounds": [
+          483,
+          1112,
+          603,
+          1316
+        ],
+        "opaquePixels": 14050,
+        "alphaBoundsInCell": [
+          41,
+          10,
+          161,
+          214
+        ]
+      },
+      {
+        "row": 5,
+        "column": 3,
+        "rectTopLeft": [
+          657,
+          1102,
+          230,
+          222
+        ],
+        "rectUnity": [
+          657,
+          450,
+          230,
+          222
+        ],
+        "pivot": [
+          0.48043478260869565,
+          0.036036036036036036
+        ],
+        "mainOpaqueBounds": [
+          711,
+          1109,
+          824,
+          1316
+        ],
+        "opaquePixels": 13314,
+        "alphaBoundsInCell": [
+          54,
+          7,
+          167,
+          214
+        ]
+      },
+      {
+        "row": 6,
+        "column": 0,
+        "rectTopLeft": [
+          0,
+          1324,
+          218,
+          234
+        ],
+        "rectUnity": [
+          0,
+          216,
+          218,
+          234
+        ],
+        "pivot": [
+          0.5137614678899083,
+          0.10256410256410256
+        ],
+        "mainOpaqueBounds": [
+          46,
+          1333,
+          178,
+          1534
+        ],
+        "opaquePixels": 16708,
+        "alphaBoundsInCell": [
+          46,
+          9,
+          178,
+          210
+        ]
+      },
+      {
+        "row": 6,
+        "column": 1,
+        "rectTopLeft": [
+          218,
+          1324,
+          212,
+          234
+        ],
+        "rectUnity": [
+          218,
+          216,
+          212,
+          234
+        ],
+        "pivot": [
+          0.49764150943396224,
+          0.10256410256410256
+        ],
+        "mainOpaqueBounds": [
+          258,
+          1339,
+          389,
+          1534
+        ],
+        "opaquePixels": 14426,
+        "alphaBoundsInCell": [
+          40,
+          15,
+          171,
+          210
+        ]
+      },
+      {
+        "row": 6,
+        "column": 2,
+        "rectTopLeft": [
+          430,
+          1324,
+          217,
+          234
+        ],
+        "rectUnity": [
+          430,
+          216,
+          217,
+          234
+        ],
+        "pivot": [
+          0.4861751152073733,
+          0.10256410256410256
+        ],
+        "mainOpaqueBounds": [
+          470,
+          1342,
+          601,
+          1534
+        ],
+        "opaquePixels": 14194,
+        "alphaBoundsInCell": [
+          40,
+          18,
+          171,
+          210
+        ]
+      },
+      {
+        "row": 6,
+        "column": 3,
+        "rectTopLeft": [
+          647,
+          1324,
+          240,
+          234
+        ],
+        "rectUnity": [
+          647,
+          216,
+          240,
+          234
+        ],
+        "pivot": [
+          0.5041666666666667,
+          0.10256410256410256
+        ],
+        "mainOpaqueBounds": [
+          693,
+          1371,
+          843,
+          1534
+        ],
+        "opaquePixels": 14640,
+        "alphaBoundsInCell": [
+          46,
+          47,
+          196,
+          210
+        ]
+      },
+      {
+        "row": 7,
+        "column": 0,
+        "rectTopLeft": [
+          0,
+          1558,
+          217,
+          216
+        ],
+        "rectUnity": [
+          0,
+          0,
+          217,
+          216
+        ],
+        "pivot": [
+          0.5138248847926268,
+          0.18055555555555555
+        ],
+        "mainOpaqueBounds": [
+          34,
+          1584,
+          189,
+          1735
+        ],
+        "opaquePixels": 13542,
+        "alphaBoundsInCell": [
+          34,
+          26,
+          189,
+          177
+        ]
+      },
+      {
+        "row": 7,
+        "column": 1,
+        "rectTopLeft": [
+          217,
+          1558,
+          203,
+          216
+        ],
+        "rectUnity": [
+          217,
+          0,
+          203,
+          216
+        ],
+        "pivot": [
+          0.5295566502463054,
+          0.17592592592592593
+        ],
+        "mainOpaqueBounds": [
+          245,
+          1581,
+          404,
+          1736
+        ],
+        "opaquePixels": 13483,
+        "alphaBoundsInCell": [
+          28,
+          23,
+          187,
+          178
+        ]
+      },
+      {
+        "row": 7,
+        "column": 2,
+        "rectTopLeft": [
+          420,
+          1558,
+          217,
+          216
+        ],
+        "rectUnity": [
+          420,
+          0,
+          217,
+          216
+        ],
+        "pivot": [
+          0.511520737327189,
+          0.20833333333333334
+        ],
+        "mainOpaqueBounds": [
+          437,
+          1618,
+          625,
+          1729
+        ],
+        "opaquePixels": 12483,
+        "alphaBoundsInCell": [
+          17,
+          60,
+          205,
+          171
+        ]
+      },
+      {
+        "row": 7,
+        "column": 3,
+        "rectTopLeft": [
+          637,
+          1558,
+          250,
+          216
+        ],
+        "rectUnity": [
+          637,
+          0,
+          250,
+          216
+        ],
+        "pivot": [
+          0.494,
+          0.2175925925925926
+        ],
+        "mainOpaqueBounds": [
+          649,
+          1631,
+          872,
+          1727
+        ],
+        "opaquePixels": 12026,
+        "alphaBoundsInCell": [
+          12,
+          73,
+          235,
+          169
+        ]
+      }
+    ]
+  },
+  "effects": {
+    "width": 1536,
+    "height": 1024,
+    "sha256": "c76bf3f68ea35b4700b145a6ad8377fcc4770ca9579b99cfaa6952b4e0aeffd9",
+    "alias": null,
+    "frames": [
+      {
+        "row": 0,
+        "column": 0,
+        "rectTopLeft": [
+          0,
+          0,
+          256,
+          265
+        ],
+        "rectUnity": [
+          0,
+          759,
+          256,
+          265
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          98,
+          79,
+          178,
+          204
+        ]
+      },
+      {
+        "row": 0,
+        "column": 1,
+        "rectTopLeft": [
+          256,
+          0,
+          256,
+          265
+        ],
+        "rectUnity": [
+          256,
+          759,
+          256,
+          265
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          50,
+          58,
+          197,
+          234
+        ]
+      },
+      {
+        "row": 0,
+        "column": 2,
+        "rectTopLeft": [
+          512,
+          0,
+          256,
+          265
+        ],
+        "rectUnity": [
+          512,
+          759,
+          256,
+          265
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          30,
+          29,
+          224,
+          251
+        ]
+      },
+      {
+        "row": 0,
+        "column": 3,
+        "rectTopLeft": [
+          768,
+          0,
+          256,
+          265
+        ],
+        "rectUnity": [
+          768,
+          759,
+          256,
+          265
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          37,
+          8,
+          247,
+          264
+        ]
+      },
+      {
+        "row": 0,
+        "column": 4,
+        "rectTopLeft": [
+          1024,
+          0,
+          256,
+          265
+        ],
+        "rectUnity": [
+          1024,
+          759,
+          256,
+          265
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          43,
+          23,
+          253,
+          258
+        ]
+      },
+      {
+        "row": 0,
+        "column": 5,
+        "rectTopLeft": [
+          1280,
+          0,
+          256,
+          265
+        ],
+        "rectUnity": [
+          1280,
+          759,
+          256,
+          265
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          23,
+          21,
+          234,
+          246
+        ]
+      },
+      {
+        "row": 1,
+        "column": 0,
+        "rectTopLeft": [
+          0,
+          265,
+          256,
+          260
+        ],
+        "rectUnity": [
+          0,
+          499,
+          256,
+          260
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          79,
+          102,
+          167,
+          184
+        ]
+      },
+      {
+        "row": 1,
+        "column": 1,
+        "rectTopLeft": [
+          256,
+          265,
+          246,
+          260
+        ],
+        "rectUnity": [
+          256,
+          499,
+          246,
+          260
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          17,
+          73,
+          213,
+          218
+        ]
+      },
+      {
+        "row": 1,
+        "column": 2,
+        "rectTopLeft": [
+          502,
+          265,
+          266,
+          260
+        ],
+        "rectUnity": [
+          502,
+          499,
+          266,
+          260
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          1,
+          13,
+          250,
+          241
+        ]
+      },
+      {
+        "row": 1,
+        "column": 3,
+        "rectTopLeft": [
+          768,
+          265,
+          265,
+          260
+        ],
+        "rectUnity": [
+          768,
+          499,
+          265,
+          260
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          3,
+          5,
+          264,
+          259
+        ]
+      },
+      {
+        "row": 1,
+        "column": 4,
+        "rectTopLeft": [
+          1033,
+          265,
+          268,
+          260
+        ],
+        "rectUnity": [
+          1033,
+          499,
+          268,
+          260
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          18,
+          33,
+          267,
+          258
+        ]
+      },
+      {
+        "row": 1,
+        "column": 5,
+        "rectTopLeft": [
+          1301,
+          265,
+          235,
+          260
+        ],
+        "rectUnity": [
+          1301,
+          499,
+          235,
+          260
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          6,
+          34,
+          195,
+          244
+        ]
+      },
+      {
+        "row": 2,
+        "column": 0,
+        "rectTopLeft": [
+          0,
+          525,
+          256,
+          243
+        ],
+        "rectUnity": [
+          0,
+          256,
+          256,
+          243
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          66,
+          91,
+          174,
+          211
+        ]
+      },
+      {
+        "row": 2,
+        "column": 1,
+        "rectTopLeft": [
+          256,
+          525,
+          256,
+          243
+        ],
+        "rectUnity": [
+          256,
+          256,
+          256,
+          243
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          12,
+          48,
+          214,
+          220
+        ]
+      },
+      {
+        "row": 2,
+        "column": 2,
+        "rectTopLeft": [
+          512,
+          525,
+          256,
+          243
+        ],
+        "rectUnity": [
+          512,
+          256,
+          256,
+          243
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          8,
+          16,
+          239,
+          224
+        ]
+      },
+      {
+        "row": 2,
+        "column": 3,
+        "rectTopLeft": [
+          768,
+          525,
+          272,
+          243
+        ],
+        "rectUnity": [
+          768,
+          256,
+          272,
+          243
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          7,
+          10,
+          271,
+          229
+        ]
+      },
+      {
+        "row": 2,
+        "column": 4,
+        "rectTopLeft": [
+          1040,
+          525,
+          252,
+          243
+        ],
+        "rectUnity": [
+          1040,
+          256,
+          252,
+          243
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          18,
+          64,
+          251,
+          224
+        ]
+      },
+      {
+        "row": 2,
+        "column": 5,
+        "rectTopLeft": [
+          1292,
+          525,
+          244,
+          243
+        ],
+        "rectUnity": [
+          1292,
+          256,
+          244,
+          243
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          18,
+          96,
+          229,
+          222
+        ]
+      },
+      {
+        "row": 3,
+        "column": 0,
+        "rectTopLeft": [
+          0,
+          768,
+          256,
+          256
+        ],
+        "rectUnity": [
+          0,
+          0,
+          256,
+          256
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          35,
+          36,
+          218,
+          193
+        ]
+      },
+      {
+        "row": 3,
+        "column": 1,
+        "rectTopLeft": [
+          256,
+          768,
+          254,
+          256
+        ],
+        "rectUnity": [
+          256,
+          0,
+          254,
+          256
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          9,
+          29,
+          228,
+          202
+        ]
+      },
+      {
+        "row": 3,
+        "column": 2,
+        "rectTopLeft": [
+          510,
+          768,
+          257,
+          256
+        ],
+        "rectUnity": [
+          510,
+          0,
+          257,
+          256
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          1,
+          18,
+          242,
+          212
+        ]
+      },
+      {
+        "row": 3,
+        "column": 3,
+        "rectTopLeft": [
+          767,
+          768,
+          267,
+          256
+        ],
+        "rectUnity": [
+          767,
+          0,
+          267,
+          256
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          1,
+          4,
+          266,
+          236
+        ]
+      },
+      {
+        "row": 3,
+        "column": 4,
+        "rectTopLeft": [
+          1034,
+          768,
+          254,
+          256
+        ],
+        "rectUnity": [
+          1034,
+          0,
+          254,
+          256
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          18,
+          23,
+          253,
+          215
+        ]
+      },
+      {
+        "row": 3,
+        "column": 5,
+        "rectTopLeft": [
+          1288,
+          768,
+          248,
+          256
+        ],
+        "rectUnity": [
+          1288,
+          0,
+          248,
+          256
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "alphaBoundsInCell": [
+          18,
+          33,
+          237,
+          204
+        ]
+      }
+    ],
+    "transparentFractionBelow10": 0.6337165832519531,
+    "rowCutsTopLeft": [
+      0,
+      265,
+      525,
+      768,
+      1024
+    ]
+  }
+}

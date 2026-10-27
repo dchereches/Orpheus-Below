@@ -28,12 +28,12 @@ namespace OrpheusBelow.Tests
         }
 
         [Test]
-        public void DescentRetainsFourGuardiansBeforeTheDeepestThrone()
+        public void DescentPlacesSixPaintedGuardiansBeforeTheDeepestThrone()
         {
             UnderworldJourney.Reset();
             var root = new GameObject("EightChamberRouteTest");
-            BossIdentity?[] expected = { null, BossIdentity.CantorOfFury, null, BossIdentity.OarsmanOfStyx,
-                null, BossIdentity.SirenOfAcheron, BossIdentity.CerberusHoundOfHades, null };
+            BossIdentity?[] expected = { null, BossIdentity.Tripod, BossIdentity.MaskedMonk, BossIdentity.MysticEyeWarden,
+                BossIdentity.WingedSentinel, BossIdentity.Shepherd, BossIdentity.CerberusHoundOfHades, null };
             try
             {
                 for (int i = 0; i < ProceduralChamberGenerator.TotalChambers; i++)
