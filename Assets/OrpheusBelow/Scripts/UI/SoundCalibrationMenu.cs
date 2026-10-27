@@ -156,7 +156,7 @@ namespace OrpheusBelow
             {
                 if (live >= sensor.hardBoomThreshold)
                 {
-                    _detectionStatusText.text = "● TRIGGERING: BOOM FERMATA (𝄐)!";
+                    _detectionStatusText.text = "● TRIGGERING: BOOM FERMATA!";
                     _detectionStatusText.color = Crimson;
                 }
                 else if (live >= sensor.softMinThreshold)
@@ -352,7 +352,7 @@ namespace OrpheusBelow
             curY += 34f;
 
             // Row C: Boom Fermata (𝄐) Threshold
-            CreateLabel(_panelRoot.transform, "Boom Fermata Threshold 𝄐 (Loud/Exhale):", 34, curY, 240, 28, 15, Ivory, false);
+            CreateLabel(_panelRoot.transform, "Boom Fermata Threshold (Loud/Exhale):", 34, curY, 240, 28, 15, Ivory, false);
             CreateButton(_panelRoot.transform, "BtnBoomDown", "-", 280, curY, 36, 28, () => AdjustBoomThreshold(-0.02f), out _);
             _boomThresholdValueLabel = CreateLabel(_panelRoot.transform, "0.60 (60%)", 324, curY, 70, 28, 15, Crimson, false);
             _boomThresholdValueLabel.alignment = TextAnchor.MiddleCenter;
@@ -384,7 +384,7 @@ namespace OrpheusBelow
 
             // --- 5. PREVIEW & FOOTER ---
             CreateButton(_panelRoot.transform, "BtnTestSoft", "♪ Test Quaver", 34, curY, 150, 32, PlayTestSoft, out _);
-            CreateButton(_panelRoot.transform, "BtnTestBoom", "𝄐 Test Fermata", 194, curY, 140, 32, PlayTestBoom, out _);
+            CreateButton(_panelRoot.transform, "BtnTestBoom", "Test Fermata", 194, curY, 140, 32, PlayTestBoom, out _);
             CreateButton(_panelRoot.transform, "BtnReset", "Reset Defaults", 344, curY, 130, 32, ResetDefaults, out _);
             CreateButton(_panelRoot.transform, "BtnClose", "Close [C]", cardW - 170, curY, 136, 32, () => SetOpen(false), out _, primary: true);
         }

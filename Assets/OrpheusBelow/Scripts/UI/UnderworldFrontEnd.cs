@@ -307,7 +307,7 @@ namespace OrpheusBelow
             });
 
             // Boom Fermata (𝄐) Threshold Slider (0.45 to 0.85)
-            _boomThresholdLabel = Label(body, "Boom Fermata (𝄐) threshold   60%", 72, 402, 500, 22, 14, Ivory, false);
+            _boomThresholdLabel = Label(body, "Boom Fermata threshold   60%", 72, 402, 500, 22, 14, Ivory, false);
             _boomThresholdSlider = MakeGenericSlider(body, 72, 426, 500, 0.45f, 0.85f, false, val =>
             {
                 SensorPulseInput sensor = SensorPulseInput.Instance;
@@ -316,7 +316,7 @@ namespace OrpheusBelow
                     sensor.hardBoomThreshold = val;
                     sensor.SaveCalibration();
                 }
-                _boomThresholdLabel.text = "Boom Fermata (𝄐) threshold   " + Mathf.RoundToInt(val * 100f) + "%";
+                _boomThresholdLabel.text = "Boom Fermata threshold   " + Mathf.RoundToInt(val * 100f) + "%";
             });
 
             // Input Mode Toggle Button
@@ -538,7 +538,7 @@ namespace OrpheusBelow
             {
                 if (live >= sensor.hardBoomThreshold)
                 {
-                    _micStatusText.text = "Boom Fermata (𝄐)   " + Mathf.RoundToInt(live * 100f) + "%";
+                    _micStatusText.text = "Boom Fermata   " + Mathf.RoundToInt(live * 100f) + "%";
                     _micStatusText.color = Crimson;
                 }
                 else if (live >= sensor.softMinThreshold)
@@ -560,7 +560,7 @@ namespace OrpheusBelow
             if (_softThresholdLabel != null)
                 _softThresholdLabel.text = $"Small Quaver (♪) threshold   {sensor.softMinThreshold:P0}";
             if (_boomThresholdLabel != null)
-                _boomThresholdLabel.text = $"Boom Fermata (𝄐) threshold   {sensor.hardBoomThreshold:P0}";
+                _boomThresholdLabel.text = $"Boom Fermata threshold   {sensor.hardBoomThreshold:P0}";
         }
 
         private void FitPanorama()

@@ -331,7 +331,7 @@ namespace OrpheusBelow
             }
             else if (!UnderworldJourney.IsAscending && index == 2)
             {
-                OrpheusHud.Instance?.ShowArtemisHint("Sanctuary of Eurydice is awakened [B - S]. Pluck Boom, then Soft to summon a protective ward.", 5.0f);
+                OrpheusHud.Instance?.ShowArtemisHint("Sanctuary of Eurydice is awakened [Boom — Soft]. Pluck Boom, then Soft to summon a protective ward.", 5.0f);
             }
             else if (!UnderworldJourney.IsAscending && index == 3)
             {
@@ -495,13 +495,13 @@ namespace OrpheusBelow
                     text = "Tap LMB or J — a light pluck plays a Small Quaver (♪) to keep the tempo.";
                     break;
                 case AsphodelTutorialStep.HardBoom:
-                    text = "RMB, K, hold LMB, or a strong pulse plays a Boom Fermata (𝄐). It shatters bronze armor, but costs breath.";
+                    text = "RMB, K, hold LMB, or a strong pulse plays a Boom Fermata. It shatters bronze armor, but costs breath.";
                     break;
                 case AsphodelTutorialStep.Flute:
-                    text = "Press F or the left trigger for the Aulos. Weaken Shades, then follow its four-note score of Quavers (♪) and Fermatas (𝄐).";
+                    text = "Press F or the left trigger for the Aulos. Weaken Shades, then follow its four-note score of Quavers (♪) and Fermatas.";
                     break;
                 case AsphodelTutorialStep.Cadence:
-                    text = "Put the flute away (F). Aim and play [ ♪ — ♪ — 𝄐 ] (Hymn of Dawn): Quaver · Quaver · Fermata. Cadences break wards and restore breath.";
+                    text = "Put the flute away (F). Aim and play [ ♪ — ♪ — Fermata ] (Hymn of Dawn): Quaver · Quaver · Fermata. Cadences break wards and restore breath.";
                     break;
                 default:
                     OrpheusHud.Instance?.HideEurydiceTutorial();
@@ -547,20 +547,20 @@ namespace OrpheusBelow
             {
                 combat.UnlockedCadenceTier = 2;
                 combat.RefreshCadenceDisplay();
-                clearBanner = "Guardian Pacified  —  Learned Cadence: Sanctuary of Eurydice (𝄐 — ♪)";
+                clearBanner = "Guardian Pacified  —  Learned Cadence: Sanctuary of Eurydice (Fermata — Quaver)";
                 OrpheusHud.Instance?.ShowCadenceUnlockCeremony(
                     "Sanctuary of Eurydice",
-                    "[ 𝄐 ]  —  [ ♪ ]",
+                    "Fermata — Quaver",
                     "Keep this cadence for your return. Its golden aegis will protect Eurydice from abductors.");
             }
             else if (CurrentChamberIndex == 1 && combat != null && combat.UnlockedCadenceTier < 3)
             {
                 combat.UnlockedCadenceTier = 3;
                 combat.RefreshCadenceDisplay();
-                clearBanner = "Guardian Pacified  —  Learned Cadence: Siren's Convergence (♪ — 𝄐 — ♪)";
+                clearBanner = "Guardian Pacified  —  Learned Cadence: Siren's Convergence (Quaver — Fermata — Quaver)";
                 OrpheusHud.Instance?.ShowCadenceUnlockCeremony(
                     "Siren's Convergence",
-                    "[ ♪ ]  —  [ 𝄐 ]  —  [ ♪ ]",
+                    "Quaver — Fermata — Quaver",
                     "Conjure an inward-pulling harmonic vortex that cracks Grief-Armor and draws all Shades together.");
             }
             else

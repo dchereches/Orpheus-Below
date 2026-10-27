@@ -99,6 +99,9 @@ namespace OrpheusBelow
         private Text _cadenceUnlockFormula;
         private Text _cadenceUnlockDesc;
         private float _cadenceUnlockTimer;
+        private GameObject _cadenceUnlockIconsTray;
+        private readonly Image[] _cadenceUnlockIcons = new Image[3];
+        private readonly Text[] _cadenceUnlockDashes = new Text[2];
 
         // Screen wipe & End screen
         private Image _fadeOverlay;
@@ -232,7 +235,7 @@ namespace OrpheusBelow
                         _dialogueSymbolsCaption.color = new Color(1f, 0.88f, 0.45f, 0.95f);
                     }
                 }
-                else if (text.Contains("Fermata") || text.Contains("Boom") || text.Contains("RMB") || text.Contains("𝄐"))
+                else if (text.Contains("Fermata") || text.Contains("Boom") || text.Contains("RMB"))
                 {
                     showIcons = true;
                     _dialogueIcons[0].gameObject.SetActive(true);
@@ -240,7 +243,7 @@ namespace OrpheusBelow
                     _dialogueIcons[0].color = new Color(1f, 0.90f, 0.28f, 1f);
                     if (_dialogueSymbolsCaption != null)
                     {
-                        _dialogueSymbolsCaption.text = "Boom Fermata (𝄐)  ·  Armor-shatter [RMB / K]";
+                        _dialogueSymbolsCaption.text = "Boom Fermata  ·  Armor-shatter [RMB / K]";
                         _dialogueSymbolsCaption.color = new Color(1f, 0.90f, 0.45f, 0.95f);
                     }
                 }
@@ -261,7 +264,7 @@ namespace OrpheusBelow
 
                     if (_dialogueSymbolsCaption != null)
                     {
-                        _dialogueSymbolsCaption.text = "Hymn of Dawn  [ ♪ — ♪ — 𝄐 ]";
+                        _dialogueSymbolsCaption.text = "Hymn of Dawn  [ ♪ — ♪ — Fermata ]";
                         _dialogueSymbolsCaption.color = new Color(1f, 0.90f, 0.55f, 0.95f);
                     }
                 }
@@ -280,7 +283,7 @@ namespace OrpheusBelow
 
                     if (_dialogueSymbolsCaption != null)
                     {
-                        _dialogueSymbolsCaption.text = "Aulos Requiem  ·  Play [ ♪ Quaver / 𝄐 Fermata ]";
+                        _dialogueSymbolsCaption.text = "Aulos Requiem  ·  Play [ ♪ Quaver / Fermata ]";
                         _dialogueSymbolsCaption.color = new Color(0.95f, 0.85f, 0.55f, 0.95f);
                     }
                 }
@@ -350,10 +353,11 @@ namespace OrpheusBelow
             {
                 _cadenceUnlockRoot.SetActive(true);
                 if (_cadenceUnlockName != null) _cadenceUnlockName.text = cadenceName;
-                if (_cadenceUnlockFormula != null) _cadenceUnlockFormula.text = chordFormula;
                 if (_cadenceUnlockDesc != null) _cadenceUnlockDesc.text = description;
                 _cadenceUnlockTimer = duration;
                 if (_cadenceUnlockGroup != null) _cadenceUnlockGroup.alpha = 0f;
+
+                ConfigureCadenceUnlockIcons(cadenceName, chordFormula);
             }
 
             ProceduralLyreAudio.Instance?.PlayCadenceUnlockFanfare();
@@ -361,6 +365,95 @@ namespace OrpheusBelow
             {
                 GroundShockwaveRing.Spawn(OrpheusPlayerController.Instance.transform.position + new Vector3(0f, 0.08f, 0f), 7.5f,
                     new Color(2.8f, 2.2f, 0.55f, 1f), 0.55f);
+            }
+        }
+
+        private void ConfigureCadenceUnlockIcons(string cadenceName, string chordFormula)
+        {
+            if (_cadenceUnlockIcons == null || _cadenceUnlockIcons.Length < 3) return;
+
+            var notes = new System.Collections.Generic.List<char>();
+            if (!string.IsNullOrEmpty(cadenceName) && cadenceName.Contains("Sanctuary"))
+            {
+                notes.Add('B');
+                notes.Add('S');
+            }
+            else if (!string.IsNullOrEmpty(cadenceName) && cadenceName.Contains("Hymn"))
+            {
+                notes.Add('S');
+                notes.Add('S');
+                notes.Add('B');
+            }
+            else if (!string.IsNullOrEmpty(cadenceName) && cadenceName.Contains("Siren"))
+            {
+                notes.Add('S');
+                notes.Add('B');
+                notes.Add('S');
+            }
+            else
+            {
+                // Dynamic fallback from formula
+                if (!string.IsNullOrEmpty(chordFormula) && (chordFormula.Contains("Boom") || chordFormula.Contains("Fermata") || chordFormula.Contains("B")))
+                {
+                    notes.Add('B');
+                    notes.Add('S');
+                }
+                else
+                {
+                    notes.Add('S');
+                    notes.Add('B');
+                }
+            }
+
+            int count = UnityEngine.Mathf.Clamp(notes.Count, 1, 3);
+            if (count == 2)
+            {
+                SetUnlockIcon(0, notes[0], new Vector2(-54f, 0f));
+                SetUnlockDash(0, new Vector2(0f, 0f), true);
+                SetUnlockIcon(1, notes[1], new Vector2(54f, 0f));
+                SetUnlockDash(1, Vector2.zero, false);
+                if (_cadenceUnlockIcons[2] != null) _cadenceUnlockIcons[2].gameObject.SetActive(false);
+            }
+            else
+            {
+                SetUnlockIcon(0, notes[0], new Vector2(-92f, 0f));
+                SetUnlockDash(0, new Vector2(-46f, 0f), true);
+                SetUnlockIcon(1, notes[1], new Vector2(0f, 0f));
+                SetUnlockDash(1, new Vector2(46f, 0f), true);
+                SetUnlockIcon(2, notes[2], new Vector2(92f, 0f));
+            }
+
+            if (_cadenceUnlockFormula != null)
+            {
+                string caption = count == 2
+                    ? (notes[0] == 'B' ? "Fermata (Hard Boom)  —  Quaver (Soft Note)" : "Quaver (Soft Note)  —  Fermata (Hard Boom)")
+                    : (notes[1] == 'B' ? "Quaver (Soft)  —  Fermata (Boom)  —  Quaver (Soft)" : "Quaver  —  Quaver  —  Fermata");
+                _cadenceUnlockFormula.text = caption;
+                _cadenceUnlockFormula.rectTransform.anchoredPosition = new Vector2(0f, -44f);
+                _cadenceUnlockFormula.fontSize = 15;
+                _cadenceUnlockFormula.color = new Color(0.85f, 0.78f, 0.58f, 0.85f);
+            }
+        }
+
+        private void SetUnlockIcon(int idx, char note, Vector2 pos)
+        {
+            Image img = _cadenceUnlockIcons[idx];
+            if (img == null) return;
+            img.gameObject.SetActive(true);
+            img.rectTransform.anchoredPosition = pos;
+            bool isBoom = (note == 'B');
+            img.sprite = isBoom ? _fermataSprite : _quaverSprite;
+            img.color = isBoom
+                ? new Color(1.0f, 0.88f, 0.18f, 1f)
+                : new Color(1.0f, 0.92f, 0.52f, 1f);
+        }
+
+        private void SetUnlockDash(int idx, Vector2 pos, bool active)
+        {
+            if (_cadenceUnlockDashes[idx] != null)
+            {
+                _cadenceUnlockDashes[idx].gameObject.SetActive(active);
+                _cadenceUnlockDashes[idx].rectTransform.anchoredPosition = pos;
             }
         }
 
@@ -613,8 +706,41 @@ namespace OrpheusBelow
                 38, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(.95f, .91f, .79f, 1f),
                 anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
 
-            _cadenceUnlockFormula = CreateSerifText("UnlockFormula", unlockRt, new Vector2(0f, -12f), new Vector2(800f, 42f),
-                24, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(.82f, .70f, .46f, .98f),
+            // Visual Transparent PNG Notation Tray
+            GameObject trayGo = new GameObject("UnlockNotationTray");
+            RectTransform trayRt = trayGo.AddComponent<RectTransform>();
+            trayRt.SetParent(unlockRt, false);
+            trayRt.anchorMin = new Vector2(0.5f, 0.5f);
+            trayRt.anchorMax = new Vector2(0.5f, 0.5f);
+            trayRt.pivot = new Vector2(0.5f, 0.5f);
+            trayRt.anchoredPosition = new Vector2(0f, -6f);
+            trayRt.sizeDelta = new Vector2(400f, 60f);
+            _cadenceUnlockIconsTray = trayGo;
+
+            for (int i = 0; i < 3; i++)
+            {
+                GameObject iconGo = new GameObject("UnlockIcon_" + i);
+                RectTransform iconRt = iconGo.AddComponent<RectTransform>();
+                iconRt.SetParent(trayRt, false);
+                iconRt.anchorMin = new Vector2(0.5f, 0.5f);
+                iconRt.anchorMax = new Vector2(0.5f, 0.5f);
+                iconRt.pivot = new Vector2(0.5f, 0.5f);
+                iconRt.sizeDelta = new Vector2(48f, 48f);
+                Image img = iconGo.AddComponent<Image>();
+                img.raycastTarget = false;
+                img.preserveAspect = true;
+                _cadenceUnlockIcons[i] = img;
+            }
+
+            for (int i = 0; i < 2; i++)
+            {
+                _cadenceUnlockDashes[i] = CreateSerifText("UnlockDash_" + i, trayRt, Vector2.zero, new Vector2(40f, 40f),
+                    22, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.95f, 0.85f, 0.55f, 0.90f),
+                    anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
+            }
+
+            _cadenceUnlockFormula = CreateSerifText("UnlockFormula", unlockRt, new Vector2(0f, -44f), new Vector2(800f, 30f),
+                15, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(.85f, .78f, .58f, .85f),
                 anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
 
             _cadenceUnlockDesc = CreateSerifText("UnlockDesc", unlockRt, new Vector2(0f, -74f), new Vector2(760f, 65f),
