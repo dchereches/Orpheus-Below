@@ -2,6 +2,20 @@
 
 ## Latest revision — 27 October 2026
 
+### Authored scene mapping (current)
+
+The active route now uses the **five newest** images from `D:/Serban/TEST`, copied unchanged into `Resources/PaintedChambers/`. Open `Assets/OrpheusBelow/Scenes/PaintedChamber_00.unity` to start. The five saved scene assets are registered first in Build Settings, and real scene transitions follow the painted exits. Bootstrap version is **11**.
+
+Scene order: **Asphodel Viaduct → Court of the Unremembered → Burial Terraces → Vault of the Painted Vessels → Phlegethon Gate**. All four guardian identities remain; Cerberus guards the final gate. The opening chamber is remapped with the same system as all other rooms.
+
+Each scene has a `PaintedChamberDefinition` asset with image-coordinate floor boundaries, solid cover footprints, foreground cutout outlines, entrance/spawn points and an exit. `PaintedChamberMap` inverse-projects the coordinates through the isometric camera, creates solid boundary/cover colliders, and provides a zoom/crop clamp. Actors depth-sort against original-art cutouts, and both enemy and friendly projectiles sweep their full frame movement to stop at cover. Solid obstacles also block dashes.
+
+Press **F3** to inspect zones: green walkable, red inaccessible/solid cover, cyan exit. Scene-view gizmos show the same collision boundaries. `Orpheus Below/Build Five Painted Chamber Scenes` rebuilds the generated scene/layout assets from the authored catalog; ordinary mesh, material and collider data are persisted into assets so scenes reopen correctly. Health and learned cadences carry across chamber loads; restart returns to the first scene.
+
+See [scene mapping notes and image provenance](docs/painted-chambers-2026-10-27.md). The UI/art revision below is retained as history; its five-room names, original opening vista and bootstrap version are superseded by this section.
+
+### Earlier UI/art revision
+
 The active visual revision uses **five chambers per descent**, bootstrap version **10**, subdued oil-painted slate/basalt floors, amber-lit dark stone beacon towers, and a cleaner painted-slate interface. The opening viaduct now loads `Art/AsphodelQuietVista`; the original background is retained. The five-room route is Asphodel → Ferryman → Phlegethon → Cocytus → Gates of Styx, with all four guardian identities retained and **Cerberus in the final chamber**.
 
 The title/pause menu has three plain-language actions; settings retain microphone calibration, brightness, difficulty and audio with keyboard/controller focus. Dialogue, controls and menu panels share the generated `PaintedSlatePanel` surface. Vitality retains its thin bar and two dash diamonds. The exposure overlay lives on a separate canvas so brightness remains active during gameplay.
@@ -12,7 +26,7 @@ See [the visual revision notes and exact image prompts](docs/visual-overhaul-202
 - **Repository Root:** `C:\Users\chere\OneDrive\Desktop\Orpheus Below`
 - **GitHub Remote:** `https://github.com/dchereches/Orpheus-Below.git` (`main` branch)
 - **Engine & Version:** Unity 6 (`6000.3.10f1`), High Definition Render Pipeline (HDRP `17.3.0`), New Input System (`1.18.0`), `.NET Standard 2.1`.
-- **Runtime Bootstrap Version:** `10` (auto-rebuilds and upgrades generated scenes on Play mode).
+- **Runtime Bootstrap Version:** `11` (auto-rebuilds and upgrades generated scenes on Play mode).
 - **Core Premise:** A distinctive mythic Hellenic chamber-crawler based on **sound, breath, and grief**. Orpheus descends into the Underworld with his Lyre and Flute (Aulos) to lead Eurydice to the upper light. Features dual-perspective camera geometry, zero RNG stat boons, procedural 2.5D background-plate chamber generation, and deterministic musical progression.
 
 ---

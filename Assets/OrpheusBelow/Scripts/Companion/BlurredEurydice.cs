@@ -51,6 +51,7 @@ namespace OrpheusBelow
         {
             BuildBlurredVisualStack();
             BuildSoulTetherLine();
+            gameObject.AddComponent<PaintedActorDepth>();
             if (orpheus != null)
             {
                 SnapBehindOrpheus(orpheus.position - UnderworldCamera2D.IsoUpXZ * followLagDistance);
@@ -64,6 +65,7 @@ namespace OrpheusBelow
             _activeAbductors.Clear();
             AbductionDanger01 = 0f;
             worldPos.y = 0f;
+            if (PaintedChamberMap.Active != null) worldPos = PaintedChamberMap.Active.NearestWalkable(worldPos, .5f);
             transform.position = worldPos;
             _desiredPos = worldPos;
             if (orpheus != null) _lastRecordedPos = orpheus.position;

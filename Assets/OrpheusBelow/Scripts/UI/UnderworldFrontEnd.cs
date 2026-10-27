@@ -189,6 +189,8 @@ namespace OrpheusBelow
             _panorama = art.gameObject.AddComponent<RawImage>();
             _panorama.texture = Resources.Load<Texture2D>("Art/AsphodelQuietVista")
                 ?? Resources.Load<Texture2D>("Art/UnderworldPanorama");
+            var titleLayout = Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_00");
+            if (titleLayout != null) _panorama.texture = titleLayout.painting;
             _panorama.raycastTarget = false;
             if (_panorama.texture == null) _panorama.enabled = false;
 

@@ -669,6 +669,7 @@ namespace OrpheusBelow
         private float _intensity;
         private float _life = 0.72f;
         private readonly HashSet<IOrphicTarget> _hitSet = new HashSet<IOrphicTarget>();
+        private bool _consumed;
 
         public void Init(Vector3 dirXZ, float speed, float dmg, float intensity)
         {
@@ -676,31 +677,52 @@ namespace OrpheusBelow
             _speed = speed;
             _dmg = dmg;
             _intensity = intensity;
+            if (GetComponent<PaintedActorDepth>() == null) gameObject.AddComponent<PaintedActorDepth>();
         }
 
         private void Update()
         {
-            float step = _speed * Time.deltaTime;
-            transform.position += _dirXZ * step;
-            _life -= Time.deltaTime;
+            Advance(Time.deltaTime);
+        }
+
+        public void Advance(float deltaTime)
+        {
+            if (_consumed) return;
+            Vector3 delta = _dirXZ * (_speed * deltaTime);
+            Collider hit = ChamberCollision.ProjectileHit(transform.position, delta, .22f, false, out float distance);
+            if (hit != null)
+            {
+                transform.position += _dirXZ * Mathf.Max(0f, distance - .01f);
+                OnTriggerEnter(hit);
+                return;
+            }
+            transform.position += delta;
+            _life -= deltaTime;
             if (_life <= 0f) Destroy(gameObject);
         }
 
         private void OnTriggerEnter(Collider other)
         {
+            if (_consumed) return;
             if (other.GetComponent<OrpheusPlayerController>() != null) return;
 
             IsoObstacle obs = other.GetComponent<IsoObstacle>();
             if (obs != null && obs.kind == IsoObstacleKind.SolidWall)
             {
-                GroundShockwaveRing.Spawn(new Vector3(transform.position.x, 0.06f, transform.position.z), 0.9f, new Color(2.0f, 1.6f, 0.4f, 0.8f), 0.14f);
-                Destroy(gameObject);
+                _consumed = true;
+                if (Application.isPlaying)
+                {
+                    GroundShockwaveRing.Spawn(new Vector3(transform.position.x, 0.06f, transform.position.z), 0.9f, new Color(2.0f, 1.6f, 0.4f, 0.8f), 0.14f);
+                    Destroy(gameObject);
+                }
+                else DestroyImmediate(gameObject);
                 return;
             }
 
             IOrphicTarget tgt = other.GetComponentInParent<IOrphicTarget>();
             if (tgt != null && _hitSet.Add(tgt))
             {
+                _consumed = true;
                 tgt.OnOrphicHit(_dmg, _intensity, false, transform.position - _dirXZ * 0.5f);
                 GroundShockwaveRing.Spawn(new Vector3(transform.position.x, 0.06f, transform.position.z), 1.35f, new Color(2.3f, 1.85f, 0.5f, 0.9f), 0.16f);
                 Destroy(gameObject);

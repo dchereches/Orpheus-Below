@@ -123,6 +123,11 @@ namespace OrpheusBelow
             CurrentSideParallaxOffset = 0f;
             CurrentBillboardRotation = RenderPipeline2DSetup.IsoCameraRotation;
             _focusPoint = target.position;
+            if (PaintedChamberMap.Active != null)
+            {
+                _cam.orthographicSize = PaintedChamberMap.Active.SafeZoom(_zoomOverride > 0 ? _zoomOverride : baseOrthoSize, _cam.aspect);
+                _focusPoint = PaintedChamberMap.Active.ClampCameraFocus(_focusPoint, _cam.orthographicSize, _cam.aspect);
+            }
             _focusVel = Vector3.zero;
             ApplyCameraTransform(Vector3.zero);
         }
@@ -189,6 +194,11 @@ namespace OrpheusBelow
             float desiredZoom = Mathf.Lerp(isoZoom, _sideOrthoSize, smoothSide);
             desiredZoom = Mathf.Lerp(desiredZoom, 4.8f, _lookBackBlend);
             _cam.orthographicSize = Mathf.Lerp(_cam.orthographicSize, desiredZoom, dt * 6.5f);
+            if (PaintedChamberMap.Active != null && SideViewBlend01 < .01f)
+            {
+                _cam.orthographicSize = PaintedChamberMap.Active.SafeZoom(_cam.orthographicSize, _cam.aspect);
+                _focusPoint = PaintedChamberMap.Active.ClampCameraFocus(_focusPoint, _cam.orthographicSize, _cam.aspect);
+            }
 
             // Screen-plane Perlin trauma shake
             Vector3 shakeWorld = Vector3.zero;

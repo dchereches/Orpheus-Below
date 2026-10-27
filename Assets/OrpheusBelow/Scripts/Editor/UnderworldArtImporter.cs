@@ -6,9 +6,10 @@ namespace OrpheusBelow.Editor
     {
         private void OnPreprocessTexture()
         {
-            if (!assetPath.Contains("/Resources/Art/")) return;
+            if (!assetPath.Contains("/Resources/Art/") && !assetPath.Contains("/Resources/PaintedChambers/")) return;
             var importer = (TextureImporter)assetImporter;
             importer.textureType = TextureImporterType.Default;
+            if (assetPath.Contains("/Resources/PaintedChambers/")) importer.isReadable = true;
             importer.npotScale = TextureImporterNPOTScale.None;
             importer.maxTextureSize = 4096;
             bool floor = assetPath.Contains("QuietSlateFloor") || assetPath.Contains("QuietBasaltFloor");

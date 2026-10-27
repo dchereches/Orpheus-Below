@@ -46,12 +46,14 @@ namespace OrpheusBelow.Tests
                     else Assert.That(room.guardianBoss, Is.Null);
                     Assert.That(room.roomRoot.GetComponentInChildren<AmbrosiaHealingWell>(), Is.Not.Null);
                     Assert.That(room.roomRoot.transform.Find("StygianBrazier"), Is.Null);
-                    if (i == 2) StringAssert.Contains("Phlegethon", room.roomRoot.name);
+                    if (i == 2) StringAssert.Contains("Burial", room.roomRoot.name);
                     if (i == 0)
                     {
-                        Assert.That(room.cameraLeashRadius, Is.Zero);
-                        Assert.That(room.roomRoot.transform.Find("Railing_West").GetComponent<MeshRenderer>().enabled, Is.False);
-                        Assert.That(room.roomRoot.transform.Find("Railing_West").GetComponent<BoxCollider>().enabled, Is.True);
+                        var map = room.roomRoot.GetComponent<PaintedChamberMap>();
+                        Assert.That(map, Is.Not.Null);
+                        Assert.That(map.IsWalkable(room.playerSpawnWorld), Is.True);
+                        Assert.That(map.transform.Find("NavigationBoundary_Solid_NoAccess").GetComponentsInChildren<BoxCollider>().Length,
+                            Is.GreaterThan(4));
                     }
                 }
             }

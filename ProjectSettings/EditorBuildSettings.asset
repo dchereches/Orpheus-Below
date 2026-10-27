@@ -6,6 +6,21 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/OrpheusBelow/Scenes/PaintedChamber_00.unity
+    guid: 01dfbd647c77d8c4f8961e950ca28584
+  - enabled: 1
+    path: Assets/OrpheusBelow/Scenes/PaintedChamber_01.unity
+    guid: f290340ebf8e996488723d817cfc1bd3
+  - enabled: 1
+    path: Assets/OrpheusBelow/Scenes/PaintedChamber_02.unity
+    guid: 5e43a0eb487984f40be45e907371dd98
+  - enabled: 1
+    path: Assets/OrpheusBelow/Scenes/PaintedChamber_03.unity
+    guid: ab8e44a6649cf2e43a1e0e1ea2ce1a71
+  - enabled: 1
+    path: Assets/OrpheusBelow/Scenes/PaintedChamber_04.unity
+    guid: 84a1c10feae62224584870fbc35bf514
+  - enabled: 1
     path: Assets/OrpheusBelow/Scenes/OrpheusPrototype.unity
     guid: 5f11910c894fc3141b34c29bac95c1e0
   - enabled: 1

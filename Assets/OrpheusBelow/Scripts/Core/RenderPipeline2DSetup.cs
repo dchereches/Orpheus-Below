@@ -13,15 +13,6 @@ namespace OrpheusBelow
     }
 
     /// <summary>
-    /// Lightweight obstacle classifier on 3D BoxColliders/CylinderColliders so custom Hades sweep-and-slide
-    /// distinguishes Solid Walls/Pillars vs Dashable Chasms without editing ProjectSettings/TagManager.asset.
-    /// </summary>
-    public class IsoObstacle : MonoBehaviour
-    {
-        public IsoObstacleKind kind = IsoObstacleKind.SolidWall;
-    }
-
-    /// <summary>
     /// 2.5D Isometric Hades rendering & geometry toolkit (works across HDRP, URP, and Built-in RP):
     ///   - Configures Isometric Orthographic Camera (Pitch 36°, Yaw 45°) + HDRP Fixed Exposure = 0 EV
     ///   - Builds 3-submesh 3D Isometric Architectural Blocks with ZWrite On depth occlusion & facet shading
@@ -488,20 +479,6 @@ namespace OrpheusBelow
         Ring,
         Diamond,
         CrescentArc
-    }
-
-    [ExecuteAlways]
-    public class ProceduralSpriteBinder : MonoBehaviour
-    {
-        public ProceduralSpriteShape shape = ProceduralSpriteShape.Square;
-
-        private void OnEnable()
-        {
-            SpriteRenderer sr = GetComponent<SpriteRenderer>();
-            if (sr == null) return;
-            if (sr.sharedMaterial == null) sr.sharedMaterial = RenderPipeline2DSetup.Get2DSpriteMaterial();
-            if (sr.sprite == null) sr.sprite = RenderPipeline2DSetup.GetShapeSprite(shape);
-        }
     }
 
     [ExecuteAlways]

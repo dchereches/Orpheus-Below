@@ -37,7 +37,8 @@ namespace OrpheusBelow
             public List<WaveSpawnSpec> wave2 = new List<WaveSpawnSpec>();
         }
 
-        public const int PrototypeBuildVersion = 10;
+        public const int PrototypeBuildVersion = 11;
+        public int initialChamberIndex;
 
         public int buildVersion = PrototypeBuildVersion;
         public List<ChamberRuntimeData> chambers = new List<ChamberRuntimeData>();
@@ -65,7 +66,7 @@ namespace OrpheusBelow
         {
             if (chambers.Count > 0)
             {
-                EnterChamberImmediate(0);
+                EnterChamberImmediate(initialChamberIndex);
             }
         }
 
@@ -124,6 +125,8 @@ namespace OrpheusBelow
             StartCoroutine(TransitionRoutine(nextIndex));
         }
 
+        public void RestoreWardenHint(bool shown) { _shownWardenHint = shown; }
+
         private IEnumerator TransitionRoutine(int nextIndex)
         {
             _transitioning = true;
@@ -135,6 +138,7 @@ namespace OrpheusBelow
             }
 
             while (UnderworldFrontEnd.BlocksGameplay) yield return null;
+            if (PaintedChamberScene.Travel(nextIndex, _shownWardenHint)) yield break;
             EnterChamberImmediate(nextIndex);
             yield return new WaitForSecondsRealtime(0.08f);
 
@@ -163,6 +167,7 @@ namespace OrpheusBelow
             ChamberRuntimeData ch = chambers[index];
             for (int i = 0; i < chambers.Count; i++)
                 if (chambers[i].roomRoot != null) chambers[i].roomRoot.SetActive(i == index);
+            ch.roomRoot?.GetComponent<PaintedChamberMap>()?.MakeActive();
             OrpheusLyreCombat.Instance?.Breath.Refill();
             UnderworldSoundscape.Instance?.PlayPortal();
             if (ch.interiorObstaclesRoot != null) ch.interiorObstaclesRoot.gameObject.SetActive(true);
@@ -431,6 +436,7 @@ namespace OrpheusBelow
     {
         public static void RestartDescent(bool skipTitle)
         {
+            if (PaintedChamberScene.Restart(skipTitle)) return;
             UnderworldFrontEnd.SkipTitleOnce = skipTitle;
             Time.timeScale = 1f;
             AudioListener.pause = false;
@@ -487,6 +493,8 @@ namespace OrpheusBelow
             sysGo.AddComponent<UnderworldFrontEnd>();
 
             HadesChamberDirector director = root.AddComponent<HadesChamberDirector>();
+            var authoredScene = Object.FindFirstObjectByType<PaintedChamberScene>();
+            if (authoredScene != null) director.initialChamberIndex = authoredScene.chamberIndex;
 
             // --- 2. ORPHEUS & BLURRED EURYDICE ---
             GameObject orpheusGo = new GameObject("Orpheus_Player25D");
@@ -522,10 +530,18 @@ namespace OrpheusBelow
             const int totalChambers = ProceduralChamberGenerator.TotalChambers;
             for (int i = 0; i < totalChambers; i++)
             {
+                if (authoredScene != null)
+                {
+                    director.chambers.Add(i == authoredScene.chamberIndex ? authoredScene.map.RuntimeData()
+                        : new HadesChamberDirector.ChamberRuntimeData { chamberTitle = "Chamber " + (i + 1) });
+                    continue;
+                }
                 Vector3 center = new Vector3(i * 90f, 0f, i * 90f);
                 var chamberData = ProceduralChamberGenerator.GenerateChamber(chambersRoot, i, totalChambers, center);
                 director.chambers.Add(chamberData);
             }
+
+            PaintedChamberScene.RestoreTravel(director);
 
             return root;
         }

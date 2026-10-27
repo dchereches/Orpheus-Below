@@ -98,6 +98,7 @@ namespace OrpheusBelow
 
             _lastSafeGroundPos = transform.position;
             BuildOrpheusVisuals();
+            gameObject.AddComponent<PaintedActorDepth>();
         }
 
         private void Start()
@@ -453,6 +454,8 @@ namespace OrpheusBelow
             _lastSafeGroundPos = worldPos;
             CurrentDashCharges = maxDashCharges;
         }
+
+        public void RestoreTravelHealth(float health) { CurrentHealth = Mathf.Clamp(health, 1f, maxHealth); }
 
         private void MoveSweepXZ(Vector3 deltaXZ, bool ignoreChasms)
         {

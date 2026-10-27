@@ -35,6 +35,7 @@ namespace OrpheusBelow
         private Text _cadenceLabel;
         private Text _sensorModeLabel;
         private Text _journeyLabel;
+        private Text _navigationLegend;
         private CanvasGroup _vitalsGroup;
 
         // Top-center subtle banners & Guardian Rhythm bar
@@ -234,6 +235,12 @@ namespace OrpheusBelow
                 16, FontStyle.Normal, TextAnchor.UpperLeft, new Color(.84f, .81f, .74f, .85f),
                 Vector2.up, Vector2.up, Vector2.up);
             _journeyLabel.font = _bodyFont;
+            _navigationLegend = CreateSerifText("NavigationLegend", root, new Vector2(42f, -72f), new Vector2(660f, 28f),
+                16, FontStyle.Normal, TextAnchor.UpperLeft, new Color(.9f, .94f, .86f),
+                Vector2.up, Vector2.up, Vector2.up);
+            _navigationLegend.font = _bodyFont;
+            _navigationLegend.text = "Green: walkable     Red: blocked     Cyan: exit";
+            _navigationLegend.gameObject.SetActive(false);
             // Vitality hairline (Original subtle 5px bar)
             CreateBarBg(bl, new Vector2(0f, 78f), new Vector2(BarWidth, 5f), new Color(0.18f, 0.06f, 0.10f, 0.72f));
             _hpFill = CreateBarFill(bl, "HpFill", new Vector2(0f, 78f), new Vector2(BarWidth, 5f), new Color(0.86f, 0.22f, 0.30f, 0.90f), out _);
@@ -349,7 +356,7 @@ namespace OrpheusBelow
             _controlsHintCorner = CreateSerifText("ControlsCornerHint", root, new Vector2(-38f, 30f), new Vector2(280f, 24f),
                 15, FontStyle.Normal, TextAnchor.LowerRight, new Color(0.82f, 0.78f, 0.72f, 0.78f),
                 anchorMin: new Vector2(1f, 0f), anchorMax: new Vector2(1f, 0f), pivot: new Vector2(1f, 0f));
-            _controlsHintCorner.text = "Esc  Pause     H  Controls";
+            _controlsHintCorner.text = "Esc  Pause   H  Controls   F3  Zones";
             _controlsHintCorner.font = _bodyFont;
 
             RectTransform cardRt = CreateRect("ControlsCard", root, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-38f, 72f), new Vector2(470f, 330f));
@@ -455,6 +462,8 @@ namespace OrpheusBelow
             _vitalsGroup.alpha = IsTutorialModalActive ? .35f : 1f;
             _controlsCard.SetActive(showControlsHelp && !IsTutorialModalActive);
             if (dir != null) _journeyLabel.text = "Chamber " + (dir.CurrentChamberIndex + 1) + " / " + dir.chambers.Count;
+            var map = PaintedChamberMap.Active;
+            _navigationLegend.gameObject.SetActive(map != null && map.overlayRoot != null && map.overlayRoot.gameObject.activeSelf);
 
             // 1. Update Vitality & Dash Gems (Original hairline format)
             if (player != null && _hpFill != null)

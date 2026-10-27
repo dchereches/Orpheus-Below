@@ -126,6 +126,7 @@ namespace OrpheusBelow
             sc.isTrigger = true;
             sc.radius = 0.52f;
             sc.center = new Vector3(0f, 0.65f, 0f);
+            gameObject.AddComponent<PaintedActorDepth>();
         }
 
         private void Start()
@@ -579,7 +580,7 @@ namespace OrpheusBelow
             if (dist < 0.0001f) return;
 
             Vector3 dir = deltaXZ / dist;
-            if (Physics.SphereCast(transform.position + new Vector3(0f, 0.5f, 0f), 0.45f, dir, out RaycastHit hit, dist + 0.04f, ~0, QueryTriggerInteraction.Ignore))
+            if (ChamberCollision.SweepObstacle(transform.position + new Vector3(0f, 0.5f, 0f), deltaXZ, .45f, out RaycastHit hit))
             {
                 IsoObstacle obs = hit.collider.GetComponent<IsoObstacle>();
                 if (obs != null)
@@ -737,6 +738,7 @@ namespace OrpheusBelow
         private float _dmg;
         private float _life = 4.2f;
         private Transform _vis;
+        private bool _shattered;
 
         public static void Spawn(Vector3 pos, Vector3 dirXZ, float speed, float damage)
         {
@@ -757,24 +759,46 @@ namespace OrpheusBelow
             p._speed = speed;
             p._dmg = damage;
             p._vis = vis.transform;
+            go.AddComponent<PaintedActorDepth>();
         }
 
         public void ShatterOrb()
         {
-            GroundShockwaveRing.Spawn(new Vector3(transform.position.x, 0.06f, transform.position.z), 1.2f, new Color(2.4f, 0.5f, 1.6f, 0.9f), 0.16f);
-            Destroy(gameObject);
+            if (_shattered) return;
+            _shattered = true;
+            if (Application.isPlaying)
+            {
+                GroundShockwaveRing.Spawn(new Vector3(transform.position.x, 0.06f, transform.position.z), 1.2f, new Color(2.4f, 0.5f, 1.6f, 0.9f), 0.16f);
+                Destroy(gameObject);
+            }
+            else DestroyImmediate(gameObject);
         }
 
         private void Update()
         {
             if (_vis != null) _vis.rotation = UnderworldCamera2D.CurrentBillboardRotation;
-            transform.position += _dirXZ * (_speed * Time.deltaTime);
-            _life -= Time.deltaTime;
+            Advance(Time.deltaTime);
+        }
+
+        public void Advance(float deltaTime)
+        {
+            if (_shattered) return;
+            Vector3 delta = _dirXZ * (_speed * deltaTime);
+            Collider hit = ChamberCollision.ProjectileHit(transform.position, delta, .3f, true, out float distance);
+            if (hit != null)
+            {
+                transform.position += _dirXZ * Mathf.Max(0f, distance - .01f);
+                OnTriggerEnter(hit);
+                return;
+            }
+            transform.position += delta;
+            _life -= deltaTime;
             if (_life <= 0f) Destroy(gameObject);
         }
 
         private void OnTriggerEnter(Collider other)
         {
+            if (_shattered) return;
             IsoObstacle obs = other.GetComponent<IsoObstacle>();
             if (obs != null && obs.kind == IsoObstacleKind.SolidWall)
             {
@@ -804,58 +828,6 @@ namespace OrpheusBelow
             GroundShockwaveRing.Spawn(new Vector3(transform.position.x, 0.06f, transform.position.z), 3.8f, new Color(2.6f, 1.5f, 0.35f, 1f), 0.32f);
             UnderworldCamera2D.Instance?.AddShake(0.42f);
             Destroy(gameObject);
-        }
-    }
-
-    public class ChamberExitDoor : MonoBehaviour
-    {
-        public int targetChamberIndex;
-        public bool isFinalSunlightExit;
-        public bool IsUnlocked { get; private set; }
-
-        [SerializeField] private SpriteRenderer _portalSr;
-        [SerializeField] private SpriteRenderer _floorBeaconSr;
-        private bool _used;
-
-        public void SetupVisuals(SpriteRenderer portalSr, SpriteRenderer floorBeaconSr)
-        {
-            _portalSr = portalSr;
-            _floorBeaconSr = floorBeaconSr;
-            SetUnlocked(false);
-        }
-
-        public void SetUnlocked(bool unlocked)
-        {
-            IsUnlocked = unlocked;
-            if (_portalSr != null)
-            {
-                _portalSr.color = unlocked
-                    ? (isFinalSunlightExit ? new Color(3.2f, 2.6f, 0.9f, 0.98f) : new Color(0.45f, 2.6f, 1.55f, 0.95f))
-                    : new Color(1.5f, 0.15f, 0.25f, 0.45f);
-            }
-            if (_floorBeaconSr != null)
-            {
-                _floorBeaconSr.color = unlocked
-                    ? new Color(0.6f, 2.4f, 1.5f, 0.85f)
-                    : new Color(0.9f, 0.15f, 0.22f, 0.30f);
-            }
-        }
-
-        private void OnTriggerEnter(Collider other)
-        {
-            if (!IsUnlocked || _used) return;
-            OrpheusPlayerController p = other.GetComponent<OrpheusPlayerController>();
-            if (p == null) return;
-
-            _used = true;
-            if (isFinalSunlightExit)
-            {
-                p.TriggerRunVictory();
-            }
-            else
-            {
-                HadesChamberDirector.Instance?.TransitionToChamber(targetChamberIndex);
-            }
         }
     }
 

@@ -32,6 +32,11 @@ namespace OrpheusBelow.EditorTools
 
         public static void RunBatch()
         {
+            if (Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_00") != null)
+            {
+                PaintedChamberVerification.RunBatch();
+                return;
+            }
             if (!Application.isBatchMode) throw new InvalidOperationException("Use a batch editor for this check.");
             Directory.CreateDirectory(Output);
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);

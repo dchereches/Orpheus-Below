@@ -162,6 +162,8 @@ namespace OrpheusBelow
             int totalChambers,
             Vector3 centerWorld)
         {
+            var authored = Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_" + chamberIndex.ToString("D2"));
+            if (authored != null) return PaintedChamberMap.Build(parent, authored, centerWorld).RuntimeData();
             int biomeIdx = Mathf.Clamp(Mathf.FloorToInt(chamberIndex * (Biomes.Length - 1f) / Mathf.Max(1, totalChambers - 1) + .5f), 0, Biomes.Length - 1);
             BiomeTheme theme = Biomes[biomeIdx];
 
