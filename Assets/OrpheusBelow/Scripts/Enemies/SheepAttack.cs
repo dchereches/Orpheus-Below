@@ -50,7 +50,7 @@ namespace OrpheusBelow
                     Actor.Art?.Play(EnemyMotion.Move, .8f, true);
                     Actor.Face(player.transform.position);
                     Vector3 toward = player.transform.position - Actor.transform.position; toward.y = 0;
-                    if (toward.magnitude > 3.5f) Actor.MoveToward(player.transform.position, 3.5f, step);
+                    if (toward.magnitude > 3.5f) Actor.MoveToward(player.transform.position, 3.5f, step,navigate:true);
                     if (_elapsed >= RestSeconds) CommandDash(player.transform.position);
                     break;
                 case DashPhase.Warning:

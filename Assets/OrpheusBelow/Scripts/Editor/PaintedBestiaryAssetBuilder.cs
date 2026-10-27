@@ -43,7 +43,7 @@ namespace OrpheusBelow.EditorTools
             for (int i = 0; i < UnderworldJourney.ChamberCount; i++)
             {
                 var chamber = Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_" + i.ToString("D2"));
-                chamber.hasGuardian = i >= 1 && i <= 6;
+                chamber.hasGuardian = ChamberEncounterPlan.IsMajorBoss(i);
                 chamber.guardian = i == 1 ? BossIdentity.Tripod : i == 2 ? BossIdentity.MaskedMonk : i == 3 ? BossIdentity.MysticEyeWarden
                     : i == 4 ? BossIdentity.WingedSentinel : i == 5 ? BossIdentity.Shepherd : BossIdentity.CerberusHoundOfHades;
                 EditorUtility.SetDirty(chamber);

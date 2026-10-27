@@ -351,7 +351,7 @@ namespace OrpheusBelow
                 _blackoutBackdrop = GameObject.CreatePrimitive(PrimitiveType.Quad);
                 _blackoutBackdrop.name = "BossAbyssalBlackoutBackdrop";
                 Collider c = _blackoutBackdrop.GetComponent<Collider>();
-                if (c != null) Destroy(c);
+                if (c != null) { if(Application.isPlaying) Destroy(c); else DestroyImmediate(c); }
 
                 _blackoutBackdrop.transform.position = _stageCenter + (UnderworldCamera2D.Side2DRotation * Vector3.forward * 4.5f) + new Vector3(0f, 3.5f, 0f);
                 _blackoutBackdrop.transform.rotation = UnderworldCamera2D.Side2DRotation;
@@ -836,7 +836,7 @@ namespace OrpheusBelow
             // Restore camera & background from Abyssal Blackout
             if (_blackoutBackdrop != null)
             {
-                Destroy(_blackoutBackdrop);
+                if(Application.isPlaying) Destroy(_blackoutBackdrop); else DestroyImmediate(_blackoutBackdrop);
                 _blackoutBackdrop = null;
             }
             if (_savedCameraBg && Camera.main != null)
@@ -872,7 +872,7 @@ namespace OrpheusBelow
             if (ActiveBoss == this) ActiveBoss = null;
             if (_blackoutBackdrop != null)
             {
-                Destroy(_blackoutBackdrop);
+                if(Application.isPlaying) Destroy(_blackoutBackdrop); else DestroyImmediate(_blackoutBackdrop);
                 _blackoutBackdrop = null;
             }
             if (_savedCameraBg && Camera.main != null)

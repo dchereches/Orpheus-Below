@@ -65,13 +65,14 @@ namespace OrpheusBelow
             switch (_state)
             {
                 case RiderState.Seek:
-                    if (toTarget.magnitude <= DashRange + .45f)
+                    if (toTarget.magnitude <= DashRange + .45f &&
+                        !ChamberCollision.SweepObstacle(position + Vector3.up * .5f, toTarget, .4f, out _))
                         BeginWindup(toTarget);
                     else
                     {
                         SetMoving(true);
                         Actor.Face(_target.transform.position);
-                        Actor.MoveToward(_target.transform.position, SeekSpeed, step);
+                        Actor.MoveToward(_target.transform.position, SeekSpeed, step,navigate:true);
                     }
                     break;
                 case RiderState.Windup:
@@ -107,9 +108,9 @@ namespace OrpheusBelow
                         break;
                     }
                     Vector3 goal = map.ToWorld(map.definition.exit);
-                    RetreatDirection = Flat(goal - position).normalized;
+                    Actor.MoveToward(goal, RetreatSpeed, step,navigate:true);
+                    RetreatDirection = Flat(Actor.transform.position-position).normalized;
                     Actor.Face(position + RetreatDirection);
-                    Actor.MoveToward(goal, RetreatSpeed, step);
                     _dustClock -= step;
                     if (_dustClock <= 0)
                     {

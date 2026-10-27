@@ -6,8 +6,9 @@ namespace OrpheusBelow.Tests
     public class UnderworldOverhaulTests
     {
         [Test]
-        public void EightChambersRetainLargerLaterRoomsAndTwoWaves()
+        public void EightChambersUseDistinctEncountersWithoutRepeatedGenericWaves()
         {
+            UnderworldJourney.Reset();
             Assert.That(ProceduralChamberGenerator.TotalChambers, Is.EqualTo(8));
             Assert.That(ProceduralChamberGenerator.ChamberNames.Length, Is.EqualTo(8));
             for (int i = 1; i < ProceduralChamberGenerator.TotalChambers; i++)
@@ -17,9 +18,9 @@ namespace OrpheusBelow.Tests
                 Assert.That(size.y, Is.GreaterThanOrEqualTo(38f));
                 var first = ProceduralChamberGenerator.GenerateWaveSpecs(i, 1);
                 var second = ProceduralChamberGenerator.GenerateWaveSpecs(i, 2);
-                Assert.That(first.Count, Is.GreaterThanOrEqualTo(5));
-                Assert.That(second.Count, Is.GreaterThanOrEqualTo(first.Count));
-                foreach (var spawn in second)
+                Assert.That(first.Count, ChamberEncounterPlan.IsMajorBoss(i) ? Is.Zero : Is.GreaterThan(0));
+                Assert.That(second, Is.Empty);
+                foreach (var spawn in first)
                 {
                     Assert.That(Mathf.Abs(spawn.localOffsetXZ.x), Is.LessThan(size.x * 0.5f - 2));
                     Assert.That(Mathf.Abs(spawn.localOffsetXZ.y), Is.LessThan(size.y * 0.5f - 2));
@@ -28,12 +29,12 @@ namespace OrpheusBelow.Tests
         }
 
         [Test]
-        public void DescentPlacesSixPaintedGuardiansBeforeTheDeepestThrone()
+        public void DescentPlacesThreeMajorBossesAndThreeFloorMiniBosses()
         {
             UnderworldJourney.Reset();
             var root = new GameObject("EightChamberRouteTest");
-            BossIdentity?[] expected = { null, BossIdentity.Tripod, BossIdentity.MaskedMonk, BossIdentity.MysticEyeWarden,
-                BossIdentity.WingedSentinel, BossIdentity.Shepherd, BossIdentity.CerberusHoundOfHades, null };
+            BossIdentity?[] expected = { null, BossIdentity.Tripod, null, BossIdentity.MysticEyeWarden,
+                null, null, BossIdentity.CerberusHoundOfHades, null };
             try
             {
                 for (int i = 0; i < ProceduralChamberGenerator.TotalChambers; i++)

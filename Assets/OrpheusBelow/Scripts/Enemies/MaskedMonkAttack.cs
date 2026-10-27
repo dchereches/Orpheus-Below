@@ -34,6 +34,7 @@ namespace OrpheusBelow
         private int _castIndex;
         private bool _grandSummon;
         private bool _summonPoseShown;
+        public int CompletedImpacts { get; private set; }
 
         public override void Initialize(PaintedEnemyActor actor)
         {
@@ -100,6 +101,7 @@ namespace OrpheusBelow
 
                 // Resolve before damage: callbacks cannot cause a second hit from this stone.
                 stone.Resolved = true;
+                CompletedImpacts++;
                 ClearStoneVisuals(stone);
                 _effects.Add(EnemyPaintedEffects.Spawn(PaintedEnemyKind.MaskedMonk, 1,
                     stone.Target, ImpactRadius * 2f, 0.65f));
@@ -120,7 +122,7 @@ namespace OrpheusBelow
             Actor.Face(lastKnownPlayerPoint);
             Actor.Art?.Play(EnemyMotion.Windup, 0.55f);
             _effects.Add(EnemyPaintedEffects.Spawn(PaintedEnemyKind.MaskedMonk, 2,
-                Actor.GroundAnchor + Vector3.up * 1.6f, 3.2f, WarningSeconds));
+                Actor.transform.position + Vector3.up * 1.6f, 3.2f, WarningSeconds));
 
             // The three disks appear together; none follow the player after this point.
             int count = grand ? 3 : 1;
@@ -129,12 +131,13 @@ namespace OrpheusBelow
             {
                 float offset = grand ? (i - 1) * 3.1f : 0f;
                 Vector3 target = lastKnownPlayerPoint + side * offset;
-                target.y = Actor.GroundAnchor.y;
+                target.y = Actor.transform.position.y;
                 if (Actor.IsBossStage)
                 {
                     float alongStage = Vector3.Dot(target - Actor.StageCenter, side);
                     target += side * (Mathf.Clamp(alongStage, -8.2f, 4.2f) - alongStage);
                 }
+                else if(PaintedChamberMap.Active != null) target = PaintedChamberMap.Active.NearestWalkable(target,.4f);
                 float dropAt = WarningSeconds + StaggerSeconds * i;
                 _stones.Add(new Stone
                 {
@@ -168,7 +171,7 @@ namespace OrpheusBelow
         {
             foreach (var stone in _stones) ClearStoneVisuals(stone);
             _stones.Clear();
-            foreach (var effect in _effects) if (effect != null) Destroy(effect);
+            foreach (var effect in _effects) if (effect != null) RemoveVisual(effect);
             _effects.Clear();
         }
 
@@ -176,12 +179,14 @@ namespace OrpheusBelow
         {
             stone.Shadow?.Dispose();
             stone.Shadow = null;
-            if (stone.PaintedShadow != null) Destroy(stone.PaintedShadow);
-            if (stone.Rock != null) Destroy(stone.Rock);
+            if (stone.PaintedShadow != null) RemoveVisual(stone.PaintedShadow);
+            if (stone.Rock != null) RemoveVisual(stone.Rock);
             stone.PaintedShadow = null;
             stone.Rock = null;
         }
 
         protected override void OnDisable() { Cancel(); }
+        private static void RemoveVisual(GameObject visual)
+        { if(Application.isPlaying) Destroy(visual); else DestroyImmediate(visual); }
     }
 }

@@ -62,7 +62,8 @@ namespace OrpheusBelow
 
         private void Start()
         {
-            if (target != null) SnapToTargetNow();
+            // An immediate chamber boss can request its view before this component's first Start.
+            if (target != null && !_inSide2DBossMode) SnapToTargetNow();
         }
 
         public static Vector3 InputToIsoWorldDir(Vector2 input)

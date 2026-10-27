@@ -61,6 +61,10 @@ namespace OrpheusBelow
             if (_shadow != null) _shadow.color = new Color(.04f, .025f, .015f, Mathf.Lerp(.24f, .66f, u));
             if (_edge != null) _edge.color = new Color(.62f, .37f, .12f, Mathf.Lerp(.35f, .8f, u));
         }
-        public void Dispose() { if (Application.isPlaying) Destroy(gameObject); else DestroyImmediate(gameObject); }
+        public void Dispose()
+        {
+            if (this == null) return; // Scene teardown may already have destroyed the warning.
+            if (Application.isPlaying) Destroy(gameObject); else DestroyImmediate(gameObject);
+        }
     }
 }

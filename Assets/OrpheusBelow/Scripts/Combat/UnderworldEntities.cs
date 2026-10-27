@@ -14,7 +14,10 @@ namespace OrpheusBelow
         BrimstoneCaster,
         ArmoredWarden,
         MourningAbductor,
-        SummonedSheep
+        SummonedSheep,
+        MaskedMonk,
+        WingedSentinel,
+        Shepherd
     }
 
     public readonly struct ShadeBalance
@@ -51,6 +54,12 @@ namespace OrpheusBelow
                     return new ShadeBalance(150f, 4.3f, 24f, 0.68f, 0.34f, 0f, 0f);
                 case ShadeArchetype.SummonedSheep:
                     return new ShadeBalance(36f, 7f, 14f, .9f, .7f, 0f, 0f);
+                case ShadeArchetype.MaskedMonk:
+                    return new ShadeBalance(200f,2.1f,0f,1.05f,1.35f,24f,0f);
+                case ShadeArchetype.WingedSentinel:
+                    return new ShadeBalance(250f,1.7f,26f,1.3f,1.8f,0f,0f);
+                case ShadeArchetype.Shepherd:
+                    return new ShadeBalance(230f,2f,0f,1.4f,1.2f,0f,0f);
                 default:
                     return new ShadeBalance(82f, 4.6f, 0f, 0f, 0.34f, 0f, 0f);
             }
@@ -78,6 +87,9 @@ namespace OrpheusBelow
         public bool IsFleeing { get; private set; }
         public float CurrentHealth => _hp;
         public bool IsPacified => _pacified;
+        public bool IsMiniBoss => ChamberEncounterPlan.IsMiniBoss(archetype);
+        public PaintedEnemyActor PaintedActor => _paintedActor;
+        public string DisplayName => archetype == ShadeArchetype.MaskedMonk ? "Masked Monk" : archetype == ShadeArchetype.WingedSentinel ? "Winged Sentinel" : archetype == ShadeArchetype.Shepherd ? "Shepherd of the Lost Flock" : ChamberEncounterPlan.ArtFor(archetype).ToString();
 
         private float _hp;
         private bool _pacified;
@@ -172,6 +184,7 @@ namespace OrpheusBelow
                 case ShadeArchetype.MourningAbductor:
                     _baseColor = new Color(0.32f, 1.35f, 1.55f, 0.94f);
                     break;
+                default: _baseColor = new Color(.85f,.72f,.48f,1); break;
             }
 
             _hp = maxHealth;
@@ -239,10 +252,9 @@ namespace OrpheusBelow
             RenderPipeline2DSetup.AttachSprite(barFill, RenderPipeline2DSetup.SquareSprite,
                 hasBronzeShield ? new Color(2.4f, 1.95f, 0.30f, 1f) : new Color(2.2f, 0.25f, 0.35f, 1f), 15);
             _hpFillBar = barFill.transform;
-            var kind = type == ShadeArchetype.MourningAbductor ? PaintedEnemyKind.RoosterRider
-                : type == ShadeArchetype.SummonedSheep ? PaintedEnemyKind.Sheep : PaintedEnemyKind.HoodedSkeleton;
+            var kind = ChamberEncounterPlan.ArtFor(type);
             _paintedActor = gameObject.AddComponent<PaintedEnemyActor>();
-            _paintedActor.Configure(kind, shade: this, createPattern: type == ShadeArchetype.BrimstoneCaster || type == ShadeArchetype.MourningAbductor || type == ShadeArchetype.SummonedSheep);
+            _paintedActor.Configure(kind, shade: this, createPattern: type != ShadeArchetype.WretchLunger && type != ShadeArchetype.ArmoredWarden);
             if (_paintedActor.Art.IsReady)
             {
                 _bodySr.enabled = false; _eyesSr.enabled = false;
@@ -382,6 +394,7 @@ namespace OrpheusBelow
 
             if (_hp <= 0f) { Pacify(); return; }
             // Damage still lands, but repeated notes cannot permanently interrupt attacks.
+            if(IsMiniBoss && !isHardBoom) return;
             if (!_resonance.TryStagger()) return;
             _paintedActor?.Cancel();
             _paintedActor?.Art.Play(EnemyMotion.Hurt, .3f);
@@ -456,6 +469,15 @@ namespace OrpheusBelow
 
             if (_paintedActor != null && _paintedActor.Pattern != null)
             {
+                if((archetype == ShadeArchetype.MaskedMonk || archetype == ShadeArchetype.Shepherd) &&
+                    Vector3.Distance(transform.position,player.transform.position) > 10f &&
+                    (_paintedActor.Art.Motion == EnemyMotion.Idle || _paintedActor.Art.Motion == EnemyMotion.Move || _paintedActor.Art.Motion == EnemyMotion.Recover))
+                {
+                    _paintedActor.Face(player.transform.position);
+                    _paintedActor.MoveToward(player.transform.position,moveSpeed,dt,navigate:true);
+                    _paintedActor.Art.Play(EnemyMotion.Move,.8f,true);
+                    return;
+                }
                 _paintedActor.Tick(dt);
                 return;
             }

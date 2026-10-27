@@ -251,12 +251,12 @@ namespace OrpheusBelow
             CreateWaitingSoul();
             Vector3 arena = NearestWalkable(ToWorld(definition.encounterCenter), 1f);
             CerberusRhythmBoss guardian = null;
-            if (definition.hasGuardian && !UnderworldJourney.IsAscending)
+            if (ChamberEncounterPlan.IsMajorBoss(definition.index) && !UnderworldJourney.IsAscending)
             {
                 var go = new GameObject("Guardian_" + definition.guardian);
                 go.transform.SetParent(transform, false);
                 guardian = go.AddComponent<CerberusRhythmBoss>();
-                guardian.ConfigureBoss(definition.guardian, arena);
+                guardian.ConfigureBoss(ChamberEncounterPlan.BossAt(definition.index), arena);
             }
             var rigObject = new GameObject("PaintedGuardianParallax");
             rigObject.transform.SetParent(transform, false);
@@ -279,17 +279,12 @@ namespace OrpheusBelow
 
         private List<HadesChamberDirector.WaveSpawnSpec> Wave(int number, Vector3 center)
         {
-            var wave = ProceduralChamberGenerator.GenerateWaveSpecs(definition.index, number);
-            if (!UnderworldJourney.HasEurydice)
-            {
-                for (int i = 0; i < wave.Count; i++) if (wave[i].archetype == ShadeArchetype.MourningAbductor)
-                    wave[i].archetype = ShadeArchetype.WretchLunger;
-            }
-            else if (!wave.Exists(s => s.archetype == ShadeArchetype.MourningAbductor))
-                wave.Add(new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.MourningAbductor });
+            var wave = ChamberEncounterPlan.Wave(definition.index,number,UnderworldJourney.IsAscending);
             for (int i = 0; i < wave.Count; i++)
             {
-                Vector3 point = NearestWalkable(ToWorld(definition.enemySpawns[(i + (number - 1) * 2) % definition.enemySpawns.Length]), .8f);
+                Vector2 source = ChamberEncounterPlan.IsMiniBoss(wave[i].archetype) ? definition.encounterCenter
+                    : definition.enemySpawns[(i + (number - 1) * 2) % definition.enemySpawns.Length];
+                Vector3 point = NearestWalkable(ToWorld(source), .8f);
                 wave[i].localOffsetXZ = new Vector2(point.x - center.x, point.z - center.z);
             }
             return wave;

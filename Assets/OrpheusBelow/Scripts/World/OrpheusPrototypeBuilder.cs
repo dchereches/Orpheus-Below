@@ -39,13 +39,14 @@ namespace OrpheusBelow
             public List<WaveSpawnSpec> wave2 = new List<WaveSpawnSpec>();
         }
 
-        public const int PrototypeBuildVersion = 13;
+        public const int PrototypeBuildVersion = 14;
         public int initialChamberIndex;
 
         public int buildVersion = PrototypeBuildVersion;
         public List<ChamberRuntimeData> chambers = new List<ChamberRuntimeData>();
         public int CurrentChamberIndex { get; private set; }
         public int ActiveEnemyCount => _aliveShades.Count;
+        public ShadeEnemy ActiveMiniBoss => _aliveShades.Find(shade => shade != null && shade.IsMiniBoss && !shade.IsPacified && shade.CurrentHealth > 0);
         public float ScreenFadeAlpha { get; private set; }
 
         private readonly List<ShadeEnemy> _aliveShades = new List<ShadeEnemy>();
@@ -325,19 +326,6 @@ namespace OrpheusBelow
 
             OrpheusHud.Instance?.ShowBanner(ch.chamberTitle, 2.8f);
 
-            if (!UnderworldJourney.IsAscending && index == 1)
-            {
-                OrpheusHud.Instance?.ShowArtemisHint("A swarm gathers. Draw the Aulos (Flute) with [F] — play its four notes to pacify them or detonate a cataclysmic shockwave!", 5.5f);
-            }
-            else if (!UnderworldJourney.IsAscending && index == 2)
-            {
-                OrpheusHud.Instance?.ShowArtemisHint("Sanctuary of Eurydice is awakened [Boom — Soft]. Pluck Boom, then Soft to summon a protective ward.", 5.0f);
-            }
-            else if (!UnderworldJourney.IsAscending && index == 3)
-            {
-                OrpheusHud.Instance?.ShowArtemisHint("Siren's Convergence is attuned [S - B - S]. Pluck Soft · Boom · Soft to pull scattered shades into a vortex.", 5.0f);
-            }
-
             if (index == 0) _firstTutorialTriggered = false;
 
             if (UnderworldJourney.Progress.IsCleared(index))
@@ -367,7 +355,7 @@ namespace OrpheusBelow
             _spawningWave = true;
             if (chambers.Count > 0 && ch == chambers[0] && _currentWaveIndex == 0)
             {
-                OrpheusHud.Instance?.ShowArtemisHint("Shades lunge quickly! Space or Shift gives two invulnerable dashes to cross danger.", 4.5f);
+                OrpheusHud.Instance?.ShowArtemisHint("The hooded skeleton raises its pistol before firing. Step aside from its committed aim, use cover, or dash through the shot. Play the lyre to answer.", 4.5f);
             }
             yield return new WaitForSeconds(delayBeforeRunes);
 
@@ -411,6 +399,11 @@ namespace OrpheusBelow
             }
 
             _spawningWave = false;
+            if(!UnderworldJourney.IsAscending && ActiveMiniBoss != null)
+            {
+                OrpheusHud.Instance?.ShowBanner(ActiveMiniBoss.DisplayName,3f);
+                OrpheusHud.Instance?.ShowArtemisTutorial(ChamberEncounterPlan.Intro(CurrentChamberIndex));
+            }
         }
 
         private void OnShadeKilled(ShadeEnemy slain)
@@ -457,6 +450,8 @@ namespace OrpheusBelow
                     HandleChamberCleared();
                 };
                 ch.guardianBoss.ActivateGuardianDuel();
+                string intro = ChamberEncounterPlan.Intro(CurrentChamberIndex);
+                if(!string.IsNullOrEmpty(intro)) OrpheusHud.Instance?.ShowArtemisTutorial(intro);
             }
             else
             {

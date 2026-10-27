@@ -32,7 +32,7 @@ namespace OrpheusBelow.Tests
             for (int i = 1; i <= 6; i++)
             {
                 var layout = Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_" + i.ToString("D2"));
-                Assert.That(layout.hasGuardian, Is.True, "Missing authored encounter in chamber " + i);
+                Assert.That(layout.hasGuardian || ProceduralChamberGenerator.GenerateWaveSpecs(i,1).Exists(s=>ChamberEncounterPlan.IsMiniBoss(s.archetype)), Is.True, "Missing authored encounter in chamber " + i);
             }
         }
 

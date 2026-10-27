@@ -529,57 +529,7 @@ namespace OrpheusBelow
         }
 
         public static List<HadesChamberDirector.WaveSpawnSpec> GenerateWaveSpecs(int chamberIndex, int waveNumber)
-        {
-            if (chamberIndex == 0) return GetAsphodelWaveSpecs(waveNumber);
-            List<HadesChamberDirector.WaveSpawnSpec> specs = new List<HadesChamberDirector.WaveSpawnSpec>();
-
-            // Base wretches
-            int wretches = Mathf.Clamp(3 + chamberIndex / 3 + (waveNumber - 1), 3, 6);
-            for (int i = 0; i < wretches; i++)
-            {
-                float angle = (i / (float)wretches) * Mathf.PI * 2f;
-                specs.Add(new HadesChamberDirector.WaveSpawnSpec
-                {
-                    archetype = ShadeArchetype.WretchLunger,
-                    localOffsetXZ = new Vector2(Mathf.Cos(angle) * 8.5f, Mathf.Sin(angle) * 8.5f)
-                });
-            }
-
-            // Casters in chamber 1+
-            if (chamberIndex >= 0)
-            {
-                specs.Add(new HadesChamberDirector.WaveSpawnSpec
-                {
-                    archetype = ShadeArchetype.BrimstoneCaster,
-                    localOffsetXZ = new Vector2(9.2f, 8.8f)
-                });
-            }
-
-            // Armored Wardens
-            if (waveNumber == 2 || chamberIndex >= 2)
-            {
-                specs.Add(new HadesChamberDirector.WaveSpawnSpec
-                {
-                    archetype = ShadeArchetype.ArmoredWarden,
-                    localOffsetXZ = new Vector2(3.5f, 4.5f)
-                });
-            }
-
-            // Mourning Abductors (target Eurydice's Soul Tether!)
-            if (chamberIndex >= 0)
-            {
-                specs.Add(new HadesChamberDirector.WaveSpawnSpec
-                {
-                    archetype = ShadeArchetype.MourningAbductor,
-                    localOffsetXZ = new Vector2(-7.5f, -6.5f)
-                });
-            }
-
-            if (chamberIndex >= 3 || waveNumber == 2)
-                specs.Add(new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.BrimstoneCaster, localOffsetXZ = new Vector2(-9f, 10f) });
-            return specs;
-        }
-
+            => ChamberEncounterPlan.Wave(chamberIndex, waveNumber, UnderworldJourney.IsAscending);
         private static void CreateTemptationZoneWithMirage(Transform parent, Vector3 worldPos, string whisper)
         {
             GameObject go = new GameObject("TemptationMistZone");

@@ -44,6 +44,38 @@ namespace OrpheusBelow.Tests
         }
 
         [Test]
+        public void RiderSeeksAClearApproachBeforeCommittingItsDash()
+        {
+            JourneyProgress previous = UnderworldJourney.Progress;
+            var rider = new GameObject("BlockedRiderTest");
+            var companion = new GameObject("BlockedCompanionTest");
+            var cover = new GameObject("DashBlockingCover");
+            try
+            {
+                UnderworldJourney.Reset();
+                UnderworldJourney.Progress.Visit(7); UnderworldJourney.Progress.ClearCurrentChamber(); UnderworldJourney.Progress.TryRescue();
+                var shade = rider.AddComponent<ShadeEnemy>(); shade.SetupArchetype(ShadeArchetype.MourningAbductor);
+                var target = companion.AddComponent<BlurredEurydice>(); companion.transform.position = Vector3.right * 4;
+                var pattern = rider.GetComponent<RoosterRiderAttack>(); Set(pattern, "_target", target);
+                cover.transform.position = new Vector3(2, .5f, 0);
+                cover.AddComponent<BoxCollider>().size = Vector3.one;
+                cover.AddComponent<IsoObstacle>().kind = IsoObstacleKind.SolidWall;
+                Physics.SyncTransforms();
+                pattern.Tick(.1f);
+                Assert.That(shade.PaintedActor.Art.Motion, Is.EqualTo(EnemyMotion.Move), "A blocked nearby target needs pursuit, not repeated blocked dashes.");
+                Object.DestroyImmediate(cover); Physics.SyncTransforms();
+                pattern.Tick(.1f);
+                Assert.That(shade.PaintedActor.Art.Motion, Is.EqualTo(EnemyMotion.Windup));
+            }
+            finally
+            {
+                typeof(UnderworldJourney).GetProperty("Progress").SetValue(null, previous);
+                Object.DestroyImmediate(rider); Object.DestroyImmediate(companion);
+                if (cover != null) Object.DestroyImmediate(cover);
+            }
+        }
+
+        [Test]
         public void SoloDescentDoesNotMoveOrGrabEvenWhenACompanionObjectExists()
         {
             JourneyProgress previous = UnderworldJourney.Progress;

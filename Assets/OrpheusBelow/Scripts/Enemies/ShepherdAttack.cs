@@ -138,7 +138,8 @@ namespace OrpheusBelow
                 if (player != null && (player.transform.position - position).sqrMagnitude < 2.25f) continue;
                 var go = new GameObject("Shepherd_SummonedSheep");
                 go.transform.position = position;
-                go.transform.SetParent(Actor.transform, true);
+                // Ownership handles cleanup; inheriting a pursuing parent's transform bypasses sheep collision.
+                go.transform.SetParent(Actor.transform.parent, true);
                 go.AddComponent<PaintedSummonOwnership>().Owner = Actor;
                 var shade = go.AddComponent<ShadeEnemy>();
                 shade.SetupArchetype(ShadeArchetype.SummonedSheep);

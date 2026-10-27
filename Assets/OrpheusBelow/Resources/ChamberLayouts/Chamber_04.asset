@@ -4532,7 +4532,7 @@ MonoBehaviour:
   - {x: 1181, y: 858}
   - {x: 1165, y: 584}
   - {x: 1269, y: 553}
-  hasGuardian: 1
+  hasGuardian: 0
   guardian: 2
 --- !u!21 &431155459151329586
 Material:

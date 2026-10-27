@@ -22,6 +22,8 @@ namespace OrpheusBelow
         public AttackPhase Phase { get; private set; } = AttackPhase.Waiting;
         public float AttackTimer { get; private set; }
         public bool IsTailAttack => _tailAttack;
+        public int BiteCount { get; private set; }
+        public int TailWhipCount { get; private set; }
         public bool HasPendingDamage => !_hitSpent &&
             (Phase == AttackPhase.Windup || Phase == AttackPhase.Bite || Phase == AttackPhase.TailWhip);
 
@@ -143,6 +145,7 @@ namespace OrpheusBelow
             // Spend the hit even when cover or dash prevents damage; no repeated overlap damage.
             _hitSpent = true;
             Vector3 toCenter = _attackCenter - Actor.transform.position;
+            if(_tailAttack) TailWhipCount++; else BiteCount++;
             toCenter.y = 0f;
             bool lungeBlocked = !Actor.IsBossStage && toCenter.sqrMagnitude > 0.001f &&
                 ChamberCollision.SweepObstacle(Actor.transform.position + Vector3.up * 0.65f,

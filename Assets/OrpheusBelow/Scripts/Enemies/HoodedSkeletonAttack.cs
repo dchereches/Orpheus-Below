@@ -77,12 +77,12 @@ namespace OrpheusBelow
 
             if (distance < RetreatRange)
             {
-                Actor.MoveToward(Actor.transform.position - direction * 2f, moveSpeed * .9f, dt);
+                Actor.MoveToward(Actor.transform.position - direction * 2f, moveSpeed * .9f, dt,navigate:true);
                 SetLocomotion(EnemyMotion.Move);
             }
             else if (distance > PreferredRange)
             {
-                Actor.MoveToward(player.transform.position, moveSpeed, dt);
+                Actor.MoveToward(player.transform.position, moveSpeed, dt,navigate:true);
                 SetLocomotion(EnemyMotion.Move);
             }
             else SetLocomotion(EnemyMotion.Idle);

@@ -21,6 +21,7 @@ namespace OrpheusBelow
         public Vector3 LockedCenter { get; private set; }
         public float LockedRadius { get; private set; }
         public bool HasPendingHit => Phase == SwordPhase.Windup || (Phase == SwordPhase.Strike && !_hitResolved);
+        public int CompletedSwings { get; private set; }
 
         private readonly List<GameObject> _effects = new List<GameObject>(3);
         private PaintedAttackShadow _warning;
@@ -60,7 +61,7 @@ namespace OrpheusBelow
                     gap.y = 0f;
                     if (gap.sqrMagnitude > 5.4f * 5.4f)
                     {
-                        Actor.MoveToward(player.transform.position, 1.7f, step);
+                        Actor.MoveToward(player.transform.position, 1.7f, step,navigate:true);
                         Actor.Art?.Play(EnemyMotion.Move, 0.9f, true);
                         return;
                     }
@@ -83,6 +84,7 @@ namespace OrpheusBelow
                     {
                         // Set first: damage callbacks may cancel this pattern immediately.
                         _hitResolved = true;
+                        CompletedSwings++;
                         ClearWarning();
                         _effects.Add(EnemyPaintedEffects.Spawn(PaintedEnemyKind.WingedSentinel, 2,
                             LockedCenter, LockedRadius * 2f, 0.55f));

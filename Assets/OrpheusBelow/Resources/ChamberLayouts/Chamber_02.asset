@@ -5203,7 +5203,7 @@ MonoBehaviour:
   - {x: 1155, y: 628}
   - {x: 1093, y: 741}
   - {x: 856, y: 793}
-  hasGuardian: 1
+  hasGuardian: 0
   guardian: 4
 --- !u!28 &39634077161000304
 Texture2D:

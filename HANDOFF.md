@@ -1,6 +1,12 @@
 # Orpheus Below — Implementation Handoff & Master Asset Guide
 
-## Latest revision — 27 October 2026
+## Latest revision — 28 October 2026
+
+### Normal encounter integration (current)
+
+Bootstrap version **14** replaces the repeated generic waves with explicit encounters. The Tripod (depth 1), Eye Warden (3) and Cerberus (6) start their major boss duels on entry. The Masked Monk (2), Winged Sentinel (4) and Shepherd (5) are distinct mini-boss enemies on the painted chamber floor, retaining its obstacles and showing their own health bar. Each uses its painted attack module, increased health and Artemis counterplay instructions. Ordinary soft notes damage mini-bosses without continuously cancelling their windups; Hard Booms and stun can interrupt them.
+
+Skeletons teach the opening and support the mini-bosses/throne encounter. Rooster riders threaten Eurydice throughout the ascent. `ChamberEncounterPlan` is the shared source for authored and generated rosters. Floor pursuit routes around mapped cover; committed charges retain their locked heading and swept collision. The approved art libraries are retained. The encounter details below are superseded where they describe six side-view guardians or skeleton art for every ordinary melee role.
 
 ### Painted bestiary (current)
 
@@ -10,7 +16,7 @@ The descending guardian roster is **Tripod (depth 1, first boss) → Masked Monk
 
 Cerberus waits and visibly winds up before biting or tail-whipping. The Monk marks locked circular shadows before boulders fall; the Sentinel warns its wide sword area before swinging. The Eye throws its painted staff instead of the old colored sweep. Tripod sonic waves respect dash invulnerability. The Shepherd summons at most three living, attackable sheep with warned dashes. Stun, defeat, guardian phase changes and terminal player states cancel pending attacks and owned hazards; pausing freezes frames and attacks. Musical progression and flute/lyre interactions remain integrated.
 
-Bootstrap version is **13**. Use **Orpheus Below/Bake Painted Bestiary** to rebuild the saved sprite libraries and encounter metadata. See [bestiary assets, combat behavior and verification](docs/painted-bestiary-2026-10-27.md). The previous four-guardian roster below is superseded by this section.
+Bootstrap version is **14**. Use **Orpheus Below/Bake Painted Bestiary** to rebuild the saved sprite libraries and encounter metadata. See [bestiary assets, combat behavior and verification](docs/painted-bestiary-2026-10-27.md). The previous four-guardian roster below is superseded by this section.
 
 ### Eight-room descent, rescue and return (current)
 

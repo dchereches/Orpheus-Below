@@ -59,6 +59,28 @@ namespace OrpheusBelow.Tests
         }
 
         [Test]
+        public void PursuingShepherdDoesNotTranslateItsSummonedFlock()
+        {
+            var go = new GameObject("MovingShepherdTest");
+            var actor = go.AddComponent<PaintedEnemyActor>();
+            try
+            {
+                actor.Configure(PaintedEnemyKind.Shepherd);
+                var shepherd = (ShepherdAttack)actor.Pattern;
+                typeof(ShepherdAttack).GetMethod("BeginBell", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Invoke(shepherd, new object[] { Vector3.right * 30 });
+                typeof(ShepherdAttack).GetMethod("Summon", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Invoke(shepherd, null);
+                var flock = Object.FindObjectsByType<PaintedSummonOwnership>(FindObjectsSortMode.None);
+                Assert.That(flock.Length, Is.GreaterThan(0));
+                Vector3 before = flock[0].transform.position;
+                go.transform.position += Vector3.forward * 3;
+                Assert.That(flock[0].transform.position, Is.EqualTo(before), "A moving parent bypasses sheep collision and invalidates their locked warnings");
+            }
+            finally { actor.Cancel(); Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void FlockAndAttackCadenceProvideReadableCounterplay()
         {
             Assert.That(ShepherdAttack.MaximumLivingSheep, Is.EqualTo(3));

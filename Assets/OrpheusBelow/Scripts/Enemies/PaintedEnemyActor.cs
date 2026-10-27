@@ -14,6 +14,7 @@ namespace OrpheusBelow
         public bool IsBossStage => (OwnerBoss != null || Kind == PaintedEnemyKind.Sheep) && OrpheusPlayerController.Instance != null && OrpheusPlayerController.Instance.IsIn2DBossStage;
         public static PaintedEnemyActor CurrentAttackOwner { get; private set; }
         private bool _cancelled;
+        private readonly PaintedEnemyNavigation _navigation = new PaintedEnemyNavigation();
         public void Configure(PaintedEnemyKind kind, ShadeEnemy shade = null, CerberusRhythmBoss boss = null, Vector3? stageCenter = null, bool createPattern = true)
         {
             Kind = kind; OwnerShade = shade; OwnerBoss = boss; GroundAnchor = transform.position; StageCenter = stageCenter ?? transform.position;
@@ -55,9 +56,11 @@ namespace OrpheusBelow
             float side = Vector3.Dot(target - transform.position, UnderworldCamera2D.IsoRightXZ);
             if (Mathf.Abs(side) > .1f) Art.Renderer.flipX = side < 0;
         }
-        public void MoveToward(Vector3 goal, float speed, float dt)
+        public void MoveToward(Vector3 goal, float speed, float dt, bool navigate = false)
         {
             if (dt <= 0) return;
+            if(navigate && !IsBossStage && PaintedChamberMap.Active != null)
+                goal = _navigation.NextWaypoint(PaintedChamberMap.Active,transform.position,goal,.4f);
             goal.y = transform.position.y;
             Vector3 delta = Vector3.ClampMagnitude(goal - transform.position, Mathf.Max(0, speed) * dt);
             if (IsBossStage)
