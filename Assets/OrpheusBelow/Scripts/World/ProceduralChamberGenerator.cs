@@ -5,20 +5,18 @@ namespace OrpheusBelow
 {
     /// <summary>
     /// Procedural Chamber Generator based on Tilted 2.5D Painted Background Plates (A5):
-    ///   - Supports arbitrary chamber count (8+ chambers across multiple Underworld Biomes).
+    ///   - Five chambers per descent, spanning the Underworld's major biomes.
     ///   - Drops in painted 2D background plate textures (or automatically loads from Resources/ChamberBackgrounds/).
     ///   - Procedurally stamps perimeter colliders, interior pillars, cracked obelisks, dashable chasms,
     ///     temptation mist zones, mirage decoys, and multi-wave shade encounters.
     /// </summary>
     public static class ProceduralChamberGenerator
     {
-        public const int TotalChambers = 12;
+        public const int TotalChambers = 5;
         public static readonly string[] ChamberNames =
         {
-            "Asphodel Viaduct", "Gardens of the Unremembered", "Charon's Tidal Court",
-            "Vault of the Ferryman", "Acheron Spillway", "Hall of Broken Oars",
-            "Phlegethon Foundry", "Cinder Basilica", "Cocytus Mirror Tarn",
-            "The Weeping Colonnade", "Lethe's Drowned Library", "The Gates of Styx"
+            "Asphodel Viaduct", "Vault of the Ferryman", "Phlegethon Foundry",
+            "Cocytus Mirror Tarn", "The Gates of Styx"
         };
         public static Vector2 GetChamberSize(int index) => index == 0 ? new Vector2(9.2f, 24.5f)
             : new Vector2(34f + (index % 3) * 5f, 38f + (index % 2) * 8f);
@@ -164,13 +162,13 @@ namespace OrpheusBelow
             int totalChambers,
             Vector3 centerWorld)
         {
-            int biomeIdx = Mathf.Clamp(chamberIndex * Biomes.Length / Mathf.Max(1, totalChambers), 0, Biomes.Length - 1);
+            int biomeIdx = Mathf.Clamp(Mathf.FloorToInt(chamberIndex * (Biomes.Length - 1f) / Mathf.Max(1, totalChambers - 1) + .5f), 0, Biomes.Length - 1);
             BiomeTheme theme = Biomes[biomeIdx];
 
             // Dedicated Asphodel Viaduct Bridge environment from user artwork
             if (chamberIndex == 0)
             {
-                Texture2D asphodelTex = LoadChamberTexture(0);
+                Texture2D asphodelTex = Resources.Load<Texture2D>("Art/AsphodelQuietVista") ?? LoadChamberTexture(0);
                 if (asphodelTex != null)
                 {
                     return BuildAsphodelBridgeChamber(parent, chamberIndex, centerWorld, theme, asphodelTex);
@@ -180,10 +178,10 @@ namespace OrpheusBelow
             float sizeX = GetChamberSize(chamberIndex).x;
             float sizeZ = GetChamberSize(chamberIndex).y;
             bool isFinal = (chamberIndex == totalChambers - 1);
-            bool isBossChamber = (chamberIndex == 0 || chamberIndex == 4 || chamberIndex == 8 || isFinal);
+            bool isBossChamber = (chamberIndex == 0 || chamberIndex == 1 || chamberIndex == 3 || isFinal);
 
             string titleRoman = ToRoman(chamberIndex + 1);
-            string title = $"{titleRoman}  ·  {theme.name}";
+            string title = $"{titleRoman}  ·  {ChamberNames[Mathf.Clamp(chamberIndex, 0, ChamberNames.Length - 1)]}";
 
             Transform chamberRoot = new GameObject($"ProceduralChamber_{chamberIndex:D2}_{theme.name}").transform;
             chamberRoot.SetParent(parent, false);
@@ -213,9 +211,10 @@ namespace OrpheusBelow
 
             if (isBossChamber)
             {
-                BossIdentity bossId = (chamberIndex == 0) ? BossIdentity.CantorOfFury
-                                    : (chamberIndex == 4) ? BossIdentity.OarsmanOfStyx
-                                    : (chamberIndex == 8) ? BossIdentity.SirenOfAcheron
+                BossIdentity bossId = isFinal ? BossIdentity.CerberusHoundOfHades
+                                    : (chamberIndex == 0) ? BossIdentity.CantorOfFury
+                                    : (chamberIndex == 1) ? BossIdentity.OarsmanOfStyx
+                                    : (chamberIndex == 3) ? BossIdentity.SirenOfAcheron
                                     : BossIdentity.CerberusHoundOfHades;
                 boss = CreateGuardian(chamberRoot, $"GuardianBoss_Ch{chamberIndex}", bossId, centerWorld);
             }
@@ -304,15 +303,22 @@ namespace OrpheusBelow
             Transform obsRoot = new GameObject("InteriorObstacles").transform;
             obsRoot.SetParent(chamberRoot, false);
 
+            // The edited plate contains the beacon towers. Keep their collision proxies invisible.
             CreateIsoPillar(obsRoot, new Vector3(-4.2f, 0f, -4.0f), theme);
-            CreateIsoPillar(obsRoot, new Vector3(-4.2f, 0f,  4.0f), theme);
-            CreateIsoPillar(obsRoot, new Vector3( 4.2f, 0f, -4.0f), theme);
-            CreateIsoPillar(obsRoot, new Vector3( 4.2f, 0f,  4.0f), theme);
+            CreateIsoPillar(obsRoot, new Vector3(-4.2f, 0f, 4.0f), theme);
+            CreateIsoPillar(obsRoot, new Vector3(4.2f, 0f, -4.0f), theme);
+            CreateIsoPillar(obsRoot, new Vector3(4.2f, 0f, 4.0f), theme);
 
             CreateCrackedObelisk(obsRoot, new Vector3(0f, 0f, 0.2f));
 
             CreateDashableStyxChasm(obsRoot, new Vector3(-7.2f, 0f, 0f), new Vector3(4.2f, 1.0f, 24.0f));
             CreateDashableStyxChasm(obsRoot, new Vector3( 7.2f, 0f, 0f), new Vector3(4.2f, 1.0f, 24.0f));
+
+            // Painted architecture and abysses already supply the scenery; these shapes are for physics.
+            foreach (MeshRenderer proxy in chamberRoot.GetComponentsInChildren<MeshRenderer>())
+                if (proxy.gameObject.name != "CrackedStyxObelisk") proxy.enabled = false;
+            foreach (SpriteRenderer proxy in obsRoot.GetComponentsInChildren<SpriteRenderer>())
+                if (proxy.gameObject.name == "AbyssPit") proxy.enabled = false;
 
             // 4. Chamber Exit Door at Northern Portal (+Z)
             Vector3 doorPos = centerWorld + new Vector3(0f, 0f, 10.4f);
@@ -362,7 +368,8 @@ namespace OrpheusBelow
                 roomRoot = chamberRoot.gameObject,
                 centerWorld = centerWorld,
                 playerSpawnWorld = centerWorld + new Vector3(0f, 0f, -9.5f),
-                cameraLeashRadius = 6.2f,
+                // A fixed painted plate must stay registered to its collider footprint as Orpheus moves.
+                cameraLeashRadius = 0f,
                 cameraOrthoOverride = 8.5f,
                 exitDoor = exitComp,
                 guardianBoss = boss,
@@ -418,27 +425,12 @@ namespace OrpheusBelow
             }
             else
             {
-                // Procedural high-res stylized mosaic slab with biome accent
+                // Quiet painted stone replaces the high-contrast checkerboard decals.
                 RenderPipeline2DSetup.CreateIsoBlock(root, "ProceduralBaseFloorSlab",
                     new Vector3(0f, -0.75f, 0f), new Vector3(sizeX, 1.5f, sizeZ),
                     theme.floorTop, theme.floorLeft, theme.floorRight, addSolidWallCollider: false);
 
-                // Geometric mosaic floor patterns
-                Color tileAccent = new Color(theme.floorTop.r * 1.5f, theme.floorTop.g * 1.5f, theme.floorTop.b * 1.5f, 0.45f);
-                int gx = Mathf.FloorToInt(sizeX / 4f);
-                int gz = Mathf.FloorToInt(sizeZ / 4f);
-                for (int ix = -gx / 2; ix <= gx / 2; ix++)
-                {
-                    for (int iz = -gz / 2; iz <= gz / 2; iz++)
-                    {
-                        if ((ix + iz) % 2 != 0) continue;
-                        GameObject tile = new GameObject("FloorMosaicTile");
-                        tile.transform.SetParent(root, false);
-                        tile.transform.localPosition = new Vector3(ix * 3.4f, 0.008f, iz * 3.4f);
-                        tile.transform.localScale = new Vector3(3.15f, 3.15f, 1f);
-                        RenderPipeline2DSetup.AttachGroundDecal(tile, RenderPipeline2DSetup.SquareSprite, tileAccent, 0);
-                    }
-                }
+                UnderworldArtLibrary.CreatePaintedFloor(root, sizeX, sizeZ, chamberIndex == 2 || chamberIndex == TotalChambers - 1);
             }
         }
 
@@ -676,18 +668,7 @@ namespace OrpheusBelow
 
         private static void CreateHadesBrazier(Transform parent, Vector3 localPos)
         {
-            GameObject br = RenderPipeline2DSetup.CreateIsoBlock(parent, "StygianBrazier",
-                localPos + new Vector3(0f, 0.55f, 0f), new Vector3(0.75f, 1.1f, 0.75f),
-                new Color(0.45f, 0.34f, 0.18f, 1f),
-                new Color(0.25f, 0.18f, 0.10f, 1f),
-                new Color(0.15f, 0.10f, 0.06f, 1f),
-                addSolidWallCollider: true);
-
-            GameObject flame = new GameObject("BrazierFlame");
-            flame.transform.SetParent(br.transform, false);
-            flame.transform.localPosition = new Vector3(0f, 0.85f, 0f);
-            flame.transform.localScale = new Vector3(1.4f, 1.8f, 1f);
-            RenderPipeline2DSetup.AttachBillboardSprite(flame, RenderPipeline2DSetup.SoftGlowSprite, new Color(2.8f, 0.85f, 0.25f, 0.90f), 12);
+            UnderworldArtLibrary.CreateBeaconTower(parent, localPos);
         }
 
         private static string ToRoman(int number)

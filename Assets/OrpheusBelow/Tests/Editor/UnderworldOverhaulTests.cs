@@ -6,9 +6,10 @@ namespace OrpheusBelow.Tests
     public class UnderworldOverhaulTests
     {
         [Test]
-        public void TwelveChambersRetainLargerLaterRoomsAndTwoWaves()
+        public void FiveChambersRetainLargerLaterRoomsAndTwoWaves()
         {
-            Assert.That(ProceduralChamberGenerator.ChamberNames.Length, Is.EqualTo(12));
+            Assert.That(ProceduralChamberGenerator.TotalChambers, Is.EqualTo(5));
+            Assert.That(ProceduralChamberGenerator.ChamberNames.Length, Is.EqualTo(5));
             for (int i = 1; i < ProceduralChamberGenerator.TotalChambers; i++)
             {
                 Vector2 size = ProceduralChamberGenerator.GetChamberSize(i);
@@ -24,6 +25,61 @@ namespace OrpheusBelow.Tests
                     Assert.That(Mathf.Abs(spawn.localOffsetXZ.y), Is.LessThan(size.y * 0.5f - 2));
                 }
             }
+        }
+
+        [Test]
+        public void ShortenedRouteRetainsEveryGuardianAndEndsWithCerberus()
+        {
+            var root = new GameObject("FiveChamberRouteTest");
+            BossIdentity?[] expected = { BossIdentity.CantorOfFury, BossIdentity.OarsmanOfStyx,
+                null, BossIdentity.SirenOfAcheron, BossIdentity.CerberusHoundOfHades };
+            try
+            {
+                for (int i = 0; i < ProceduralChamberGenerator.TotalChambers; i++)
+                {
+                    var room = ProceduralChamberGenerator.GenerateChamber(root.transform, i,
+                        ProceduralChamberGenerator.TotalChambers, Vector3.right * i * 90f);
+                    Assert.That(room.exitDoor.isFinalSunlightExit, Is.EqualTo(i == 4));
+                    Assert.That(room.exitDoor.targetChamberIndex, Is.EqualTo(i + 1));
+                    if (expected[i].HasValue)
+                        Assert.That(room.guardianBoss.identity, Is.EqualTo(expected[i].Value));
+                    else Assert.That(room.guardianBoss, Is.Null);
+                    Assert.That(room.roomRoot.GetComponentInChildren<AmbrosiaHealingWell>(), Is.Not.Null);
+                    Assert.That(room.roomRoot.transform.Find("StygianBrazier"), Is.Null);
+                    if (i == 2) StringAssert.Contains("Phlegethon", room.roomRoot.name);
+                    if (i == 0)
+                    {
+                        Assert.That(room.cameraLeashRadius, Is.Zero);
+                        Assert.That(room.roomRoot.transform.Find("Railing_West").GetComponent<MeshRenderer>().enabled, Is.False);
+                        Assert.That(room.roomRoot.transform.Find("Railing_West").GetComponent<BoxCollider>().enabled, Is.True);
+                    }
+                }
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+
+        [Test]
+        public void PaintedFloorCoversRoomAndBeaconUsesGeneratedArtWithSolidFootprint()
+        {
+            var root = new GameObject("PaintedAssetsTest");
+            try
+            {
+                var floor = UnderworldArtLibrary.CreatePaintedFloor(root.transform, 34f, 38f, false);
+                Assert.That(floor.sprite.name, Is.EqualTo("QuietSlateFloor"));
+                Assert.That(floor.drawMode, Is.EqualTo(SpriteDrawMode.Tiled));
+                Assert.That(floor.bounds.center.x, Is.EqualTo(0f).Within(.01f));
+                Assert.That(floor.bounds.center.z, Is.EqualTo(0f).Within(.01f));
+                Assert.That(floor.bounds.size.x, Is.EqualTo(34f).Within(.01f));
+                Assert.That(floor.bounds.size.z, Is.EqualTo(38f).Within(.01f));
+                var tower = UnderworldArtLibrary.CreateBeaconTower(root.transform, Vector3.zero);
+                Assert.That(tower.transform.Find("PaintedBeacon").GetComponent<SpriteRenderer>().sprite.name,
+                    Is.EqualTo("DarkBeaconTower"));
+                Assert.That(tower.GetComponent<BoxCollider>().isTrigger, Is.False);
+                Assert.That(tower.GetComponent<IsoObstacle>().kind, Is.EqualTo(IsoObstacleKind.SolidWall));
+                var panel = UnderworldArtLibrary.PaintedSprite("PaintedSlatePanel", 8f, true);
+                Assert.That(panel.border.x, Is.GreaterThan(0));
+            }
+            finally { Object.DestroyImmediate(root); }
         }
 
         [Test]

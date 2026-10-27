@@ -37,7 +37,7 @@ namespace OrpheusBelow
             public List<WaveSpawnSpec> wave2 = new List<WaveSpawnSpec>();
         }
 
-        public const int PrototypeBuildVersion = 9;
+        public const int PrototypeBuildVersion = 10;
 
         public int buildVersion = PrototypeBuildVersion;
         public List<ChamberRuntimeData> chambers = new List<ChamberRuntimeData>();
@@ -569,21 +569,7 @@ namespace OrpheusBelow
                 new Vector3(0f, -0.75f, 0f), new Vector3(sizeX, 1.5f, sizeZ),
                 floorTop, floorLeft, floorRight, addSolidWallCollider: false);
 
-            Color tileAccent = new Color(0.20f, 0.14f, 0.29f, 0.50f);
-            int gx = Mathf.FloorToInt(sizeX / 4f);
-            int gz = Mathf.FloorToInt(sizeZ / 4f);
-            for (int ix = -gx / 2; ix <= gx / 2; ix++)
-            {
-                for (int iz = -gz / 2; iz <= gz / 2; iz++)
-                {
-                    if ((ix + iz) % 2 != 0) continue;
-                    GameObject tile = new GameObject("FloorMosaicTile");
-                    tile.transform.SetParent(room, false);
-                    tile.transform.localPosition = new Vector3(ix * 3.4f, 0.008f, iz * 3.4f);
-                    tile.transform.localScale = new Vector3(3.15f, 3.15f, 1f);
-                    RenderPipeline2DSetup.AttachGroundDecal(tile, RenderPipeline2DSetup.SquareSprite, tileAccent, 0);
-                }
-            }
+            UnderworldArtLibrary.CreatePaintedFloor(room, sizeX, sizeZ, finalExit);
 
             Color wallTop   = new Color(0.26f, 0.16f, 0.33f, 1f);
             Color wallLeft  = new Color(0.16f, 0.09f, 0.21f, 1f);
@@ -705,18 +691,7 @@ namespace OrpheusBelow
 
         private static void CreateHadesBrazier(Transform parent, Vector3 localPos)
         {
-            GameObject br = RenderPipeline2DSetup.CreateIsoBlock(parent, "StygianBrazier",
-                localPos + new Vector3(0f, 0.55f, 0f), new Vector3(0.75f, 1.1f, 0.75f),
-                new Color(0.45f, 0.34f, 0.18f, 1f),
-                new Color(0.25f, 0.18f, 0.10f, 1f),
-                new Color(0.15f, 0.10f, 0.06f, 1f),
-                addSolidWallCollider: true);
-
-            GameObject flame = new GameObject("BrazierFlame");
-            flame.transform.SetParent(br.transform, false);
-            flame.transform.localPosition = new Vector3(0f, 0.85f, 0f);
-            flame.transform.localScale = new Vector3(1.4f, 1.8f, 1f);
-            RenderPipeline2DSetup.AttachBillboardSprite(flame, RenderPipeline2DSetup.SoftGlowSprite, new Color(2.8f, 0.85f, 0.25f, 0.90f), 12);
+            UnderworldArtLibrary.CreateBeaconTower(parent, localPos);
         }
 
         private static void CreateTemptationMistZone(Transform parent, Vector3 worldPos, Vector3 size, string whisper)

@@ -61,7 +61,7 @@ namespace OrpheusBelow
             waterFoam.a = 1f;
 
             Texture2D panorama = _chamberIndex < 2
-                ? Resources.Load<Texture2D>("ChamberBackgrounds/Chamber_00")
+                ? Resources.Load<Texture2D>("Art/AsphodelQuietVista")
                 : Resources.Load<Texture2D>("Art/UnderworldPanorama");
             if (panorama == null) panorama = Resources.Load<Texture2D>("Art/UnderworldPanorama");
             if (panorama != null)

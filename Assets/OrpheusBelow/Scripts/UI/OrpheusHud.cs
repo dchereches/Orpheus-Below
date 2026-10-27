@@ -23,6 +23,8 @@ namespace OrpheusBelow
         }
 
         private Font _serifFont;
+        private Font _bodyFont;
+        private bool _ownsBodyFont;
         private BlurredEurydice _eurydice;
 
         // Bottom-left minimal bars + Cadence trail
@@ -32,6 +34,8 @@ namespace OrpheusBelow
         private Image _pulseFillImg;
         private Text _cadenceLabel;
         private Text _sensorModeLabel;
+        private Text _journeyLabel;
+        private CanvasGroup _vitalsGroup;
 
         // Top-center subtle banners & Guardian Rhythm bar
         private CanvasGroup _bannerGroup;
@@ -97,11 +101,15 @@ namespace OrpheusBelow
             Instance = this;
 
             _serifFont = LoadClassicalFont();
+            _bodyFont = Font.CreateDynamicFontFromOSFont(new[] { "Segoe UI", "Arial" }, 24);
+            _ownsBodyFont = _bodyFont != null;
+            if (_bodyFont == null) _bodyFont = _serifFont;
             BuildMinimalCanvas();
         }
 
         private void OnDestroy()
         {
+            if (_ownsBodyFont && _bodyFont != null) Destroy(_bodyFont);
             if (IsTutorialModalActive)
             {
                 IsTutorialModalActive = false;
@@ -217,7 +225,15 @@ namespace OrpheusBelow
 
             // --- 1. BOTTOM-LEFT: VITALITY, DASH GEMS, SENSOR PULSE & PHYSICAL CADENCES ---
             RectTransform bl = CreateRect("BottomLeftCluster", root, Vector2.zero, Vector2.zero, Vector2.zero, new Vector2(42f, 30f), new Vector2(480f, 114f));
-
+            _vitalsGroup = bl.gameObject.AddComponent<CanvasGroup>();
+            Text vitality = CreateSerifText("VitalityLabel", bl, new Vector2(0f, 94f), new Vector2(240f, 20f),
+                14, FontStyle.Normal, TextAnchor.LowerLeft, new Color(.82f, .80f, .75f, .85f));
+            vitality.text = "Vitality";
+            vitality.font = _bodyFont;
+            _journeyLabel = CreateSerifText("JourneyProgress", root, new Vector2(42f, -34f), new Vector2(330f, 28f),
+                16, FontStyle.Normal, TextAnchor.UpperLeft, new Color(.84f, .81f, .74f, .85f),
+                Vector2.up, Vector2.up, Vector2.up);
+            _journeyLabel.font = _bodyFont;
             // Vitality hairline (Original subtle 5px bar)
             CreateBarBg(bl, new Vector2(0f, 78f), new Vector2(BarWidth, 5f), new Color(0.18f, 0.06f, 0.10f, 0.72f));
             _hpFill = CreateBarFill(bl, "HpFill", new Vector2(0f, 78f), new Vector2(BarWidth, 5f), new Color(0.86f, 0.22f, 0.30f, 0.90f), out _);
@@ -243,7 +259,10 @@ namespace OrpheusBelow
                 15, FontStyle.Italic, TextAnchor.LowerLeft, new Color(0.94f, 0.86f, 0.64f, 0.76f));
 
             _sensorModeLabel = CreateSerifText("SensorModeText", bl, new Vector2(0f, 0f), new Vector2(420f, 22f),
-                13, FontStyle.Italic, TextAnchor.LowerLeft, new Color(0.84f, 0.80f, 0.74f, 0.50f));
+                14, FontStyle.Normal, TextAnchor.LowerLeft, new Color(0.84f, 0.80f, 0.74f, 0.76f));
+            _cadenceLabel.font = _bodyFont;
+            _cadenceLabel.fontStyle = FontStyle.Normal;
+            _sensorModeLabel.font = _bodyFont;
 
             // --- 2. TOP-CENTER: FADING LITERARY CHAMBER TITLE & GUARDIAN RHYTHM BAR ---
             RectTransform bannerRt = CreateRect("TopChamberBanner", root, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -44f), new Vector2(1040f, 48f));
@@ -297,63 +316,58 @@ namespace OrpheusBelow
             // --- 4. EURYDICE'S FIXED BOTTOM-CENTER TUTORIAL TEXT BOX (ENTER TO CONTINUE) ---
             _tutorialBoxRect = CreateRect("EurydiceTutorialBox", root,
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                new Vector2(0f, 36f), new Vector2(760f, 132f));
+                new Vector2(0f, 174f), new Vector2(820f, 196f));
             _tutorialBoxRoot = _tutorialBoxRect.gameObject;
 
             Image boxBg = _tutorialBoxRoot.AddComponent<Image>();
-            boxBg.color = new Color(0.045f, 0.018f, 0.055f, 0.94f);
-            boxBg.raycastTarget = false;
-
-            Outline boxOutline = _tutorialBoxRoot.AddComponent<Outline>();
-            boxOutline.effectColor = new Color(0.86f, 0.62f, 0.35f, 0.85f);
-            boxOutline.effectDistance = new Vector2(1.5f, -1.5f);
-
-            RectTransform decorLine = CreateRect("TopGoldHairline", _tutorialBoxRect,
-                new Vector2(0.04f, 1f), new Vector2(0.96f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0f, -2f), new Vector2(0f, 1.5f));
-            Image decorImg = decorLine.gameObject.AddComponent<Image>();
-            decorImg.color = new Color(0.94f, 0.82f, 0.48f, 0.70f);
-            decorImg.raycastTarget = false;
+            UnderworldArtLibrary.StylePanel(boxBg);
 
             _tutorialSpeakerText = CreateSerifText("EurydiceSpeaker", _tutorialBoxRect,
-                new Vector2(0f, -14f), new Vector2(700f, 22f), 15, FontStyle.Bold,
-                TextAnchor.MiddleCenter, new Color(0.98f, 0.72f, 0.78f, 0.98f),
-                anchorMin: new Vector2(0.5f, 1f), anchorMax: new Vector2(0.5f, 1f), pivot: new Vector2(0.5f, 1f));
-            _tutorialSpeakerText.text = "✦   E U R Y D I C E   ✦";
+                new Vector2(34f, -24f), new Vector2(748f, 24f), 17, FontStyle.Normal,
+                TextAnchor.MiddleLeft, new Color(.82f, .70f, .46f),
+                anchorMin: Vector2.up, anchorMax: Vector2.up, pivot: Vector2.up);
+            _tutorialSpeakerText.text = "Eurydice";
 
             _tutorialBodyText = CreateSerifText("EurydiceBody", _tutorialBoxRect,
-                new Vector2(0f, -42f), new Vector2(700f, 54f), 17, FontStyle.Normal,
-                TextAnchor.MiddleCenter, new Color(0.96f, 0.92f, 0.86f, 0.98f),
-                anchorMin: new Vector2(0.5f, 1f), anchorMax: new Vector2(0.5f, 1f), pivot: new Vector2(0.5f, 1f));
+                new Vector2(34f, -59f), new Vector2(748f, 90f), 22, FontStyle.Normal,
+                TextAnchor.UpperLeft, new Color(.94f, .92f, .86f),
+                anchorMin: Vector2.up, anchorMax: Vector2.up, pivot: Vector2.up);
+            _tutorialBodyText.verticalOverflow = VerticalWrapMode.Truncate;
+            _tutorialBodyText.font = _bodyFont;
+            _tutorialBodyText.lineSpacing = 1.12f;
 
             _tutorialContinuePrompt = CreateSerifText("TutorialContinuePrompt", _tutorialBoxRect,
-                new Vector2(0f, 12f), new Vector2(700f, 20f), 13, FontStyle.Italic,
-                TextAnchor.MiddleCenter, new Color(0.96f, 0.84f, 0.46f, 0.92f),
-                anchorMin: new Vector2(0.5f, 0f), anchorMax: new Vector2(0.5f, 0f), pivot: new Vector2(0.5f, 0f));
-            _tutorialContinuePrompt.text = "[ Press ENTER to continue ↵ ]";
+                new Vector2(-34f, 22f), new Vector2(748f, 22f), 15, FontStyle.Normal,
+                TextAnchor.MiddleRight, new Color(.82f, .78f, .67f),
+                anchorMin: Vector2.right, anchorMax: Vector2.right, pivot: Vector2.right);
+            _tutorialContinuePrompt.text = "Enter to continue";
+            _tutorialContinuePrompt.font = _bodyFont;
 
             _tutorialBoxRoot.SetActive(false);
 
             // --- 5. BOTTOM-RIGHT: DISCREET [H] CONTROLS TOGGLE & [Esc] SETTINGS HINT ---
             _controlsHintCorner = CreateSerifText("ControlsCornerHint", root, new Vector2(-38f, 30f), new Vector2(280f, 24f),
-                14, FontStyle.Italic, TextAnchor.LowerRight, new Color(0.82f, 0.78f, 0.72f, 0.42f),
+                15, FontStyle.Normal, TextAnchor.LowerRight, new Color(0.82f, 0.78f, 0.72f, 0.78f),
                 anchorMin: new Vector2(1f, 0f), anchorMax: new Vector2(1f, 0f), pivot: new Vector2(1f, 0f));
-            _controlsHintCorner.text = "[Esc] Settings   ·   [H] Controls";
+            _controlsHintCorner.text = "Esc  Pause     H  Controls";
+            _controlsHintCorner.font = _bodyFont;
 
-            RectTransform cardRt = CreateRect("ControlsCard", root, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-38f, 62f), new Vector2(405f, 210f));
-            cardRt.gameObject.AddComponent<Image>().color = new Color(0.04f, 0.02f, 0.07f, 0.78f);
-            Text cardTxt = CreateSerifText("ControlsBody", cardRt, new Vector2(16f, 12f), new Vector2(374f, 186f),
-                13, FontStyle.Normal, TextAnchor.MiddleLeft, new Color(0.88f, 0.84f, 0.78f, 0.88f));
+            RectTransform cardRt = CreateRect("ControlsCard", root, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-38f, 72f), new Vector2(470f, 330f));
+            UnderworldArtLibrary.StylePanel(cardRt.gameObject.AddComponent<Image>());
+            Text cardTxt = CreateSerifText("ControlsBody", cardRt, new Vector2(30f, 26f), new Vector2(410f, 278f),
+                17, FontStyle.Normal, TextAnchor.MiddleLeft, new Color(.90f, .88f, .82f));
+            cardTxt.lineSpacing = 1.2f;
+            cardTxt.font = _bodyFont;
             cardTxt.text =
-                "W A S D  —  Move (A / D in 2D Rhythm Duel)\n" +
-                "Space / Shift  —  Double-Dash (Crosses Chasms)\n" +
-                "F  —  Flute (Aulos) Stance  ·  Pacifies Weakened Shades\n" +
-                "Tap LMB / J  —  Soft Note ('S', < 60%  ·  Eurydice Hums Back)\n" +
-                "RMB / K / Hold LMB  —  Hard Boom ('B', >= 60%)\n" +
-                "Cadence [S - S - B]  —  Hymn of Dawn (Piercing Beam)\n" +
-                "Cadence [B - S]  —  Sanctuary of Eurydice (Ch. I Reward)\n" +
-                "Cadence [S - B - S]  —  Siren's Convergence (Ch. II Reward)\n" +
-                "Tab  —  Cycle Mic / ESP32   ·   Esc  —  Settings & Mic Calibration   ·   R  —  Restart";
+                "WASD       Move · A / D during guardian duels\n" +
+                "Space / Shift       Dash · two charges\n" +
+                "LMB / J       Soft note (S)\n" +
+                "RMB / K       Hard boom (B)\n" +
+                "F       Draw the flute\n\n" +
+                "S – S – B       Hymn of Dawn\n" +
+                "B – S       Sanctuary of Eurydice\n" +
+                "S – B – S       Siren's Convergence\n\n" +
+                "E  Drink ambrosia     R  Restart     Tab  Input";
             _controlsCard = cardRt.gameObject;
             _controlsCard.SetActive(showControlsHelp);
 
@@ -370,14 +384,14 @@ namespace OrpheusBelow
             _cadenceUnlockTitle = CreateSerifText("UnlockHeader", unlockRt, new Vector2(0f, 110f), new Vector2(800f, 32f),
                 20, FontStyle.Italic, TextAnchor.MiddleCenter, new Color(0.95f, 0.85f, 0.55f, 0.85f),
                 anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
-            _cadenceUnlockTitle.text = "—  Cadence Unlocked  —";
+            _cadenceUnlockTitle.text = "Cadence learned";
 
             _cadenceUnlockName = CreateSerifText("UnlockName", unlockRt, new Vector2(0f, 52f), new Vector2(900f, 58f),
-                38, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(2.8f, 2.3f, 0.95f, 1f),
+                38, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(.95f, .91f, .79f, 1f),
                 anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
 
             _cadenceUnlockFormula = CreateSerifText("UnlockFormula", unlockRt, new Vector2(0f, -12f), new Vector2(800f, 42f),
-                24, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(2.6f, 1.95f, 0.45f, 0.98f),
+                24, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(.82f, .70f, .46f, .98f),
                 anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
 
             _cadenceUnlockDesc = CreateSerifText("UnlockDesc", unlockRt, new Vector2(0f, -74f), new Vector2(760f, 65f),
@@ -438,6 +452,9 @@ namespace OrpheusBelow
             HadesChamberDirector dir = HadesChamberDirector.Instance;
             if (_eurydice == null) _eurydice = Object.FindFirstObjectByType<BlurredEurydice>();
             UpdateTutorialModal(kb, pad, player);
+            _vitalsGroup.alpha = IsTutorialModalActive ? .35f : 1f;
+            _controlsCard.SetActive(showControlsHelp && !IsTutorialModalActive);
+            if (dir != null) _journeyLabel.text = "Chamber " + (dir.CurrentChamberIndex + 1) + " / " + dir.chambers.Count;
 
             // 1. Update Vitality & Dash Gems (Original hairline format)
             if (player != null && _hpFill != null)
@@ -480,7 +497,7 @@ namespace OrpheusBelow
                     mode = sensor.SerialConnected
                         ? "Lyre Input [Tab]: ESP32 Connected (" + sensor.serialPortName + ")"
                         : "Lyre Input [Tab]: ESP32 Waiting (" + sensor.serialPortName + ")";
-                _sensorModeLabel.text = mode + "  ·  [Esc] Settings";
+                _sensorModeLabel.text = mode;
             }
 
             // 3. Guardian Rhythm Bar vs Subtle Chamber Banner
@@ -604,13 +621,9 @@ namespace OrpheusBelow
                 return;
             }
 
-            // Pulse the continue prompt
             if (_tutorialContinuePrompt != null)
             {
-                float pulse = 0.65f + 0.35f * Mathf.Sin(Time.unscaledTime * 5.0f);
-                Color c = _tutorialContinuePrompt.color;
-                c.a = pulse;
-                _tutorialContinuePrompt.color = c;
+                _tutorialContinuePrompt.text = pad != null ? "A / Enter to continue" : "Enter to continue";
             }
 
             bool enterPressed = (kb != null && (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame))

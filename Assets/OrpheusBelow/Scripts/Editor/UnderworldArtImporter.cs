@@ -11,10 +11,11 @@ namespace OrpheusBelow.Editor
             importer.textureType = TextureImporterType.Default;
             importer.npotScale = TextureImporterNPOTScale.None;
             importer.maxTextureSize = 4096;
-            importer.mipmapEnabled = false;
-            importer.alphaIsTransparency = assetPath.Contains("Creatures");
+            bool floor = assetPath.Contains("QuietSlateFloor") || assetPath.Contains("QuietBasaltFloor");
+            importer.mipmapEnabled = floor;
+            importer.alphaIsTransparency = assetPath.Contains("Creatures") || assetPath.Contains("DarkBeaconTower");
             importer.textureCompression = TextureImporterCompression.Uncompressed;
-            importer.wrapMode = UnityEngine.TextureWrapMode.Clamp;
+            importer.wrapMode = floor ? UnityEngine.TextureWrapMode.Repeat : UnityEngine.TextureWrapMode.Clamp;
             importer.filterMode = UnityEngine.FilterMode.Bilinear;
         }
     }

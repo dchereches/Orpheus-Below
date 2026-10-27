@@ -29,13 +29,10 @@ namespace OrpheusBelow
 
         // Classical Hellenic Palette
         private static readonly Color Ivory = new Color(0.95f, 0.92f, 0.82f);
-        private static readonly Color Gold = new Color(0.96f, 0.82f, 0.35f);
-        private static readonly Color Bronze = new Color(0.72f, 0.54f, 0.31f);
-        private static readonly Color Teal = new Color(0.48f, 0.72f, 0.69f);
-        private static readonly Color Muted = new Color(0.64f, 0.66f, 0.61f);
+        private static readonly Color Gold = new Color(0.82f, 0.70f, 0.46f);
+        private static readonly Color Bronze = new Color(0.52f, 0.45f, 0.33f);
+        private static readonly Color Muted = new Color(0.70f, 0.72f, 0.71f);
         private static readonly Color Crimson = new Color(0.98f, 0.32f, 0.25f);
-        private static readonly Color DarkBronzeBg = new Color(0.18f, 0.13f, 0.08f, 0.75f);
-        private static readonly Color PanelBg = new Color(0.025f, 0.035f, 0.045f, 0.96f);
 
         private Font _serif, _sans;
         private GameObject _canvasObject, _main, _settings;
@@ -53,7 +50,7 @@ namespace OrpheusBelow
         // 1. Microphone & Breath Calibration
         private RectTransform _vuFill;
         private Image _vuFillImg;
-        private Text _vuLevelText, _micStatusText;
+        private Text _micStatusText;
         private Slider _sensitivitySlider, _softThresholdSlider, _boomThresholdSlider;
         private Text _sensitivityLabel, _softThresholdLabel, _boomThresholdLabel;
         private Button _inputModeBtn;
@@ -170,9 +167,13 @@ namespace OrpheusBelow
 
             var screen = root.GetComponent<RectTransform>();
 
-            // Fullscreen Brightness Luminance Veil (active across entire run & menus)
+            // A sibling canvas keeps exposure active when the menu canvas is hidden.
+            var exposure = new GameObject("ExposureCanvas", typeof(RectTransform), typeof(Canvas));
+            exposure.transform.SetParent(transform, false);
+            exposure.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
+            exposure.GetComponent<Canvas>().sortingOrder = 1200;
             var veilGo = new GameObject("BrightnessVeil", typeof(RectTransform), typeof(Image));
-            veilGo.transform.SetParent(screen, false);
+            veilGo.transform.SetParent(exposure.transform, false);
             var veilRt = veilGo.GetComponent<RectTransform>();
             veilRt.anchorMin = Vector2.zero;
             veilRt.anchorMax = Vector2.one;
@@ -186,7 +187,8 @@ namespace OrpheusBelow
             background.gameObject.AddComponent<Image>().color = new Color(0.025f, 0.055f, 0.06f);
             var art = Stretch("PaintedUnderworld", screen);
             _panorama = art.gameObject.AddComponent<RawImage>();
-            _panorama.texture = Resources.Load<Texture2D>("Art/UnderworldPanorama");
+            _panorama.texture = Resources.Load<Texture2D>("Art/AsphodelQuietVista")
+                ?? Resources.Load<Texture2D>("Art/UnderworldPanorama");
             _panorama.raycastTarget = false;
             if (_panorama.texture == null) _panorama.enabled = false;
 
@@ -211,21 +213,20 @@ namespace OrpheusBelow
             // --- 1. MAIN MENU (Title & 3 Greek Buttons) ---
             _main = Stretch("TitleAndNavigation", content).gameObject;
             RectTransform main = _main.GetComponent<RectTransform>();
-            Line(main, 72, 57, 84, Bronze);
-            Label(main, "A JOURNEY THROUGH THE UNDERWORLD", 174, 44, 520, 26, 12, Bronze, false);
-            _eyebrow = Label(main, "THE DESCENT", 72, 101, 480, 24, 13, Teal, false);
-            Label(main, "ORPHEUS", 66, 132, 560, 81, 72, Ivory);
-            Label(main, "B E L O W", 72, 214, 480, 43, 33, Ivory);
-            _premise = Label(main, "A lyre against the silence. A soul worth the descent.\nLead Eurydice out of Hades. Do not look back.", 74, 274, 540, 58, 18, Muted);
+            var titleSurface = Rect("PaintedTitleSurface", main, 52, 80, 478, 552).gameObject.AddComponent<Image>();
+            UnderworldArtLibrary.StylePanel(titleSurface, .88f);
+            _eyebrow = Label(main, "The descent", 92, 118, 360, 24, 14, Gold, false);
+            Label(main, "Orpheus", 86, 159, 410, 86, 70, Ivory);
+            Label(main, "Below", 92, 242, 360, 46, 36, Ivory);
+            _premise = Label(main, "Lead Eurydice out of Hades.\nTrust her voice. Do not look back.", 94, 306, 360, 62, 18, Muted, false);
 
             // 3 GREEK BUTTONS: [ NEW GAME ], [ SETTINGS ], [ QUIT ]
-            _primary = MakeGreekButton(main, "NewGameBtn", "✦   NEW GAME   ✦", 72, 365, 420, 52, BeginOrResume, out _primaryLabel, true);
-            _settingsBtn = MakeGreekButton(main, "SettingsBtn", "✦   SETTINGS   ✦", 72, 432, 420, 48, ShowSettings, out _settingsLabel);
-            _leave = MakeGreekButton(main, "LeaveBtn", "✦   QUIT   ✦", 72, 495, 420, 48, Leave, out _leaveLabel);
+            _primary = MakeGreekButton(main, "NewGameBtn", "Begin descent", 92, 400, 352, 52, BeginOrResume, out _primaryLabel, true);
+            _settingsBtn = MakeGreekButton(main, "SettingsBtn", "Settings", 92, 468, 352, 48, ShowSettings, out _settingsLabel);
+            _leave = MakeGreekButton(main, "LeaveBtn", "Quit", 92, 530, 352, 48, Leave, out _leaveLabel);
 
-            Label(main, "WASD / ARROWS / D-PAD   navigate     ·     ENTER / A   select", 73, 669, 670, 23, 11, Muted, false);
+            Label(main, "Arrow keys / D-pad to navigate     Enter / A to select", 73, 669, 670, 23, 13, Muted, false);
             Label(main, "A song can cross what a blade cannot.", 760, 630, 445, 30, 18, Ivory).alignment = TextAnchor.MiddleRight;
-            Line(main, 1118, 678, 88, Bronze);
             LinkVertical(_primary, _settingsBtn, _leave);
 
             // --- 2. GREEK SETTINGS SUBMENU ---
@@ -238,21 +239,21 @@ namespace OrpheusBelow
         {
             _settings = Stretch("SettingsSheet", parent).gameObject;
             var dim = _settings.AddComponent<Image>();
-            dim.color = PanelBg;
+            UnderworldArtLibrary.StylePanel(dim);
+            dim.raycastTarget = true;
 
             var body = _settings.GetComponent<RectTransform>();
-            Label(body, "SANCTUARY OF TUNING", 72, 44, 1000, 26, 13, Bronze, false);
-            Label(body, "SETTINGS", 70, 72, 1100, 50, 38, Ivory);
+            Label(body, "Tune your descent", 72, 38, 1000, 26, 14, Gold, false);
+            Label(body, "Settings", 70, 72, 1100, 50, 38, Ivory);
             Line(body, 72, 128, 1136, Bronze);
 
             // === LEFT COLUMN (x = 72): MICROPHONE & BREATH CALIBRATION ===
-            Label(body, "I   MICROPHONE & BREATH CALIBRATION", 72, 148, 520, 26, 14, Teal, false);
+            Label(body, "Microphone & breath", 72, 148, 520, 28, 20, Ivory);
 
             // Live VU Meter Bar
-            Label(body, "LIVE ACOUSTIC LEVEL  (TEST VOICE OR BREATH)", 72, 182, 500, 20, 11, Muted, false);
+            Label(body, "Live input · test your voice or breath", 72, 183, 500, 20, 13, Muted, false);
             var vuTrack = Rect("VuMeterTrack", body, 72, 206, 500, 22);
             vuTrack.gameObject.AddComponent<Image>().color = new Color(0.12f, 0.16f, 0.18f, 0.90f);
-            AddOrnateBorder(vuTrack, Bronze, 1);
 
             _vuFill = Rect("VuFill", vuTrack, 0, 0, 0, 22);
             _vuFill.anchorMin = _vuFill.anchorMax = _vuFill.pivot = new Vector2(0f, 1f);
@@ -260,11 +261,11 @@ namespace OrpheusBelow
             _vuFillImg.color = Gold;
 
             // Live Recognition Pill
-            _micStatusText = Label(body, "[ SILENCE ]", 72, 236, 500, 24, 13, Ivory, false);
+            _micStatusText = Label(body, "Listening", 72, 236, 500, 24, 14, Muted, false);
             _micStatusText.alignment = TextAnchor.MiddleLeft;
 
             // Sensitivity / Gain Slider (1.0x to 8.0x)
-            _sensitivityLabel = Label(body, "MIC SENSITIVITY   ·   2.5x", 72, 274, 500, 20, 12, Ivory, false);
+            _sensitivityLabel = Label(body, "Sensitivity   2.5×", 72, 274, 500, 22, 14, Ivory, false);
             _sensitivitySlider = MakeGenericSlider(body, 72, 298, 500, 1.0f, 8.0f, false, val =>
             {
                 SensorPulseInput sensor = SensorPulseInput.Instance;
@@ -273,11 +274,11 @@ namespace OrpheusBelow
                     sensor.micSensitivity = val;
                     sensor.SaveCalibration();
                 }
-                _sensitivityLabel.text = "MIC SENSITIVITY   ·   " + val.ToString("F1") + "x";
+                _sensitivityLabel.text = "Sensitivity   " + val.ToString("F1") + "×";
             });
 
             // Soft Threshold Slider (0.05 to 0.40)
-            _softThresholdLabel = Label(body, "SOFT NOTE THRESHOLD   ·   14%", 72, 338, 500, 20, 12, Ivory, false);
+            _softThresholdLabel = Label(body, "Soft note threshold   14%", 72, 338, 500, 22, 14, Ivory, false);
             _softThresholdSlider = MakeGenericSlider(body, 72, 362, 500, 0.05f, 0.40f, false, val =>
             {
                 SensorPulseInput sensor = SensorPulseInput.Instance;
@@ -286,11 +287,11 @@ namespace OrpheusBelow
                     sensor.softMinThreshold = val;
                     sensor.SaveCalibration();
                 }
-                _softThresholdLabel.text = "SOFT NOTE THRESHOLD   ·   " + Mathf.RoundToInt(val * 100f) + "%";
+                _softThresholdLabel.text = "Soft note threshold   " + Mathf.RoundToInt(val * 100f) + "%";
             });
 
             // Hard Boom Threshold Slider (0.45 to 0.85)
-            _boomThresholdLabel = Label(body, "HARD BOOM THRESHOLD   ·   60%", 72, 402, 500, 20, 12, Ivory, false);
+            _boomThresholdLabel = Label(body, "Hard boom threshold   60%", 72, 402, 500, 22, 14, Ivory, false);
             _boomThresholdSlider = MakeGenericSlider(body, 72, 426, 500, 0.45f, 0.85f, false, val =>
             {
                 SensorPulseInput sensor = SensorPulseInput.Instance;
@@ -299,7 +300,7 @@ namespace OrpheusBelow
                     sensor.hardBoomThreshold = val;
                     sensor.SaveCalibration();
                 }
-                _boomThresholdLabel.text = "HARD BOOM THRESHOLD   ·   " + Mathf.RoundToInt(val * 100f) + "%";
+                _boomThresholdLabel.text = "Hard boom threshold   " + Mathf.RoundToInt(val * 100f) + "%";
             });
 
             // Input Mode Toggle Button
@@ -307,22 +308,22 @@ namespace OrpheusBelow
 
             // === RIGHT COLUMN (x = 660): BRIGHTNESS, DIFFICULTY, AUDIO ===
             // 2. Brightness
-            Label(body, "II   BRIGHTNESS & EXPOSURE", 660, 148, 500, 26, 14, Teal, false);
-            _brightnessLabel = Label(body, "BRIGHTNESS   ·   100%", 660, 182, 500, 20, 12, Ivory, false);
+            Label(body, "Display", 660, 148, 500, 28, 20, Ivory);
+            _brightnessLabel = Label(body, "Brightness   100%", 660, 182, 500, 22, 14, Ivory, false);
             _brightnessSlider = MakeGenericSlider(body, 660, 206, 500, 0.5f, 1.5f, false, val =>
             {
                 ApplyBrightness(val);
-                _brightnessLabel.text = "BRIGHTNESS   ·   " + Mathf.RoundToInt(val * 100f) + "%";
+                _brightnessLabel.text = "Brightness   " + Mathf.RoundToInt(val * 100f) + "%";
             });
 
             // 3. Difficulty Setting
-            Label(body, "III   UNDERWORLD DIFFICULTY", 660, 252, 500, 26, 14, Teal, false);
-            _diffBtn = MakeGreekButton(body, "DiffBtn", "DIFFICULTY   ·   HEROIC", 660, 282, 500, 44, CycleDifficulty, out _diffLabel, true);
-            _diffDesc = Label(body, DifficultySettings.GetDescription(DifficultySettings.CurrentDifficulty), 660, 334, 500, 48, 14, Muted, false);
+            Label(body, "Difficulty", 660, 252, 500, 28, 20, Ivory);
+            _diffBtn = MakeGreekButton(body, "DiffBtn", "Heroic", 660, 290, 500, 44, CycleDifficulty, out _diffLabel);
+            _diffDesc = Label(body, DifficultySettings.GetDescription(DifficultySettings.CurrentDifficulty), 660, 342, 500, 46, 14, Muted, false);
 
             // 4. Audio Controls
-            Label(body, "IV   AUDIO VOLUMES", 660, 396, 500, 26, 14, Teal, false);
-            _volumeLabel = Label(body, "MASTER VOLUME   ·   75%", 660, 426, 330, 20, 12, Ivory, false);
+            Label(body, "Audio", 660, 396, 500, 28, 20, Ivory);
+            _volumeLabel = Label(body, "Master volume   75%", 660, 430, 330, 22, 14, Ivory, false);
             _volume = MakeGenericSlider(body, 660, 452, 330, 0f, 100f, true, val =>
             {
                 UnderworldSoundscape.Instance?.SetVolume(val / 100f);
@@ -332,7 +333,10 @@ namespace OrpheusBelow
 
             // Bottom Divider & Return Button
             Line(body, 72, 560, 1136, Bronze);
-            _settingsBack = MakeGreekButton(body, "SettingsBack", "✦   RETURN TO MENU   ✦", 72, 586, 360, 48, HideSettings, out _, true);
+            _settingsBack = MakeGreekButton(body, "SettingsBack", "Back to menu", 72, 586, 260, 48, HideSettings, out _, true);
+            Label(body, "Esc to go back", 960, 598, 200, 24, 13, Muted, false).alignment = TextAnchor.MiddleRight;
+            LinkVertical(_sensitivitySlider, _softThresholdSlider, _boomThresholdSlider, _inputModeBtn,
+                _brightnessSlider, _diffBtn, _volume, _mute, _settingsBack);
 
             _settings.SetActive(false);
         }
@@ -372,7 +376,7 @@ namespace OrpheusBelow
         private void UpdateDifficultyLabels()
         {
             if (_diffLabel != null)
-                _diffLabel.text = "DIFFICULTY   ·   " + DifficultySettings.GetName(DifficultySettings.CurrentDifficulty);
+                _diffLabel.text = DifficultySettings.GetName(DifficultySettings.CurrentDifficulty);
             if (_diffDesc != null)
                 _diffDesc.text = DifficultySettings.GetDescription(DifficultySettings.CurrentDifficulty);
         }
@@ -408,7 +412,6 @@ namespace OrpheusBelow
 
             var track = Rect("Track", rt, 0, 10, width, 4).gameObject.AddComponent<Image>();
             track.color = new Color(0.20f, 0.24f, 0.25f, 0.95f);
-            AddOrnateBorder(track.rectTransform, new Color(Bronze.r, Bronze.g, Bronze.b, 0.5f), 1);
 
             var fillArea = Stretch("FillArea", rt);
             fillArea.offsetMin = new Vector2(0f, 10f);
@@ -423,8 +426,7 @@ namespace OrpheusBelow
             var handle = new GameObject("Handle", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
             handle.transform.SetParent(handleArea, false);
             handle.color = Ivory;
-            handle.rectTransform.sizeDelta = new Vector2(14, 20);
-            AddOrnateBorder(handle.rectTransform, Bronze, 1);
+            handle.rectTransform.sizeDelta = new Vector2(8, 18);
 
             slider.handleRect = handle.rectTransform;
             slider.targetGraphic = handle;
@@ -520,17 +522,17 @@ namespace OrpheusBelow
             {
                 if (live >= sensor.hardBoomThreshold)
                 {
-                    _micStatusText.text = "ACOUSTIC NOTE:  [ HARD BOOM (B) ]   ·   Level " + Mathf.RoundToInt(live * 100f) + "%";
+                    _micStatusText.text = "Hard boom (B)   " + Mathf.RoundToInt(live * 100f) + "%";
                     _micStatusText.color = Crimson;
                 }
                 else if (live >= sensor.softMinThreshold)
                 {
-                    _micStatusText.text = "ACOUSTIC NOTE:  [ SOFT NOTE (S) ]   ·   Level " + Mathf.RoundToInt(live * 100f) + "%";
+                    _micStatusText.text = "Soft note (S)   " + Mathf.RoundToInt(live * 100f) + "%";
                     _micStatusText.color = Gold;
                 }
                 else
                 {
-                    _micStatusText.text = "ACOUSTIC NOTE:  [ SILENCE ]   ·   Level " + Mathf.RoundToInt(live * 100f) + "%";
+                    _micStatusText.text = "Listening   " + Mathf.RoundToInt(live * 100f) + "%";
                     _micStatusText.color = Muted;
                 }
             }
@@ -565,12 +567,12 @@ namespace OrpheusBelow
             _main.SetActive(true);
             _settings.SetActive(false);
 
-            _eyebrow.text = _inRun ? "THE SONG IS HELD" : "THE DESCENT";
-            _primaryLabel.text = _inRun ? "✦   RESUME   ✦" : "✦   NEW GAME   ✦";
-            _leaveLabel.text = _inRun ? "✦   RETURN TO TITLE   ✦" : "✦   QUIT   ✦";
+            _eyebrow.text = _inRun ? "The song is held" : "The descent";
+            _primaryLabel.text = _inRun ? "Resume journey" : "Begin descent";
+            _leaveLabel.text = _inRun ? "Return to title" : "Quit";
             _premise.text = _inRun
                 ? "The underworld waits. Take a breath.\nYour journey resumes exactly where you left it."
-                : "A lyre against the silence. A soul worth the descent.\nLead Eurydice out of Hades. Do not look back.";
+                : "Lead Eurydice out of Hades.\nTrust her voice. Do not look back.";
 
             SyncAudioControls();
             Select(_primary);
@@ -600,19 +602,19 @@ namespace OrpheusBelow
             if (sensor != null)
             {
                 _sensitivitySlider?.SetValueWithoutNotify(sensor.micSensitivity);
-                if (_sensitivityLabel != null) _sensitivityLabel.text = "MIC SENSITIVITY   ·   " + sensor.micSensitivity.ToString("F1") + "x";
+                if (_sensitivityLabel != null) _sensitivityLabel.text = "Sensitivity   " + sensor.micSensitivity.ToString("F1") + "×";
 
                 _softThresholdSlider?.SetValueWithoutNotify(sensor.softMinThreshold);
-                if (_softThresholdLabel != null) _softThresholdLabel.text = "SOFT NOTE THRESHOLD   ·   " + Mathf.RoundToInt(sensor.softMinThreshold * 100f) + "%";
+                if (_softThresholdLabel != null) _softThresholdLabel.text = "Soft note threshold   " + Mathf.RoundToInt(sensor.softMinThreshold * 100f) + "%";
 
                 _boomThresholdSlider?.SetValueWithoutNotify(sensor.hardBoomThreshold);
-                if (_boomThresholdLabel != null) _boomThresholdLabel.text = "HARD BOOM THRESHOLD   ·   " + Mathf.RoundToInt(sensor.hardBoomThreshold * 100f) + "%";
+                if (_boomThresholdLabel != null) _boomThresholdLabel.text = "Hard boom threshold   " + Mathf.RoundToInt(sensor.hardBoomThreshold * 100f) + "%";
 
                 UpdateInputModeLabel();
             }
 
             _brightnessSlider?.SetValueWithoutNotify(_currentBrightness);
-            if (_brightnessLabel != null) _brightnessLabel.text = "BRIGHTNESS   ·   " + Mathf.RoundToInt(_currentBrightness * 100f) + "%";
+            if (_brightnessLabel != null) _brightnessLabel.text = "Brightness   " + Mathf.RoundToInt(_currentBrightness * 100f) + "%";
 
             UpdateDifficultyLabels();
             SyncAudioControls();
@@ -649,7 +651,7 @@ namespace OrpheusBelow
             bool muted = sound != null && sound.IsMuted;
             if (_muteLabel != null) _muteLabel.text = muted ? "Audio: Muted" : "Audio: On";
             int percent = Mathf.RoundToInt((sound == null ? 0.75f : sound.Volume) * 100f);
-            if (_volumeLabel != null) _volumeLabel.text = "MASTER VOLUME   ·   " + percent + "%";
+            if (_volumeLabel != null) _volumeLabel.text = "Master volume   " + percent + "%";
         }
 
         private void Leave()
@@ -692,67 +694,28 @@ namespace OrpheusBelow
         {
             var rt = Rect(name, parent, x, y, w, h);
             var image = rt.gameObject.AddComponent<Image>();
-            image.color = primary ? DarkBronzeBg : new Color(0.06f, 0.08f, 0.09f, 0.75f);
+            image.color = Color.white;
 
             var button = rt.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
 
             ColorBlock colors = button.colors;
-            colors.normalColor = image.color;
-            colors.highlightedColor = new Color(0.32f, 0.24f, 0.12f, 0.95f);
+            colors.normalColor = primary ? new Color(.24f, .22f, .18f, .94f) : new Color(.12f, .15f, .17f, .9f);
+            colors.highlightedColor = new Color(.32f, .30f, .24f, 1f);
             colors.selectedColor = colors.highlightedColor;
-            colors.pressedColor = new Color(0.50f, 0.38f, 0.18f, 1f);
+            colors.pressedColor = new Color(.39f, .34f, .25f, 1f);
             colors.fadeDuration = 0.12f;
             button.colors = colors;
 
-            // Classical Greek Ornate Bronze/Gold Border
-            AddOrnateBorder(rt, primary ? Gold : Bronze, 2);
+            // One quiet baseline and a warm focus fill give mouse and controller equal feedback.
+            Line(rt, 0, h - 1, w, primary ? Gold : new Color(Bronze.r, Bronze.g, Bronze.b, .45f));
 
-            label = Label(rt, text, 0, 0, w, h, primary ? 23 : 21, Ivory);
-            label.alignment = TextAnchor.MiddleCenter;
+            label = Label(rt, text, 18, 0, w - 36, h, primary ? 22 : 19, Ivory);
+            label.alignment = TextAnchor.MiddleLeft;
 
             button.onClick.AddListener(action);
             rt.gameObject.AddComponent<UnderworldMenuFeedback>();
             return button;
-        }
-
-        private static void AddOrnateBorder(RectTransform parent, Color borderColor, int thickness)
-        {
-            // Top border
-            var top = Rect("BorderTop", parent, 0, 0, parent.sizeDelta.x, thickness).gameObject.AddComponent<Image>();
-            top.color = borderColor;
-            top.raycastTarget = false;
-            top.rectTransform.anchorMin = new Vector2(0f, 1f);
-            top.rectTransform.anchorMax = new Vector2(1f, 1f);
-            top.rectTransform.sizeDelta = new Vector2(0f, thickness);
-            top.rectTransform.anchoredPosition = Vector2.zero;
-
-            // Bottom border
-            var bot = Rect("BorderBot", parent, 0, 0, parent.sizeDelta.x, thickness).gameObject.AddComponent<Image>();
-            bot.color = borderColor;
-            bot.raycastTarget = false;
-            bot.rectTransform.anchorMin = new Vector2(0f, 0f);
-            bot.rectTransform.anchorMax = new Vector2(1f, 0f);
-            bot.rectTransform.sizeDelta = new Vector2(0f, thickness);
-            bot.rectTransform.anchoredPosition = Vector2.zero;
-
-            // Left border
-            var left = Rect("BorderLeft", parent, 0, 0, thickness, parent.sizeDelta.y).gameObject.AddComponent<Image>();
-            left.color = borderColor;
-            left.raycastTarget = false;
-            left.rectTransform.anchorMin = new Vector2(0f, 0f);
-            left.rectTransform.anchorMax = new Vector2(0f, 1f);
-            left.rectTransform.sizeDelta = new Vector2(thickness, 0f);
-            left.rectTransform.anchoredPosition = Vector2.zero;
-
-            // Right border
-            var right = Rect("BorderRight", parent, 0, 0, thickness, parent.sizeDelta.y).gameObject.AddComponent<Image>();
-            right.color = borderColor;
-            right.raycastTarget = false;
-            right.rectTransform.anchorMin = new Vector2(1f, 0f);
-            right.rectTransform.anchorMax = new Vector2(1f, 1f);
-            right.rectTransform.sizeDelta = new Vector2(thickness, 0f);
-            right.rectTransform.anchoredPosition = Vector2.zero;
         }
 
         private Text Label(RectTransform parent, string value, float x, float y, float w, float h, int size, Color color, bool serif = true)
