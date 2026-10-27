@@ -85,6 +85,13 @@ namespace OrpheusBelow
             _noteDisplayRoot = new GameObject("FluteNoteStave").transform;
             _noteDisplayRoot.SetParent(_billboardRoot, false);
 
+            // Subtle parchment backing ribbon behind the stave so black notes remain crisp against any background
+            GameObject staveBacking = new GameObject("FluteMiniStaffBacking");
+            staveBacking.transform.SetParent(_noteDisplayRoot, false);
+            staveBacking.transform.localPosition = new Vector3(0f, 0f, 0.05f);
+            staveBacking.transform.localScale = new Vector3(1.82f, 0.34f, 1f);
+            RenderPipeline2DSetup.AttachSprite(staveBacking, RenderPipeline2DSetup.SquareSprite, new Color(0.96f, 0.94f, 0.88f, 0.20f), 19);
+
             // Mini golden staff baseline behind the 4 notes (clean, subtle hairline)
             GameObject staveLine = new GameObject("FluteMiniStaffLine");
             staveLine.transform.SetParent(_noteDisplayRoot, false);
@@ -223,22 +230,21 @@ namespace OrpheusBelow
 
                 if (i < _currentNoteIndex)
                 {
-                    // Completed note
-                    _noteRenderers[i].color = new Color(2.6f, 2.2f, 0.5f, 0.95f);
+                    // Completed note - illuminates into radiant gold
+                    _noteRenderers[i].color = new Color(1f, 0.88f, 0.25f, 0.95f);
                     _noteTransforms[i].localScale = baseScale;
                 }
                 else if (i == _currentNoteIndex)
                 {
-                    // Active target note
-                    Color activeCol = isBoom ? new Color(2.9f, 0.45f, 0.35f, 1f) : new Color(2.7f, 2.25f, 0.45f, 1f);
-                    _noteRenderers[i].color = activeCol;
+                    // Active target note needed now - simple black with 40% transparency (60% opacity), gently pulsing
+                    _noteRenderers[i].color = new Color(0f, 0f, 0f, 0.60f);
                     _noteTransforms[i].localScale = baseScale * pulse;
                 }
                 else
                 {
-                    // Upcoming note
-                    _noteRenderers[i].color = new Color(0.7f, 0.75f, 0.85f, 0.35f);
-                    _noteTransforms[i].localScale = baseScale * 0.88f;
+                    // Upcoming notes needed next - simple black with 40% transparency (60% opacity)
+                    _noteRenderers[i].color = new Color(0f, 0f, 0f, 0.60f);
+                    _noteTransforms[i].localScale = baseScale * 0.92f;
                 }
             }
         }

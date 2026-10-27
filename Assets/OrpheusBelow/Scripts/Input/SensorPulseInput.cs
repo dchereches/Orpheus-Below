@@ -25,6 +25,22 @@ namespace OrpheusBelow
     public class SensorPulseInput : MonoBehaviour
     {
         public static SensorPulseInput Instance { get; private set; }
+        public static SensorSourceMode GlobalSourceMode { get; private set; } = SensorSourceMode.KeyboardAndMouseOnly;
+
+        private const string SourceModePrefKey = "OrpheusBelow.SensorSourceMode";
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        public static void InitGlobalInput()
+        {
+            if (PlayerPrefs.HasKey(SourceModePrefKey))
+            {
+                GlobalSourceMode = (SensorSourceMode)PlayerPrefs.GetInt(SourceModePrefKey, (int)SensorSourceMode.KeyboardAndMouseOnly);
+            }
+            else
+            {
+                GlobalSourceMode = SensorSourceMode.KeyboardAndMouseOnly;
+            }
+        }
 
         [Header("Input Source ([Tab] cycles in-game)")]
         public SensorSourceMode sourceMode = SensorSourceMode.KeyboardAndMouseOnly;
@@ -77,6 +93,7 @@ namespace OrpheusBelow
                 return;
             }
             Instance = this;
+            sourceMode = GlobalSourceMode;
         }
 
         public string CurrentMicDevice => _micDevice;
@@ -102,6 +119,7 @@ namespace OrpheusBelow
 
         public void SetSourceMode(SensorSourceMode mode)
         {
+            GlobalSourceMode = mode;
             sourceMode = mode;
             ApplySourceMode();
             SaveCalibration();
@@ -109,7 +127,7 @@ namespace OrpheusBelow
 
         public void SaveCalibration()
         {
-            PlayerPrefs.SetInt("OrpheusBelow.SensorSourceMode", (int)sourceMode);
+            PlayerPrefs.SetInt(SourceModePrefKey, (int)GlobalSourceMode);
             PlayerPrefs.SetFloat("OrpheusBelow.MicSensitivity", micSensitivity);
             PlayerPrefs.SetFloat("OrpheusBelow.SoftThreshold", softMinThreshold);
             PlayerPrefs.SetFloat("OrpheusBelow.BoomThreshold", hardBoomThreshold);
@@ -119,22 +137,24 @@ namespace OrpheusBelow
 
         public void LoadCalibration()
         {
-            if (PlayerPrefs.HasKey("OrpheusBelow.MicSensitivity"))
+            if (PlayerPrefs.HasKey(SourceModePrefKey))
             {
+                GlobalSourceMode = (SensorSourceMode)PlayerPrefs.GetInt(SourceModePrefKey, (int)SensorSourceMode.KeyboardAndMouseOnly);
+            }
+            sourceMode = GlobalSourceMode;
+
+            if (PlayerPrefs.HasKey("OrpheusBelow.MicSensitivity"))
                 micSensitivity = Mathf.Clamp(PlayerPrefs.GetFloat("OrpheusBelow.MicSensitivity", 3.2f), 1f, 8f);
+            if (PlayerPrefs.HasKey("OrpheusBelow.SoftThreshold"))
                 softMinThreshold = Mathf.Clamp(PlayerPrefs.GetFloat("OrpheusBelow.SoftThreshold", 0.14f), 0.05f, 0.40f);
+            if (PlayerPrefs.HasKey("OrpheusBelow.BoomThreshold"))
                 hardBoomThreshold = Mathf.Clamp(PlayerPrefs.GetFloat("OrpheusBelow.BoomThreshold", 0.60f), 0.45f, 0.85f);
-                if (PlayerPrefs.HasKey("OrpheusBelow.SensorSourceMode"))
+            if (PlayerPrefs.HasKey("OrpheusBelow.MicDevice"))
+            {
+                string saved = PlayerPrefs.GetString("OrpheusBelow.MicDevice");
+                if (Microphone.devices != null && Array.IndexOf(Microphone.devices, saved) >= 0)
                 {
-                    sourceMode = (SensorSourceMode)PlayerPrefs.GetInt("OrpheusBelow.SensorSourceMode", 0);
-                }
-                if (PlayerPrefs.HasKey("OrpheusBelow.MicDevice"))
-                {
-                    string saved = PlayerPrefs.GetString("OrpheusBelow.MicDevice");
-                    if (Microphone.devices != null && Array.IndexOf(Microphone.devices, saved) >= 0)
-                    {
-                        _micDevice = saved;
-                    }
+                    _micDevice = saved;
                 }
             }
         }
@@ -192,8 +212,7 @@ namespace OrpheusBelow
 
         public void CycleSourceMode()
         {
-            sourceMode = (SensorSourceMode)(((int)sourceMode + 1) % 3);
-            ApplySourceMode();
+            SetSourceMode((SensorSourceMode)(((int)GlobalSourceMode + 1) % 3));
         }
 
         private void ApplySourceMode()
