@@ -438,16 +438,16 @@ namespace OrpheusBelow
                     text = "Space or Shift gives two invulnerable dashes. Cross danger cleanly.";
                     break;
                 case AsphodelTutorialStep.SoftNote:
-                    text = "Tap LMB or J — a light pluck to keep the tempo.";
+                    text = "Tap LMB or J — a light pluck plays a Small Quaver (♪) to keep the tempo.";
                     break;
                 case AsphodelTutorialStep.HardBoom:
-                    text = "RMB, K, hold LMB, or a strong pulse makes a Hard Boom. It breaks bronze armor, but costs breath.";
+                    text = "RMB, K, hold LMB, or a strong pulse plays a Boom Fermata (𝄐). It shatters bronze armor, but costs breath.";
                     break;
                 case AsphodelTutorialStep.Flute:
-                    text = "Press F or the left trigger for the Aulos. Weaken Shades, then follow its four-note phrase.";
+                    text = "Press F or the left trigger for the Aulos. Weaken Shades, then follow its four-note score of Quavers (♪) and Fermatas (𝄐).";
                     break;
                 case AsphodelTutorialStep.Cadence:
-                    text = "Put the flute away (F). Aim and tap J, J, K with a short beat between notes: Soft · Soft · Boom. Cadences break wards and restore breath.";
+                    text = "Put the flute away (F). Aim and play [ ♪ — ♪ — 𝄐 ] (Hymn of Dawn): Quaver · Quaver · Fermata. Cadences break wards and restore breath.";
                     break;
                 default:
                     OrpheusHud.Instance?.HideEurydiceTutorial();
@@ -484,20 +484,20 @@ namespace OrpheusBelow
             {
                 combat.UnlockedCadenceTier = 2;
                 combat.RefreshCadenceDisplay();
-                clearBanner = "Guardian Pacified  —  Learned Cadence: Sanctuary of Eurydice (B - S)";
+                clearBanner = "Guardian Pacified  —  Learned Cadence: Sanctuary of Eurydice (𝄐 — ♪)";
                 OrpheusHud.Instance?.ShowCadenceUnlockCeremony(
                     "Sanctuary of Eurydice",
-                    "[ B ]  —  [ S ]",
+                    "[ 𝄐 ]  —  [ ♪ ]",
                     "Surround Eurydice in a Golden Aegis, repelling abductors and hearing her reassuring hum.");
             }
             else if (CurrentChamberIndex == 1 && combat != null && combat.UnlockedCadenceTier < 3)
             {
                 combat.UnlockedCadenceTier = 3;
                 combat.RefreshCadenceDisplay();
-                clearBanner = "Guardian Pacified  —  Learned Cadence: Siren's Convergence (S - B - S)";
+                clearBanner = "Guardian Pacified  —  Learned Cadence: Siren's Convergence (♪ — 𝄐 — ♪)";
                 OrpheusHud.Instance?.ShowCadenceUnlockCeremony(
                     "Siren's Convergence",
-                    "[ S ]  —  [ B ]  —  [ S ]",
+                    "[ ♪ ]  —  [ 𝄐 ]  —  [ ♪ ]",
                     "Conjure an inward-pulling harmonic vortex that cracks Grief-Armor and draws all Shades together.");
             }
             else

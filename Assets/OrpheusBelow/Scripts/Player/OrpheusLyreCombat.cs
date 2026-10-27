@@ -39,6 +39,9 @@ namespace OrpheusBelow
         public int SoftNoteCount { get; private set; }
         public int HardBoomCount { get; private set; }
         public int CadenceCount { get; private set; }
+        public int QuaverCount => SoftNoteCount;
+        public int FermataCount => HardBoomCount;
+        public IReadOnlyList<char> CadenceBuffer => _cadenceBuffer;
         public OrphicBreath Breath { get; } = new OrphicBreath();
 
         private OrpheusPlayerController _player;
@@ -238,19 +241,19 @@ namespace OrpheusBelow
                 StringBuilder sb = new StringBuilder("Cadence:  ");
                 for (int i = 0; i < _cadenceBuffer.Count; i++)
                 {
-                    if (i > 0) sb.Append(" - ");
-                    sb.Append(_cadenceBuffer[i] == 'B' ? "BOOM" : "Soft");
+                    if (i > 0) sb.Append(" — ");
+                    sb.Append(_cadenceBuffer[i] == 'B' ? "𝄐" : "♪");
                 }
                 CurrentCadenceDisplay = sb.ToString();
             }
             else
             {
                 if (UnlockedCadenceTier <= 1)
-                    CurrentCadenceDisplay = "Cadences:  S-S-B Beam";
+                    CurrentCadenceDisplay = "Cadences:  ♪-♪-𝄐 Beam";
                 else if (UnlockedCadenceTier == 2)
-                    CurrentCadenceDisplay = "Cadences:  S-S-B Beam  ·  B-S Sanctuary";
+                    CurrentCadenceDisplay = "Cadences:  ♪-♪-𝄐 Beam  ·  𝄐-♪ Aegis";
                 else
-                    CurrentCadenceDisplay = "Cadences:  S-S-B Beam  ·  B-S Sanctuary  ·  S-B-S Vortex";
+                    CurrentCadenceDisplay = "Cadences:  ♪-♪-𝄐 Beam  ·  𝄐-♪ Aegis  ·  ♪-𝄐-♪ Vortex";
             }
         }
 
@@ -258,7 +261,7 @@ namespace OrpheusBelow
         {
             RewardCadence();
             ProceduralLyreAudio.Instance?.PlayCadenceComplete();
-            OrpheusHud.Instance?.ShowSubtleCallout("Hymn of Dawn  (S - S - B)");
+            OrpheusHud.Instance?.ShowSubtleCallout("Hymn of Dawn  (♪ — ♪ — 𝄐)");
 
             Vector3 aimDir = _player.AimDirectionXZ;
             if (aimDir.sqrMagnitude < 0.001f) aimDir = UnderworldCamera2D.IsoUpXZ;
@@ -301,7 +304,7 @@ namespace OrpheusBelow
         {
             RewardCadence();
             ProceduralLyreAudio.Instance?.PlayCadenceComplete();
-            OrpheusHud.Instance?.ShowSubtleCallout("Sanctuary of Eurydice  (B - S)");
+            OrpheusHud.Instance?.ShowSubtleCallout("Sanctuary of Eurydice  (𝄐 — ♪)");
 
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.06f, 0f), 3.4f, new Color(2.5f, 2.05f, 0.55f, 0.90f), 0.30f);
             if (_eurydice != null && !_eurydice.IsVanished)
@@ -314,7 +317,7 @@ namespace OrpheusBelow
         {
             RewardCadence();
             ProceduralLyreAudio.Instance?.PlayCadenceComplete();
-            OrpheusHud.Instance?.ShowSubtleCallout("Siren's Convergence  (S - B - S)");
+            OrpheusHud.Instance?.ShowSubtleCallout("Siren's Convergence  (♪ — 𝄐 — ♪)");
 
             Vector3 aimDir = _player.AimDirectionXZ;
             if (aimDir.sqrMagnitude < 0.001f) aimDir = UnderworldCamera2D.IsoUpXZ;
