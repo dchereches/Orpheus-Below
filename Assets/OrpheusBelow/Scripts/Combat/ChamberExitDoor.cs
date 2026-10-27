@@ -2,10 +2,13 @@ using UnityEngine;
 
 namespace OrpheusBelow
 {
+    public enum JourneyDoorRole { Legacy, Deeper, Surfaceward, Reunion }
+
     public sealed class ChamberExitDoor : MonoBehaviour
     {
         public int targetChamberIndex;
         public bool isFinalSunlightExit;
+        public JourneyDoorRole journeyRole;
         public bool IsUnlocked { get; private set; }
         [SerializeField] private SpriteRenderer _portalSr;
         [SerializeField] private SpriteRenderer _floorBeaconSr;
@@ -29,10 +32,21 @@ namespace OrpheusBelow
         }
 
         private void OnTriggerEnter(Collider other)
+            => TryEnter(other);
+        private void OnTriggerStay(Collider other)
+            => TryEnter(other);
+
+        private void TryEnter(Collider other)
         {
             if (!IsUnlocked || _used) return;
             var player = other.GetComponent<OrpheusPlayerController>();
             if (player == null || player.IsGameOver) return;
+            if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive) return;
+            if (journeyRole != JourneyDoorRole.Legacy)
+            {
+                _used = HadesChamberDirector.Instance != null && HadesChamberDirector.Instance.TryJourneyPassage(this);
+                return;
+            }
             _used = true;
             if (isFinalSunlightExit) player.TriggerRunVictory();
             else HadesChamberDirector.Instance?.TransitionToChamber(targetChamberIndex);

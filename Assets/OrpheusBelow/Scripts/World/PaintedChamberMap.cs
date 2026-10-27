@@ -11,6 +11,9 @@ namespace OrpheusBelow
         public Transform coverRoot;
         public Transform overlayRoot;
         public ChamberExitDoor exitDoor;
+        public ChamberExitDoor returnDoor;
+        private GameObject _waitingSoul;
+        public ChamberExitDoor ActivePassage => UnderworldJourney.IsAscending ? returnDoor : exitDoor;
         public MeshRenderer background;
         public bool showNavigationGizmos = true;
         public static PaintedChamberMap Active { get; private set; }
@@ -104,21 +107,11 @@ namespace OrpheusBelow
                 renderer.sortingOrder = DepthOrder(front);
             }
 
-            var exit = new GameObject("PaintedExit_NextChamber");
-            exit.transform.SetParent(transform, false);
-            exit.transform.position = ToWorld(definition.exit);
-            exit.transform.rotation = Quaternion.LookRotation(UnderworldCamera2D.IsoUpXZ);
-            var trigger = exit.AddComponent<BoxCollider>();
-            trigger.isTrigger = true; trigger.center = Vector3.up; trigger.size = new Vector3(2.6f, 2.5f, 2.2f);
-            exitDoor = exit.AddComponent<ChamberExitDoor>();
-            exitDoor.targetChamberIndex = definition.index + 1;
-            exitDoor.isFinalSunlightExit = definition.index == 4;
-            var marker = new GameObject("ExitThreshold");
-            marker.transform.SetParent(exit.transform, false);
-            marker.transform.localPosition = Vector3.up * .035f;
-            marker.transform.localScale = new Vector3(1.7f, 1.7f, 1f);
-            var beacon = RenderPipeline2DSetup.AttachGroundDecal(marker, RenderPipeline2DSetup.RingSprite, Color.white, 20);
-            exitDoor.SetupVisuals(null, beacon);
+            exitDoor = CreatePassage("PaintedExit_Deeper", definition.exit, definition.index + 1,
+                definition.index == UnderworldJourney.DeepestChamber ? JourneyDoorRole.Reunion : JourneyDoorRole.Deeper);
+            returnDoor = CreatePassage("PaintedExit_Surfaceward", definition.returnExit, definition.index - 1, JourneyDoorRole.Surfaceward);
+            returnDoor.isFinalSunlightExit = definition.index == 0;
+            ConfigurePassages();
             BuildOverlay();
         }
 
@@ -142,6 +135,40 @@ namespace OrpheusBelow
             _ownedTextures.Add(texture);
             center = new Vector2(left + width * .5f, top + height * .5f);
             return Sprite.Create(texture, new Rect(0, 0, width, height), Vector2.one * .5f, 1536f / definition.imageWidth, 0, SpriteMeshType.FullRect);
+        }
+
+        private ChamberExitDoor CreatePassage(string name, Vector2 point, int target, JourneyDoorRole role)
+        {
+            var go = new GameObject(name); go.transform.SetParent(transform, false);
+            go.transform.position = ToWorld(point); go.transform.rotation = Quaternion.LookRotation(UnderworldCamera2D.IsoUpXZ);
+            var trigger = go.AddComponent<BoxCollider>(); trigger.isTrigger = true;
+            trigger.center = Vector3.up; trigger.size = new Vector3(2.6f, 2.5f, 2.2f);
+            var door = go.AddComponent<ChamberExitDoor>(); door.targetChamberIndex = target; door.journeyRole = role;
+            var marker = new GameObject("ExitThreshold"); marker.transform.SetParent(go.transform, false);
+            marker.transform.localPosition = Vector3.up * .035f; marker.transform.localScale = new Vector3(1.7f, 1.7f, 1f);
+            door.SetupVisuals(null, RenderPipeline2DSetup.AttachGroundDecal(marker, RenderPipeline2DSetup.RingSprite, Color.white, 20));
+            return door;
+        }
+
+        public void ConfigurePassages()
+        {
+            if (exitDoor != null) exitDoor.gameObject.SetActive(!UnderworldJourney.IsAscending);
+            if (returnDoor != null) returnDoor.gameObject.SetActive(UnderworldJourney.IsAscending);
+        }
+
+        public void HideWaitingSoul() { if (_waitingSoul != null) _waitingSoul.SetActive(false); }
+
+        private void CreateWaitingSoul()
+        {
+            if (definition.index != UnderworldJourney.DeepestChamber || UnderworldJourney.HasEurydice || _waitingSoul != null) return;
+            var library = Resources.Load<EurydiceAnimationLibrary>(EurydiceAnimationLibrary.ResourcePath);
+            if (library == null) return;
+            _waitingSoul = new GameObject("Eurydice_WaitingAtTheThrone");
+            _waitingSoul.transform.SetParent(transform, false);
+            _waitingSoul.transform.position = ToWorld(definition.reunionPoint);
+            RenderPipeline2DSetup.AttachBillboardSprite(_waitingSoul, library.idle[0], new Color(1, 1, 1, .9f), 12);
+            _waitingSoul.AddComponent<EurydiceSpriteAnimator>();
+            _waitingSoul.AddComponent<PaintedActorDepth>();
         }
 
         private MeshRenderer PaintedShape(string name, Transform parent, Vector2[] polygon, Material material, int order)
@@ -211,15 +238,20 @@ namespace OrpheusBelow
             Vector2 p = definition.exit;
             PaintedShape("Exit", overlayRoot, new[] { p + new Vector2(-28, -18), p + new Vector2(28, -18),
                 p + new Vector2(28, 18), p + new Vector2(-28, 18) }, cyan, 31002);
+            p = definition.returnExit;
+            PaintedShape("SurfacewardExit", overlayRoot, new[] { p + new Vector2(-28, -18), p + new Vector2(28, -18),
+                p + new Vector2(28, 18), p + new Vector2(-28, 18) }, cyan, 31002);
             overlayRoot.gameObject.SetActive(false);
         }
 
         public HadesChamberDirector.ChamberRuntimeData RuntimeData()
         {
             if (_runtime != null) return _runtime;
+            ConfigurePassages();
+            CreateWaitingSoul();
             Vector3 arena = NearestWalkable(ToWorld(definition.encounterCenter), 1f);
             CerberusRhythmBoss guardian = null;
-            if (definition.hasGuardian)
+            if (definition.hasGuardian && !UnderworldJourney.IsAscending)
             {
                 var go = new GameObject("Guardian_" + definition.guardian);
                 go.transform.SetParent(transform, false);
@@ -237,9 +269,9 @@ namespace OrpheusBelow
             {
                 chamberTitle = (definition.index + 1) + "  ·  " + definition.title,
                 roomRoot = gameObject, centerWorld = arena,
-                playerSpawnWorld = NearestWalkable(ToWorld(definition.entrance), .65f),
+                playerSpawnWorld = NearestWalkable(ToWorld(UnderworldJourney.IsAscending ? definition.returnSpawn : definition.entrance), .65f),
                 cameraLeashRadius = 200f, cameraOrthoOverride = definition.zoom,
-                exitDoor = exitDoor, guardianBoss = guardian, interiorObstaclesRoot = coverRoot,
+                exitDoor = ActivePassage, guardianBoss = guardian, interiorObstaclesRoot = coverRoot,
                 wave1 = Wave(1, arena), wave2 = Wave(2, arena)
             };
             return _runtime;
@@ -248,6 +280,13 @@ namespace OrpheusBelow
         private List<HadesChamberDirector.WaveSpawnSpec> Wave(int number, Vector3 center)
         {
             var wave = ProceduralChamberGenerator.GenerateWaveSpecs(definition.index, number);
+            if (!UnderworldJourney.HasEurydice)
+            {
+                for (int i = 0; i < wave.Count; i++) if (wave[i].archetype == ShadeArchetype.MourningAbductor)
+                    wave[i].archetype = ShadeArchetype.WretchLunger;
+            }
+            else if (!wave.Exists(s => s.archetype == ShadeArchetype.MourningAbductor))
+                wave.Add(new HadesChamberDirector.WaveSpawnSpec { archetype = ShadeArchetype.MourningAbductor });
             for (int i = 0; i < wave.Count; i++)
             {
                 Vector3 point = NearestWalkable(ToWorld(definition.enemySpawns[(i + (number - 1) * 2) % definition.enemySpawns.Length]), .8f);

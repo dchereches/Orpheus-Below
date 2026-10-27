@@ -13,12 +13,14 @@ namespace OrpheusBelow
     {
         public static OrpheusHud Instance { get; private set; }
         public static bool IsTutorialModalActive { get; private set; }
+        public string CurrentTutorialSpeaker { get; private set; } = string.Empty;
 
         public bool showControlsHelp;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetSessionStatic()
         {
+            Instance = null;
             IsTutorialModalActive = false;
         }
 
@@ -35,6 +37,7 @@ namespace OrpheusBelow
         private Text _cadenceLabel;
         private Text _sensorModeLabel;
         private Text _journeyLabel;
+        private Text _journeyObjective;
         private Text _navigationLegend;
         private CanvasGroup _vitalsGroup;
 
@@ -60,13 +63,15 @@ namespace OrpheusBelow
         private GameObject _lookBackRoot;
         private RectTransform _lookBackFill;
 
-        // Bottom-anchored Eurydice tutorial & combat guidance modal (Enter to continue)
+        // Bottom-anchored dialogue; Artemis teaches, Eurydice speaks after the rescue.
         private RectTransform _canvasRoot;
         private GameObject _tutorialBoxRoot;
         private RectTransform _tutorialBoxRect;
         private Text _tutorialSpeakerText;
         private Text _tutorialBodyText;
         private Text _tutorialContinuePrompt;
+        private RawImage _tutorialPortrait;
+        private bool _tutorialUsesCompanionPose;
         private System.Action _tutorialConfirmCallback;
 
         // Optional [H] controls card
@@ -111,6 +116,9 @@ namespace OrpheusBelow
         private void OnDestroy()
         {
             if (_ownsBodyFont && _bodyFont != null) Destroy(_bodyFont);
+            if (Instance != this) return;
+            Instance = null;
+            ReleaseCompanionTeachingPose();
             if (IsTutorialModalActive)
             {
                 IsTutorialModalActive = false;
@@ -151,15 +159,71 @@ namespace OrpheusBelow
             _calloutTimer = duration;
         }
 
+        public void ShowArtemisTutorial(string text, System.Action onConfirm = null)
+        {
+            ShowTutorial("Artemis", text, onConfirm, false);
+        }
+
+        public void ShowArtemisHint(string text, float duration = 3.2f)
+        {
+            // Guidance stays readable until acknowledged, as with the control lessons.
+            ShowArtemisTutorial(text);
+        }
+
         public void ShowEurydiceTutorial(string text, System.Action onConfirm = null)
         {
             if (_eurydice == null) _eurydice = Object.FindFirstObjectByType<BlurredEurydice>();
+            ShowTutorial("Eurydice", text, onConfirm, true);
+        }
+
+        private void ShowTutorial(string speaker, string text, System.Action onConfirm, bool companionSpeech)
+        {
+            ReleaseCompanionTeachingPose();
+            CurrentTutorialSpeaker = speaker;
+            if (_tutorialSpeakerText != null) _tutorialSpeakerText.text = speaker;
             _tutorialConfirmCallback = onConfirm;
             if (_tutorialBodyText != null) _tutorialBodyText.text = text;
+            SetTutorialPortrait(companionSpeech);
+            if (_tutorialBoxRect != null && _tutorialBodyText != null)
+            {
+                float bodyHeight = Mathf.Max(90f, _tutorialBodyText.preferredHeight);
+                _tutorialBodyText.rectTransform.sizeDelta = new Vector2(608f, bodyHeight);
+                _tutorialBoxRect.sizeDelta = new Vector2(820f, Mathf.Max(196f, bodyHeight + 107f));
+            }
             if (_tutorialBoxRoot != null) _tutorialBoxRoot.SetActive(true);
             IsTutorialModalActive = true;
             Time.timeScale = 0f;
-            _eurydice?.SetTeachingPose(true);
+            _tutorialUsesCompanionPose = companionSpeech;
+            if (_tutorialUsesCompanionPose) _eurydice?.SetTeachingPose(true);
+        }
+
+        private void ReleaseCompanionTeachingPose()
+        {
+            if (!_tutorialUsesCompanionPose) return;
+            _eurydice?.SetTeachingPose(false);
+            _tutorialUsesCompanionPose = false;
+        }
+
+        private void SetTutorialPortrait(bool companionSpeech)
+        {
+            if (_tutorialPortrait == null) return;
+            _tutorialPortrait.uvRect = new Rect(0f, 0f, 1f, 1f);
+            _tutorialPortrait.texture = companionSpeech ? null
+                : Resources.Load<Texture2D>("Characters/Artemis/GuidePortrait");
+            if (companionSpeech)
+            {
+                var library = Resources.Load<EurydiceAnimationLibrary>(EurydiceAnimationLibrary.ResourcePath);
+                if (library != null && library.idle != null && library.idle.Length > 0 && library.idle[0] != null)
+                {
+                    Sprite frame = library.idle[0];
+                    Rect rect = frame.rect;
+                    float side = Mathf.Min(rect.width, rect.height * .48f);
+                    _tutorialPortrait.texture = frame.texture;
+                    _tutorialPortrait.uvRect = new Rect((rect.center.x - side * .5f) / frame.texture.width,
+                        (rect.yMax - side) / frame.texture.height, side / frame.texture.width, side / frame.texture.height);
+                }
+            }
+            _tutorialPortrait.gameObject.SetActive(_tutorialPortrait.texture != null);
         }
 
         public void ShowEurydiceHint(string text, float duration = 3.2f)
@@ -172,8 +236,9 @@ namespace OrpheusBelow
         {
             if (!IsTutorialModalActive) return;
             IsTutorialModalActive = false;
+            CurrentTutorialSpeaker = string.Empty;
             if (_tutorialBoxRoot != null) _tutorialBoxRoot.SetActive(false);
-            _eurydice?.SetTeachingPose(false);
+            ReleaseCompanionTeachingPose();
             UnderworldSoundscape.Instance?.PlayMenuConfirm();
             Time.timeScale = 1f;
 
@@ -235,7 +300,13 @@ namespace OrpheusBelow
                 16, FontStyle.Normal, TextAnchor.UpperLeft, new Color(.84f, .81f, .74f, .85f),
                 Vector2.up, Vector2.up, Vector2.up);
             _journeyLabel.font = _bodyFont;
-            _navigationLegend = CreateSerifText("NavigationLegend", root, new Vector2(42f, -72f), new Vector2(660f, 28f),
+            _journeyObjective = CreateSerifText("JourneyObjective", root, new Vector2(42f, -66f), new Vector2(380f, 54f),
+                15, FontStyle.Normal, TextAnchor.UpperLeft, new Color(.80f, .80f, .73f, .82f),
+                Vector2.up, Vector2.up, Vector2.up);
+            _journeyObjective.font = _bodyFont;
+            _journeyLabel.text = UnderworldJourney.ProgressLabel;
+            _journeyObjective.text = UnderworldJourney.Objective;
+            _navigationLegend = CreateSerifText("NavigationLegend", root, new Vector2(42f, -126f), new Vector2(660f, 28f),
                 16, FontStyle.Normal, TextAnchor.UpperLeft, new Color(.9f, .94f, .86f),
                 Vector2.up, Vector2.up, Vector2.up);
             _navigationLegend.font = _bodyFont;
@@ -320,8 +391,8 @@ namespace OrpheusBelow
             _lookBackFill = CreateBarFill(lbRt, "LookBackFill", new Vector2(0f, 2f), new Vector2(0f, 3f), new Color(0.98f, 0.28f, 0.46f, 0.95f), out _);
             _lookBackRoot.SetActive(false);
 
-            // --- 4. EURYDICE'S FIXED BOTTOM-CENTER TUTORIAL TEXT BOX (ENTER TO CONTINUE) ---
-            _tutorialBoxRect = CreateRect("EurydiceTutorialBox", root,
+            // --- 4. FIXED BOTTOM-CENTER DIALOGUE TEXT BOX (ENTER TO CONTINUE) ---
+            _tutorialBoxRect = CreateRect("GuideDialogueBox", root,
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                 new Vector2(0f, 174f), new Vector2(820f, 196f));
             _tutorialBoxRoot = _tutorialBoxRect.gameObject;
@@ -329,14 +400,20 @@ namespace OrpheusBelow
             Image boxBg = _tutorialBoxRoot.AddComponent<Image>();
             UnderworldArtLibrary.StylePanel(boxBg);
 
-            _tutorialSpeakerText = CreateSerifText("EurydiceSpeaker", _tutorialBoxRect,
-                new Vector2(34f, -24f), new Vector2(748f, 24f), 17, FontStyle.Normal,
+            RectTransform portraitRect = CreateRect("SpeakerPortrait", _tutorialBoxRect,
+                Vector2.up, Vector2.up, Vector2.up, new Vector2(24f, -34f), new Vector2(126f, 126f));
+            _tutorialPortrait = portraitRect.gameObject.AddComponent<RawImage>();
+            _tutorialPortrait.raycastTarget = false;
+            _tutorialPortrait.color = new Color(.94f, .94f, .90f);
+
+            _tutorialSpeakerText = CreateSerifText("DialogueSpeaker", _tutorialBoxRect,
+                new Vector2(178f, -24f), new Vector2(608f, 24f), 17, FontStyle.Normal,
                 TextAnchor.MiddleLeft, new Color(.82f, .70f, .46f),
                 anchorMin: Vector2.up, anchorMax: Vector2.up, pivot: Vector2.up);
-            _tutorialSpeakerText.text = "Eurydice";
+            _tutorialSpeakerText.text = "Artemis";
 
-            _tutorialBodyText = CreateSerifText("EurydiceBody", _tutorialBoxRect,
-                new Vector2(34f, -59f), new Vector2(748f, 90f), 22, FontStyle.Normal,
+            _tutorialBodyText = CreateSerifText("DialogueBody", _tutorialBoxRect,
+                new Vector2(178f, -59f), new Vector2(608f, 90f), 22, FontStyle.Normal,
                 TextAnchor.UpperLeft, new Color(.94f, .92f, .86f),
                 anchorMin: Vector2.up, anchorMax: Vector2.up, pivot: Vector2.up);
             _tutorialBodyText.verticalOverflow = VerticalWrapMode.Truncate;
@@ -461,7 +538,8 @@ namespace OrpheusBelow
             UpdateTutorialModal(kb, pad, player);
             _vitalsGroup.alpha = IsTutorialModalActive ? .35f : 1f;
             _controlsCard.SetActive(showControlsHelp && !IsTutorialModalActive);
-            if (dir != null) _journeyLabel.text = "Chamber " + (dir.CurrentChamberIndex + 1) + " / " + dir.chambers.Count;
+            _journeyLabel.text = UnderworldJourney.ProgressLabel;
+            _journeyObjective.text = UnderworldJourney.Objective;
             var map = PaintedChamberMap.Active;
             _navigationLegend.gameObject.SetActive(map != null && map.overlayRoot != null && map.overlayRoot.gameObject.activeSelf);
 
@@ -544,9 +622,11 @@ namespace OrpheusBelow
             }
 
             // 4. Eurydice Soul-Tether Abduction Danger, Whisper & Look-Back
-            if (_abductionRoot != null && _eurydice != null && player != null)
+            bool escorting = UnderworldJourney.HasEurydice && _eurydice != null;
+            if (_abductionRoot != null)
             {
-                bool showAbduct = (_eurydice.IsBeingAbducted || _eurydice.AbductionDanger01 > 0.02f) && !player.IsGameOver && !player.IsVictory;
+                bool showAbduct = escorting && player != null
+                    && (_eurydice.IsBeingAbducted || _eurydice.AbductionDanger01 > 0.02f) && !player.IsGameOver && !player.IsVictory;
                 _abductionRoot.SetActive(showAbduct);
                 if (showAbduct)
                 {
@@ -558,16 +638,16 @@ namespace OrpheusBelow
 
             if (_whisperText != null)
             {
-                bool showWhisper = _eurydice != null && _eurydice.InTemptationZone && player != null && !player.IsGameOver && !player.IsVictory;
+                bool showWhisper = escorting && _eurydice.InTemptationZone && player != null && !player.IsGameOver && !player.IsVictory;
                 if (showWhisper) _whisperText.text = _eurydice.ActiveWhisper;
                 Color wc = _whisperText.color;
-                wc.a = Mathf.MoveTowards(wc.a, showWhisper ? 0.78f : 0f, dt * 2.5f);
+                wc.a = escorting ? Mathf.MoveTowards(wc.a, showWhisper ? 0.78f : 0f, dt * 2.5f) : 0f;
                 _whisperText.color = wc;
             }
 
-            if (_lookBackRoot != null && player != null)
+            if (_lookBackRoot != null)
             {
-                bool looking = player.LookBackProgress01 > 0.01f && !player.IsGameOver;
+                bool looking = escorting && player != null && player.LookBackProgress01 > 0.01f && !player.IsGameOver && !player.IsVictory;
                 _lookBackRoot.SetActive(looking);
                 if (looking) _lookBackFill.sizeDelta = new Vector2(320f * player.LookBackProgress01, 3f);
             }
@@ -615,7 +695,7 @@ namespace OrpheusBelow
                     _endScreenRoot.SetActive(true);
                     _endScreenBg.color = new Color(0.10f, 0.08f, 0.03f, 0.82f);
                     _endTitleText.text = "Into the Upper Light";
-                    _endBodyText.text = "Every tormented Shade found peace, every Guardian was lulled into golden slumber,\nand you trusted her voice behind you without ever looking back.\nIn the warm light of day, Eurydice steps beside you — whole and alive.\n\nPress [R] to play again.";
+                    _endBodyText.text = "You descended alone to the deepest throne and found Eurydice.\nTogether you climbed through the underworld, trusting her voice behind you.\nIn the warm light of day, she steps beside you — whole and alive.\n\nPress [R] to play again.";
                 }
             }
         }

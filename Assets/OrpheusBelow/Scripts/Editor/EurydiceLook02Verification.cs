@@ -101,7 +101,18 @@ namespace OrpheusBelow.EditorTools
                 if (_phase == 0)
                 {
                     _companion = UnityEngine.Object.FindFirstObjectByType<BlurredEurydice>();
-                    if (_companion == null) return;
+                    if (_companion == null)
+                    {
+                        // This isolated art sampler deliberately opens an escorted return visit.
+                        var player = OrpheusPlayerController.Instance;
+                        if (player == null || PaintedChamberMap.Active == null) return;
+                        UnderworldJourney.Progress.Visit(UnderworldJourney.DeepestChamber);
+                        UnderworldJourney.Progress.ClearCurrentChamber();
+                        UnderworldJourney.Progress.TryRescue();
+                        UnderworldJourney.Progress.Visit(PaintedChamberMap.Active.definition.index);
+                        OrpheusPrototypeBuilder.AddCompanion(player.transform.parent, player.transform);
+                        _next = EditorApplication.timeSinceStartup + .5; return;
+                    }
                     _animator = _companion.GetComponentInChildren<EurydiceSpriteAnimator>();
                     if (_animator == null) return;
                     if (!_animator.UsesLook02) throw new Exception("Look02 library not in use");

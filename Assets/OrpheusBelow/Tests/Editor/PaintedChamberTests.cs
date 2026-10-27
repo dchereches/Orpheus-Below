@@ -33,7 +33,7 @@ namespace OrpheusBelow.Tests
         [Test]
         public void EveryChamberHasAnAuthoredPaintedLayout()
         {
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < UnderworldJourney.ChamberCount; i++)
                 Assert.That(Resources.Load<ScriptableObject>("ChamberLayouts/Chamber_" + i.ToString("D2")),
                     Is.Not.Null, "Missing painted chamber " + i);
         }
@@ -41,7 +41,7 @@ namespace OrpheusBelow.Tests
         [Test]
         public void AuthoredScenesReopenWithLiveCollisionAndExitComponents()
         {
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < UnderworldJourney.ChamberCount; i++)
             {
                 var scene = EditorSceneManager.OpenScene(PaintedChamberScene.ScenePath(i), OpenSceneMode.Additive);
                 try
@@ -87,8 +87,10 @@ namespace OrpheusBelow.Tests
         public void AuthoredFloorExcludesPaintedCoverWhileLeavingTheAdjacentFightingSpaceOpen()
         {
             var d = Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_01");
-            Assert.That(d.IsWalkable(d.ImageToGround(new Vector2(806, 803))), Is.False, "Broken column's base is solid.");
-            Assert.That(d.IsWalkable(d.ImageToGround(new Vector2(880, 803)), .4f), Is.True, "Floor immediately beside it remains usable.");
+            Vector2 solid = Vector2.zero;
+            foreach (var p in d.cover[0].footprint) solid += p; solid /= d.cover[0].footprint.Length;
+            Assert.That(d.IsWalkable(d.ImageToGround(solid)), Is.False, "Painted pillar base is solid.");
+            Assert.That(d.IsWalkable(d.ImageToGround(d.encounterCenter), .4f), Is.True, "The fighting floor remains usable.");
             Assert.That(d.IsWalkable(d.ImageToGround(new Vector2(50, 150))), Is.False, "The distant vista is inaccessible.");
         }
 
@@ -99,14 +101,17 @@ namespace OrpheusBelow.Tests
             var map = PaintedChamberMap.Build(null, d, Vector3.zero);
             try
             {
-                var sprite = map.coverRoot.Find("CenterBrokenColumn/PaintedOcclusion").GetComponent<SpriteRenderer>().sprite;
-                // A 102-pixel-wide outline on a 1536-pixel-wide, 72-unit painting is 4.78125 units wide.
-                Assert.That(sprite.bounds.size.x, Is.EqualTo(4.78125f).Within(.01f));
-                Assert.That(sprite.bounds.size.y, Is.EqualTo(4.696875f).Within(.05f));
+                var cover = d.cover[0];
+                var cutout = map.coverRoot.Find(cover.name + "/PaintedOcclusion");
+                var sprite = cutout.GetComponent<SpriteRenderer>().sprite;
+                Vector2 min = cover.silhouette[0], max = min;
+                foreach (var p in cover.silhouette) { min = Vector2.Min(min, p); max = Vector2.Max(max, p); }
+                Assert.That(sprite.bounds.size.x, Is.EqualTo((Mathf.Ceil(max.x) - Mathf.Floor(min.x)) / 1536f * d.imageWidth).Within(.01f));
+                Assert.That(sprite.bounds.size.y, Is.EqualTo((Mathf.Ceil(max.y) - Mathf.Floor(min.y)) / 1024f * d.imageHeight).Within(.01f));
+                float front = 0; foreach (var p in cover.footprint) front = Mathf.Max(front, p.y);
                 Vector3 forward = RenderPipeline2DSetup.IsoCameraRotation * Vector3.forward;
-                float depth = Vector3.Dot(map.coverRoot.Find("CenterBrokenColumn/PaintedOcclusion").position, forward);
-                Assert.That(depth, Is.EqualTo(Vector3.Dot(d.ImageToGround(new Vector2(806, 836.2f)), forward)).Within(.01f),
-                    "The cutout sits at the pillar's front edge so HDRP distance sorting also hides actors behind it.");
+                Assert.That(Vector3.Dot(cutout.position, forward),
+                    Is.EqualTo(Vector3.Dot(d.ImageToGround(new Vector2(0, front)), forward)).Within(.01f));
             }
             finally { Object.DestroyImmediate(map.gameObject); }
         }
@@ -150,7 +155,7 @@ namespace OrpheusBelow.Tests
         [Test]
         public void EveryEntranceAndExitIsReachableWithoutCrossingCover()
         {
-            for (int index = 0; index < 5; index++)
+            for (int index = 0; index < UnderworldJourney.ChamberCount; index++)
             {
                 var d = Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_" + index.ToString("D2"));
                 Assert.That(d.IsWalkable(d.ImageToGround(d.entrance), .55f), Is.True, "Entrance " + index);

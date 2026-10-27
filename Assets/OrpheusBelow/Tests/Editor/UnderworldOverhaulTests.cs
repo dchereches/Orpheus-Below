@@ -6,10 +6,10 @@ namespace OrpheusBelow.Tests
     public class UnderworldOverhaulTests
     {
         [Test]
-        public void FiveChambersRetainLargerLaterRoomsAndTwoWaves()
+        public void EightChambersRetainLargerLaterRoomsAndTwoWaves()
         {
-            Assert.That(ProceduralChamberGenerator.TotalChambers, Is.EqualTo(5));
-            Assert.That(ProceduralChamberGenerator.ChamberNames.Length, Is.EqualTo(5));
+            Assert.That(ProceduralChamberGenerator.TotalChambers, Is.EqualTo(8));
+            Assert.That(ProceduralChamberGenerator.ChamberNames.Length, Is.EqualTo(8));
             for (int i = 1; i < ProceduralChamberGenerator.TotalChambers; i++)
             {
                 Vector2 size = ProceduralChamberGenerator.GetChamberSize(i);
@@ -28,25 +28,26 @@ namespace OrpheusBelow.Tests
         }
 
         [Test]
-        public void ShortenedRouteRetainsEveryGuardianAndEndsWithCerberus()
+        public void DescentRetainsFourGuardiansBeforeTheDeepestThrone()
         {
-            var root = new GameObject("FiveChamberRouteTest");
-            BossIdentity?[] expected = { BossIdentity.CantorOfFury, BossIdentity.OarsmanOfStyx,
-                null, BossIdentity.SirenOfAcheron, BossIdentity.CerberusHoundOfHades };
+            UnderworldJourney.Reset();
+            var root = new GameObject("EightChamberRouteTest");
+            BossIdentity?[] expected = { null, BossIdentity.CantorOfFury, null, BossIdentity.OarsmanOfStyx,
+                null, BossIdentity.SirenOfAcheron, BossIdentity.CerberusHoundOfHades, null };
             try
             {
                 for (int i = 0; i < ProceduralChamberGenerator.TotalChambers; i++)
                 {
                     var room = ProceduralChamberGenerator.GenerateChamber(root.transform, i,
                         ProceduralChamberGenerator.TotalChambers, Vector3.right * i * 90f);
-                    Assert.That(room.exitDoor.isFinalSunlightExit, Is.EqualTo(i == 4));
+                    Assert.That(room.exitDoor.isFinalSunlightExit, Is.False, "Reaching the bottom must not win the run.");
                     Assert.That(room.exitDoor.targetChamberIndex, Is.EqualTo(i + 1));
                     if (expected[i].HasValue)
                         Assert.That(room.guardianBoss.identity, Is.EqualTo(expected[i].Value));
                     else Assert.That(room.guardianBoss, Is.Null);
                     Assert.That(room.roomRoot.GetComponentInChildren<AmbrosiaHealingWell>(), Is.Not.Null);
                     Assert.That(room.roomRoot.transform.Find("StygianBrazier"), Is.Null);
-                    if (i == 2) StringAssert.Contains("Burial", room.roomRoot.name);
+                    if (i == 7) StringAssert.Contains("Throne", room.roomRoot.name);
                     if (i == 0)
                     {
                         var map = room.roomRoot.GetComponent<PaintedChamberMap>();

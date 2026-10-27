@@ -2,13 +2,25 @@
 
 ## Latest revision — 27 October 2026
 
+### Eight-room descent, rescue and return (current)
+
+Open `Assets/OrpheusBelow/Scenes/PaintedChamber_00.unity`. Bootstrap version is **12**. Eight supplied TEST paintings are now eight saved chamber scenes, registered first in Build Settings. The source filenames are 18:57:54–18:57:55 with filesystem saves at 19:09; this was the latest eight-image batch containing the requested throne room. Source bytes are unchanged.
+
+The route is **Sanctuary of Artemis → Gardens of the Upper Light → Asphodel's Last Sun → Court of Withered Cypresses → Broken Causeways → Falls of Phlegethon → Titan's Rest → Throne of the Below**. Orpheus begins **alone**. Clear the deepest encounter and approach Eurydice beside the throne to rescue her, then escort her through the same chambers in reverse. Victory occurs only at the sanctuary's surface passage with Eurydice nearby. This makes **15 chamber visits**, with no repeated guardian duels on ascent. All four guardian identities remain on the descent; ascent encounters introduce abductor threats.
+
+**Artemis** now speaks the tutorial and progression guidance, with a new broad-oil portrait. Escort warnings and tether UI remain hidden during the solo descent. Eurydice's approved Look 02 animation library is used after the rescue and for her waiting presence beside the throne. Tutorial completion, direction, encounter clears, health and learned cadences survive scene transitions; restart resets the solo descent.
+
+Each new painting has traced walkable boundaries, solid obstacle footprints, original-art foreground cutouts, stairs, enemy positions and two safe arrival points. The active passage follows the painted exit in the current travel direction; upward passages wait for Eurydice. **F3** shows walkable, inaccessible, cover and passage zones. The existing zoom/crop clamp keeps painting edges out of view. Use **Orpheus Below/Build Eight Painted Chamber Scenes** to rebuild scenes and layouts from `DescentChamberCatalog`.
+
+See [current route, image provenance and verification](docs/painted-chambers-descent-2026-10-27.md). The five-room route descriptions below are history and are superseded by this section.
+
 ### Eurydice Look 02 (current)
 
 Eurydice now uses the approved **Look 02 / Broad Oil** ivory/gold/oxblood design and the supplied red-haired facial references. Five transparent atlases in `Resources/Characters/Eurydice/Look02/` supply **148 frames** for eight-direction idle/walking, stair motion, joy, fear, listening, teaching, sanctuary, shatter/reform and surrounding painted effects. The visible silhouette is approximately **30% larger**.
 
 Ground-only movement and facing hysteresis keep idle quiet. Actual tutorial, acoustic reply, abduction, rescue, chamber-clear and victory events select reactions. Stair polygons in the painted layout assets distinguish ascent from descent. The pause menu freezes playback; tutorial gestures use the UI clock while gameplay is paused. `Orpheus Below/Bake Eurydice Look 02` rebuilds the saved sprite library. See [animation behavior and verification](docs/eurydice-look02-animation-guide.md) and [exact production prompts](docs/eurydice-look02-image-prompts.json). Older four-state/dark-crimson Eurydice notes below describe the retained fallback.
 
-### Authored scene mapping (current)
+### Earlier five-room scene mapping
 
 The active route now uses the **five newest** images from `D:/Serban/TEST`, copied unchanged into `Resources/PaintedChambers/`. Open `Assets/OrpheusBelow/Scenes/PaintedChamber_00.unity` to start. The five saved scene assets are registered first in Build Settings, and real scene transitions follow the painted exits. Bootstrap version is **11**.
 
@@ -32,7 +44,7 @@ See [the visual revision notes and exact image prompts](docs/visual-overhaul-202
 - **Repository Root:** `C:\Users\chere\OneDrive\Desktop\Orpheus Below`
 - **GitHub Remote:** `https://github.com/dchereches/Orpheus-Below.git` (`main` branch)
 - **Engine & Version:** Unity 6 (`6000.3.10f1`), High Definition Render Pipeline (HDRP `17.3.0`), New Input System (`1.18.0`), `.NET Standard 2.1`.
-- **Runtime Bootstrap Version:** `11` (auto-rebuilds and upgrades generated scenes on Play mode).
+- **Runtime Bootstrap Version:** `12` (auto-rebuilds and upgrades generated scenes on Play mode).
 - **Core Premise:** A distinctive mythic Hellenic chamber-crawler based on **sound, breath, and grief**. Orpheus descends into the Underworld with his Lyre and Flute (Aulos) to lead Eurydice to the upper light. Features dual-perspective camera geometry, zero RNG stat boons, procedural 2.5D background-plate chamber generation, and deterministic musical progression.
 
 ---

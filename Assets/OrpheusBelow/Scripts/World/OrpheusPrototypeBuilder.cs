@@ -39,7 +39,7 @@ namespace OrpheusBelow
             public List<WaveSpawnSpec> wave2 = new List<WaveSpawnSpec>();
         }
 
-        public const int PrototypeBuildVersion = 11;
+        public const int PrototypeBuildVersion = 12;
         public int initialChamberIndex;
 
         public int buildVersion = PrototypeBuildVersion;
@@ -62,6 +62,7 @@ namespace OrpheusBelow
         private int _devSelection;
         private float _devPreviousTimeScale = 1f;
         private Vector2 _devScroll;
+        private float _nextEscortWaitHint;
 
         private void Awake()
         {
@@ -110,7 +111,7 @@ namespace OrpheusBelow
 
             if (!_asphodelTutorial.IsActive)
             {
-                if (CurrentChamberIndex == 0 && !_asphodelTutorial.HasCompleted && !_firstTutorialTriggered)
+                if (CurrentChamberIndex == 0 && !UnderworldJourney.HasEurydice && !UnderworldJourney.Progress.TutorialComplete && !_asphodelTutorial.HasCompleted && !_firstTutorialTriggered)
                 {
                     _firstTutorialTriggered = true;
                     ChamberRuntimeData ch = chambers[0];
@@ -134,6 +135,7 @@ namespace OrpheusBelow
 
             if (_asphodelTutorial.HasCompleted)
             {
+                UnderworldJourney.Progress.TutorialComplete = true;
                 OrpheusHud.Instance?.HideEurydiceTutorial();
                 ChamberRuntimeData chamber = chambers[CurrentChamberIndex];
                 StartCoroutine(SpawnWaveWithRunesRoutine(chamber, chamber.wave1, 0.55f));
@@ -171,8 +173,10 @@ namespace OrpheusBelow
             _devScroll = GUILayout.BeginScrollView(_devScroll, GUILayout.Height(height - 170f));
             for (int i = 0; i < chambers.Count; i++)
             {
-                if (i == 0) GUILayout.Label("ASPHODEL MEADOWS");
-                else if (i == 2) GUILayout.Label("TARTARUS");
+                if (i == 0) GUILayout.Label("UPPER LIGHT");
+                else if (i == 2) GUILayout.Label("ASPHODEL");
+                else if (i == 4) GUILayout.Label("TARTARUS");
+                else if (i == 7) GUILayout.Label("THE THRONE");
                 string marker = i == CurrentChamberIndex ? "CURRENT  ·  " : i == _devSelection ? "SELECTED  ·  " : string.Empty;
                 if (GUILayout.Button($"{marker}{i + 1:00}  —  {chambers[i].chamberTitle}", GUILayout.Height(30f))) _devSelection = i;
             }
@@ -203,6 +207,50 @@ namespace OrpheusBelow
 
         public void RestoreWardenHint(bool shown) { _shownWardenHint = shown; }
 
+        public bool TryJourneyPassage(ChamberExitDoor door)
+        {
+            if (_transitioning || door == null || !door.IsUnlocked) return false;
+            var map = PaintedChamberMap.Active;
+            if (map == null || map.definition.index != CurrentChamberIndex || door.GetComponentInParent<PaintedChamberMap>() != map) return false;
+            var progress = UnderworldJourney.Progress;
+            if (door.journeyRole == JourneyDoorRole.Reunion)
+            {
+                if (!progress.TryRescue()) return false;
+                map.HideWaitingSoul(); map.ConfigurePassages();
+                chambers[CurrentChamberIndex].exitDoor = map.returnDoor;
+                map.returnDoor.SetUnlocked(true);
+                var companion = OrpheusPrototypeBuilder.AddCompanion(transform, OrpheusPlayerController.Instance.transform);
+                UnderworldCamera2D.Instance.eurydiceTarget = companion.transform;
+                OrpheusHud.Instance?.ShowBanner("Eurydice has joined you  ·  Begin the ascent", 4f);
+                OrpheusHud.Instance?.ShowArtemisTutorial("You have found her, Orpheus. Lead her back through the chambers to my sanctuary. Trust the voice behind you; do not look back. Wait at each passage until she is near.");
+                return true;
+            }
+            if (door.journeyRole == JourneyDoorRole.Deeper)
+            {
+                int next = CurrentChamberIndex + 1;
+                if (next >= chambers.Count || !Application.CanStreamedLevelBeLoaded(PaintedChamberScene.ScenePath(next)) || !progress.TryDescend()) return false;
+                TransitionToChamber(next); return true;
+            }
+            if (door.journeyRole == JourneyDoorRole.Surfaceward)
+            {
+                var companion = Object.FindFirstObjectByType<BlurredEurydice>();
+                bool together = companion != null && !companion.IsVanished && Vector3.Distance(companion.transform.position, door.transform.position) <= 6f;
+                if (!together)
+                {
+                    if (Time.unscaledTime > _nextEscortWaitHint)
+                    { _nextEscortWaitHint = Time.unscaledTime + 1.5f; OrpheusHud.Instance?.ShowSubtleCallout("Wait for Eurydice at the passage.", 1.5f); }
+                    return false;
+                }
+                int next = CurrentChamberIndex - 1;
+                if (next >= 0 && !Application.CanStreamedLevelBeLoaded(PaintedChamberScene.ScenePath(next))) return false;
+                if (!progress.TryAscend(together)) return false;
+                if (progress.IsComplete) OrpheusPlayerController.Instance.TriggerRunVictory();
+                else TransitionToChamber(next);
+                return true;
+            }
+            return false;
+        }
+
         private IEnumerator TransitionRoutine(int nextIndex)
         {
             _transitioning = true;
@@ -229,6 +277,7 @@ namespace OrpheusBelow
 
         private void EnterChamberImmediate(int index)
         {
+            UnderworldJourney.Progress.Visit(index);
             CurrentChamberIndex = index;
             _chamberCleared = false;
             _bossPhaseStarted = false;
@@ -252,7 +301,7 @@ namespace OrpheusBelow
             if (player != null)
             {
                 player.TeleportToChamberSpawn(ch.playerSpawnWorld);
-                if (index > 0)
+                if (index > 0 || UnderworldJourney.IsAscending)
                 {
                     player.Heal(20f);
                     OrpheusHud.Instance?.ShowSubtleCallout("+20 HP Restored  ·  Chamber Respite", 2.2f);
@@ -276,24 +325,29 @@ namespace OrpheusBelow
 
             OrpheusHud.Instance?.ShowBanner(ch.chamberTitle, 2.8f);
 
-            if (index == 1)
+            if (!UnderworldJourney.IsAscending && index == 1)
             {
-                OrpheusHud.Instance?.ShowEurydiceHint("A swarm gathers. Draw the Aulos (Flute) with [F] — play its four notes to pacify them or detonate a cataclysmic shockwave!", 5.5f);
+                OrpheusHud.Instance?.ShowArtemisHint("A swarm gathers. Draw the Aulos (Flute) with [F] — play its four notes to pacify them or detonate a cataclysmic shockwave!", 5.5f);
             }
-            else if (index == 2)
+            else if (!UnderworldJourney.IsAscending && index == 2)
             {
-                OrpheusHud.Instance?.ShowEurydiceHint("Sanctuary of Eurydice is awakened [B - S]. Pluck Boom, then Soft to summon a protective ward.", 5.0f);
+                OrpheusHud.Instance?.ShowArtemisHint("Sanctuary of Eurydice is awakened [B - S]. Pluck Boom, then Soft to summon a protective ward.", 5.0f);
             }
-            else if (index == 3)
+            else if (!UnderworldJourney.IsAscending && index == 3)
             {
-                OrpheusHud.Instance?.ShowEurydiceHint("Siren's Convergence is attuned [S - B - S]. Pluck Soft · Boom · Soft to pull scattered shades into a vortex.", 5.0f);
+                OrpheusHud.Instance?.ShowArtemisHint("Siren's Convergence is attuned [S - B - S]. Pluck Soft · Boom · Soft to pull scattered shades into a vortex.", 5.0f);
             }
 
             if (index == 0) _firstTutorialTriggered = false;
 
+            if (UnderworldJourney.Progress.IsCleared(index))
+            {
+                HandleChamberCleared(); return;
+            }
+
             if (ch.wave1.Count > 0)
             {
-                if (index == 0 && !_asphodelTutorial.HasCompleted)
+                if (index == 0 && !UnderworldJourney.HasEurydice && !UnderworldJourney.Progress.TutorialComplete && !_asphodelTutorial.HasCompleted)
                 {
                     // Delay tutorial start until Update() when UnderworldFrontEnd.BlocksGameplay is false!
                 }
@@ -313,7 +367,7 @@ namespace OrpheusBelow
             _spawningWave = true;
             if (chambers.Count > 0 && ch == chambers[0] && _currentWaveIndex == 0)
             {
-                OrpheusHud.Instance?.ShowEurydiceHint("Shades lunge quickly! Space or Shift gives two invulnerable dashes to cross danger.", 4.5f);
+                OrpheusHud.Instance?.ShowArtemisHint("Shades lunge quickly! Space or Shift gives two invulnerable dashes to cross danger.", 4.5f);
             }
             yield return new WaitForSeconds(delayBeforeRunes);
 
@@ -351,7 +405,7 @@ namespace OrpheusBelow
                 if (s.archetype == ShadeArchetype.ArmoredWarden && !_shownWardenHint)
                 {
                     _shownWardenHint = true;
-                    OrpheusHud.Instance?.ShowEurydiceHint(
+                    OrpheusHud.Instance?.ShowArtemisHint(
                         "Bronze grief-armor turns Soft Notes aside. Break it with a Hard Boom.", 4.0f);
                 }
             }
@@ -432,7 +486,7 @@ namespace OrpheusBelow
             switch (step)
             {
                 case AsphodelTutorialStep.Move:
-                    text = "Stay ahead of me, Orpheus. Move with W A S D or the left stick.";
+                    text = "Orpheus, I am Artemis. I will guide your descent. Move with W A S D or the left stick.";
                     break;
                 case AsphodelTutorialStep.Dash:
                     text = "Space or Shift gives two invulnerable dashes. Cross danger cleanly.";
@@ -454,13 +508,14 @@ namespace OrpheusBelow
                     return;
             }
 
-            OrpheusHud.Instance?.ShowEurydiceTutorial(text);
+            OrpheusHud.Instance?.ShowArtemisTutorial(text);
         }
 
         private void HandleChamberCleared()
         {
             if (_chamberCleared) return;
             _chamberCleared = true;
+            UnderworldJourney.Progress.ClearCurrentChamber();
             Object.FindFirstObjectByType<BlurredEurydice>()?.Celebrate(1.8f);
 
             ChamberRuntimeData ch = chambers[CurrentChamberIndex];
@@ -476,7 +531,15 @@ namespace OrpheusBelow
             OrpheusLyreCombat combat = OrpheusLyreCombat.Instance;
             string clearBanner;
 
-            if (ch.exitDoor != null && ch.exitDoor.isFinalSunlightExit)
+            if (UnderworldJourney.IsAscending)
+            {
+                clearBanner = CurrentChamberIndex == 0 ? "The sanctuary is open  —  Bring Eurydice into the light" : "Ascent passage unlocked  —  Stay together";
+            }
+            else if (CurrentChamberIndex == UnderworldJourney.DeepestChamber)
+            {
+                clearBanner = "The throne is reached  —  Approach Eurydice";
+            }
+            else if (ch.exitDoor != null && ch.exitDoor.isFinalSunlightExit)
             {
                 clearBanner = "Cerberus Charmed into Slumber  —  Ascend into the Sun";
             }
@@ -488,7 +551,7 @@ namespace OrpheusBelow
                 OrpheusHud.Instance?.ShowCadenceUnlockCeremony(
                     "Sanctuary of Eurydice",
                     "[ B ]  —  [ S ]",
-                    "Surround Eurydice in a Golden Aegis, repelling abductors and hearing her reassuring hum.");
+                    "Keep this cadence for your return. Its golden aegis will protect Eurydice from abductors.");
             }
             else if (CurrentChamberIndex == 1 && combat != null && combat.UnlockedCadenceTier < 3)
             {
@@ -511,8 +574,19 @@ namespace OrpheusBelow
 
     public static class OrpheusPrototypeBuilder
     {
+        public static BlurredEurydice AddCompanion(Transform parent, Transform player)
+        {
+            var existing = Object.FindFirstObjectByType<BlurredEurydice>();
+            if (existing != null) return existing;
+            var go = new GameObject("Eurydice_BlurredCompanion25D"); go.transform.SetParent(parent, false);
+            go.transform.position = player.position - UnderworldCamera2D.IsoUpXZ * 2.2f;
+            var companion = go.AddComponent<BlurredEurydice>(); companion.orpheus = player;
+            return companion;
+        }
+
         public static void RestartDescent(bool skipTitle)
         {
+            UnderworldJourney.Reset();
             if (PaintedChamberScene.Restart(skipTitle)) return;
             UnderworldFrontEnd.SkipTitleOnce = skipTitle;
             Time.timeScale = 1f;
@@ -572,6 +646,7 @@ namespace OrpheusBelow
             HadesChamberDirector director = root.AddComponent<HadesChamberDirector>();
             var authoredScene = Object.FindFirstObjectByType<PaintedChamberScene>();
             if (authoredScene != null) director.initialChamberIndex = authoredScene.chamberIndex;
+            UnderworldJourney.Progress.Visit(director.initialChamberIndex);
 
             // --- 2. ORPHEUS & BLURRED EURYDICE ---
             GameObject orpheusGo = new GameObject("Orpheus_Player25D");
@@ -581,11 +656,7 @@ namespace OrpheusBelow
             orpheusGo.AddComponent<OrpheusLyreCombat>();
             orpheusGo.AddComponent<OrpheusFluteChannel>();
 
-            GameObject eurydiceGo = new GameObject("Eurydice_BlurredCompanion25D");
-            eurydiceGo.transform.SetParent(root.transform, false);
-            eurydiceGo.transform.position = new Vector3(-8.0f, 0f, -8.0f);
-            BlurredEurydice eurydice = eurydiceGo.AddComponent<BlurredEurydice>();
-            eurydice.orpheus = orpheusGo.transform;
+            BlurredEurydice eurydice = UnderworldJourney.HasEurydice ? AddCompanion(root.transform, player.transform) : null;
 
             // --- 3. DUAL-PERSPECTIVE CAMERA (2.5D Isometric <-> 2D Parallax Boss Stage) ---
             Camera mainCam = Camera.main ?? Object.FindFirstObjectByType<Camera>();
@@ -599,7 +670,7 @@ namespace OrpheusBelow
             UnderworldCamera2D camIso = mainCam.GetComponent<UnderworldCamera2D>();
             if (camIso == null) camIso = mainCam.gameObject.AddComponent<UnderworldCamera2D>();
             camIso.target = player.transform;
-            camIso.eurydiceTarget = eurydice.transform;
+            camIso.eurydiceTarget = eurydice != null ? eurydice.transform : null;
 
             Transform chambersRoot = new GameObject("Chambers_25D_And_Parallax2D").transform;
             chambersRoot.SetParent(root.transform, false);
@@ -610,7 +681,7 @@ namespace OrpheusBelow
                 if (authoredScene != null)
                 {
                     director.chambers.Add(i == authoredScene.chamberIndex ? authoredScene.map.RuntimeData()
-                        : new HadesChamberDirector.ChamberRuntimeData { chamberTitle = "Chamber " + (i + 1) });
+                        : new HadesChamberDirector.ChamberRuntimeData { chamberTitle = UnderworldJourney.ChamberNames[i] });
                     continue;
                 }
                 Vector3 center = new Vector3(i * 90f, 0f, i * 90f);
