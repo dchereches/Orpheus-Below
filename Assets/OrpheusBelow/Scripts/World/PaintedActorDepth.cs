@@ -10,7 +10,9 @@ namespace OrpheusBelow
     {
         private SortingGroup _group;
         private readonly Dictionary<SpriteRenderer, Material> _originals = new Dictionary<SpriteRenderer, Material>();
+        private readonly HashSet<SpriteRenderer> _excluded = new HashSet<SpriteRenderer>();
         private static Material _depthMaterial;
+        public void Exclude(SpriteRenderer sprite) { if (sprite != null) _excluded.Add(sprite); }
         private void Awake()
         {
             _group = GetComponent<SortingGroup>();
@@ -27,6 +29,12 @@ namespace OrpheusBelow
                 if (_depthMaterial == null) _depthMaterial = new Material(Shader.Find("OrpheusBelow/PaintedCover")) { name = "PaintedActorDepth" };
                 foreach (var sprite in GetComponentsInChildren<SpriteRenderer>())
                 {
+                    // Ground decals and translucent painted effects must not cut holes in the actor's body.
+                    if (_excluded.Contains(sprite) || Vector3.Dot(sprite.transform.forward, RenderPipeline2DSetup.IsoCameraRotation * Vector3.forward) < .9f)
+                    {
+                        if (_originals.TryGetValue(sprite, out var original)) sprite.sharedMaterial = original;
+                        continue;
+                    }
                     if (!_originals.ContainsKey(sprite)) _originals.Add(sprite, sprite.sharedMaterial);
                     sprite.sharedMaterial = _depthMaterial;
                 }

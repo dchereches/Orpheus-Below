@@ -46,12 +46,20 @@ namespace OrpheusBelow
         private float _humPoseTimer;
         private bool _shownAbductorHint;
         private Vector3 _lastAnimationPosition;
+        private readonly EurydiceAnimationBrain _animationBrain = new EurydiceAnimationBrain();
+        private SpriteRenderer _paintedEffects;
+        private float _joyTimer, _fearTimer, _reformTimer, _shieldIntroTimer, _threatScanTimer;
+        private readonly Collider[] _nearby = new Collider[24];
+        public EurydiceAnimationState CurrentAnimation => _spriteAnimator != null ? _spriteAnimator.CurrentState : EurydiceAnimationState.Idle;
+        public EurydiceFacing Facing => _animationBrain.Facing;
 
         private void Start()
         {
             BuildBlurredVisualStack();
             BuildSoulTetherLine();
-            gameObject.AddComponent<PaintedActorDepth>();
+            var depth = gameObject.AddComponent<PaintedActorDepth>();
+            depth.Exclude(_paintedEffects);
+            depth.Exclude(_sanctuaryRingSr);
             if (orpheus != null)
             {
                 SnapBehindOrpheus(orpheus.position - UnderworldCamera2D.IsoUpXZ * followLagDistance);
@@ -68,7 +76,12 @@ namespace OrpheusBelow
             if (PaintedChamberMap.Active != null) worldPos = PaintedChamberMap.Active.NearestWalkable(worldPos, .5f);
             transform.position = worldPos;
             _desiredPos = worldPos;
+            _lastAnimationPosition = worldPos;
+            _animationBrain.ResetMotion();
+            _spriteAnimator?.ResetMotion();
+            _reformTimer = IsTeachingPose ? 0 : .9f; _joyTimer = 0; _fearTimer = 0; _humPoseTimer = 0;
             if (orpheus != null) _lastRecordedPos = orpheus.position;
+            if (IsTeachingPose) SetTeachingPose(true);
         }
 
         private void BuildSoulTetherLine()
@@ -90,7 +103,7 @@ namespace OrpheusBelow
             shadow.transform.SetParent(transform, false);
             shadow.transform.localPosition = new Vector3(0f, 0.02f, 0f);
             shadow.transform.localScale = new Vector3(1.6f, 1.6f, 1f);
-            RenderPipeline2DSetup.AttachGroundDecal(shadow, RenderPipeline2DSetup.SoftGlowSprite, new Color(0.35f, 0.75f, 1.0f, 0.25f), 1);
+            RenderPipeline2DSetup.AttachGroundDecal(shadow, RenderPipeline2DSetup.SoftGlowSprite, new Color(0.35f, 0.75f, 1.0f, 0.08f), 1);
 
             GameObject sancGo = new GameObject("SanctuaryAegisRing");
             sancGo.transform.SetParent(transform, false);
@@ -136,8 +149,8 @@ namespace OrpheusBelow
 
             GameObject spriteGo = new GameObject("EurydiceDarkCrimsonSprite");
             spriteGo.transform.SetParent(_billboardRoot, false);
-            spriteGo.transform.localPosition = new Vector3(0f, -0.82f, -0.03f);
-            spriteGo.transform.localScale = new Vector3(1.05f, 1.05f, 1f);
+            spriteGo.transform.localPosition = Quaternion.Inverse(_billboardRoot.rotation) * (-Vector3.up * .85f) - Vector3.forward * .03f;
+            spriteGo.transform.localScale = Vector3.one;
             _generatedSpriteRenderer = spriteGo.AddComponent<SpriteRenderer>();
             _generatedSpriteRenderer.sharedMaterial = RenderPipeline2DSetup.Get2DSpriteMaterial();
             _generatedSpriteRenderer.sortingOrder = 10;
@@ -148,11 +161,24 @@ namespace OrpheusBelow
             {
                 _sharpCoreRobe.enabled = false;
                 _sharpCoreHead.enabled = false;
+                if (_spriteAnimator.UsesLook02)
+                {
+                    foreach (var layer in _blurRenderers) layer.enabled = false;
+                    var effects = new GameObject("EurydicePaintedEffects");
+                    effects.transform.SetParent(_billboardRoot, false);
+                    effects.transform.localPosition = Quaternion.Inverse(_billboardRoot.rotation) * (-Vector3.up * .85f)
+                        + new Vector3(0, .85f, .05f);
+                    _paintedEffects = effects.AddComponent<SpriteRenderer>();
+                    _paintedEffects.sharedMaterial = RenderPipeline2DSetup.Get2DSpriteMaterial();
+                    _paintedEffects.sortingOrder = 8;
+                    _spriteAnimator.AttachEffects(_paintedEffects);
+                }
             }
             else
             {
                 _generatedSpriteRenderer.enabled = false;
             }
+            if (IsTeachingPose) SetTeachingPose(true);
         }
 
         public void RegisterAbductor(ShadeEnemy shade)
@@ -172,13 +198,21 @@ namespace OrpheusBelow
         public void SetTeachingPose(bool active)
         {
             IsTeachingPose = active && !IsVanished;
-            if (IsTeachingPose) _spriteAnimator?.SetState(EurydiceAnimationState.Teaching);
+            if (IsTeachingPose)
+            {
+                _reformTimer = 0;
+                _spriteAnimator?.SetState(IsBeingAbducted || _fearTimer > 0 ? EurydiceAnimationState.Fear
+                    : HasSanctuaryShield && _shieldIntroTimer > 0 ? EurydiceAnimationState.Sanctuary : EurydiceAnimationState.Teaching);
+            }
         }
 
         public void UnregisterAbductor(ShadeEnemy shade)
         {
-            _activeAbductors.Remove(shade);
+            if (_activeAbductors.Remove(shade) && _activeAbductors.Count == 0 && !IsVanished) Celebrate(1.4f);
         }
+
+        public void Celebrate(float duration = 1.6f) { if (!IsVanished) _joyTimer = Mathf.Max(_joyTimer, duration); }
+        public void NotifyThreat(float duration = 1.2f) { if (!IsVanished && !HasSanctuaryShield) _fearTimer = Mathf.Max(_fearTimer, duration); }
 
         /// <summary>
         /// Triggered when Orpheus plays a Soft Ping near her or executes the B-S Sanctuary Cadence!
@@ -190,6 +224,7 @@ namespace OrpheusBelow
             if (grantSanctuaryShield)
             {
                 _sanctuaryTimer = 4.5f;
+                _shieldIntroTimer = 1f;
                 AbductionDanger01 = 0f;
                 // Repel & pacify-damage any Abductor Shades clinging to Eurydice!
                 List<ShadeEnemy> copy = new List<ShadeEnemy>(_activeAbductors);
@@ -224,6 +259,7 @@ namespace OrpheusBelow
 
         public void SetTemptationZone(bool active, string whisperText)
         {
+            if (active && !InTemptationZone) NotifyThreat(1.5f);
             InTemptationZone = active;
             ActiveWhisper = active ? whisperText : "";
         }
@@ -242,7 +278,7 @@ namespace OrpheusBelow
         private IEnumerator ShatterRoutine()
         {
             UpdateBlurVisuals();
-            yield return new WaitForSecondsRealtime(1.0f);
+            yield return new WaitForSeconds(1.1f);
 
             for (int i = 0; i < 42; i++)
             {
@@ -258,6 +294,8 @@ namespace OrpheusBelow
             foreach (var r in _blurRenderers) if (r != null) r.enabled = false;
             if (_sharpCoreHead != null) _sharpCoreHead.enabled = false;
             if (_sharpCoreRobe != null) _sharpCoreRobe.enabled = false;
+            if (_generatedSpriteRenderer != null) _generatedSpriteRenderer.enabled = false;
+            if (_paintedEffects != null) _paintedEffects.enabled = false;
         }
 
         private void Update()
@@ -267,9 +305,22 @@ namespace OrpheusBelow
             if (_billboardRoot != null) _billboardRoot.rotation = UnderworldCamera2D.CurrentBillboardRotation;
 
             float dt = Time.deltaTime;
+            if (dt <= 0) { _lastAnimationPosition = transform.position; return; }
             if (_replyCooldown > 0f) _replyCooldown -= dt;
             if (_humPoseTimer > 0f) _humPoseTimer -= dt;
             if (_sanctuaryTimer > 0f) _sanctuaryTimer -= dt;
+            _joyTimer = Mathf.Max(0, _joyTimer - dt);
+            _fearTimer = Mathf.Max(0, _fearTimer - dt);
+            _reformTimer = Mathf.Max(0, _reformTimer - dt);
+            _shieldIntroTimer = Mathf.Max(0, _shieldIntroTimer - dt);
+            _threatScanTimer -= dt;
+            if (_threatScanTimer <= 0 && !HasSanctuaryShield)
+            {
+                _threatScanTimer = .2f;
+                int count = Physics.OverlapSphereNonAlloc(transform.position + Vector3.up * .6f, 2.1f, _nearby, ~0, QueryTriggerInteraction.Collide);
+                for (int i = 0; i < count; i++)
+                    if (_nearby[i].GetComponentInParent<ShadeEnemy>() is ShadeEnemy shade && shade.CurrentHealth > 0) { NotifyThreat(.6f); break; }
+            }
 
             if (_sanctuaryRingSr != null)
             {
@@ -312,21 +363,12 @@ namespace OrpheusBelow
                 {
                     AbductionDanger01 = Mathf.MoveTowards(AbductionDanger01, 0f, dt * 0.45f);
 
-                    if (Vector3.Distance(orpheus.position, _lastRecordedPos) > 0.35f)
-                    {
-                        _breadcrumbs.Enqueue(orpheus.position);
-                        _lastRecordedPos = orpheus.position;
-                    }
-
                     float targetLag = InTemptationZone ? followLagDistance + 1.4f : followLagDistance;
-                    while (_breadcrumbs.Count > 1 && Vector3.Distance(_breadcrumbs.Peek(), orpheus.position) > targetLag)
-                    {
-                        _desiredPos = _breadcrumbs.Dequeue();
-                    }
-
-                    float bob = Mathf.Sin(Time.time * 2.3f) * 0.08f;
-                    Vector3 goal = new Vector3(_desiredPos.x, bob, _desiredPos.z);
-                    transform.position = Vector3.Lerp(transform.position, goal, Time.unscaledDeltaTime * smoothSpeed);
+                    bool nearby = GroundDistance(transform.position, orpheus.position) < followLagDistance * 1.6f;
+                    bool gesture = IsTeachingPose || _reformTimer > 0 || _fearTimer > 0 || (pc != null && pc.IsVictory) ||
+                        (nearby && (_joyTimer > 0 || _humPoseTimer > 0 || _shieldIntroTimer > 0));
+                    if (gesture) RecordBreadcrumb();
+                    else FollowBreadcrumbs(dt, targetLag);
                 }
 
                 UpdateSoulTetherVisual();
@@ -339,16 +381,83 @@ namespace OrpheusBelow
         private void UpdateGeneratedSpriteAnimation(float dt)
         {
             if (_spriteAnimator == null || !_spriteAnimator.IsReady) return;
+            if (dt <= 0) { _lastAnimationPosition = transform.position; return; }
 
-            float speed = Vector3.Distance(transform.position, _lastAnimationPosition) / Mathf.Max(0.0001f, dt);
+            Vector3 delta = transform.position - _lastAnimationPosition;
             _lastAnimationPosition = transform.position;
+            bool ascending = false;
+            var map = PaintedChamberMap.Active;
+            bool onStairs = map != null && map.definition.StairMotion(transform.position - map.transform.position, delta, out ascending);
+            var pc = OrpheusPlayerController.Instance;
+            bool grounded = new Vector2(delta.x, delta.z).magnitude / dt < .28f;
+            _animationBrain.Step(new EurydiceAnimationInput
+            {
+                groundDelta = delta, deltaTime = dt,
+                paused = UnderworldFrontEnd.BlocksGameplay || dt <= 0,
+                vanished = IsVanished, reforming = _reformTimer > 0,
+                threatened = IsBeingAbducted || (!HasSanctuaryShield && _fearTimer > 0) || (pc != null && pc.IsGameOver),
+                shield = HasSanctuaryShield && _shieldIntroTimer > 0 && grounded, joy = (_joyTimer > 0 && grounded) || (pc != null && pc.IsVictory),
+                teaching = IsTeachingPose, replying = _humPoseTimer > 0 && grounded, onStairs = onStairs, ascending = ascending
+            });
+            _spriteAnimator.SetShieldActive(HasSanctuaryShield, _joyTimer > 0, _humPoseTimer > 0);
+            _spriteAnimator.Drive(_animationBrain);
+        }
 
-            if (IsTeachingPose || _humPoseTimer > 0f)
-                _spriteAnimator.SetState(EurydiceAnimationState.Teaching);
-            else if (speed > 0.18f)
-                _spriteAnimator.SetState(EurydiceAnimationState.Glide);
-            else
-                _spriteAnimator.SetState(EurydiceAnimationState.Idle);
+        private static float GroundDistance(Vector3 a, Vector3 b) { a.y = b.y = 0; return Vector3.Distance(a, b); }
+        private void RecordBreadcrumb()
+        {
+            if (orpheus != null && GroundDistance(orpheus.position, _lastRecordedPos) > .35f)
+            { _breadcrumbs.Enqueue(orpheus.position); _lastRecordedPos = orpheus.position; }
+        }
+
+        private void FollowBreadcrumbs(float dt, float targetLag)
+        {
+            RecordBreadcrumb();
+            var player = OrpheusPlayerController.Instance;
+            float speed = Mathf.Max(smoothSpeed * 2.4f, player != null ? player.moveSpeed * 1.15f : 0);
+            float budget = Mathf.Min(speed * dt, Mathf.Max(0, RemainingPathDistance() - targetLag));
+            // Carry unused distance across waypoints while retaining every recorded corner.
+            for (int guard = 0; guard < 64 && budget > .0001f; guard++)
+            {
+                float remaining = GroundDistance(transform.position, _desiredPos);
+                if (remaining < .001f)
+                {
+                    if (_breadcrumbs.Count == 0) break;
+                    _desiredPos = _breadcrumbs.Dequeue(); continue;
+                }
+                Vector3 before = transform.position;
+                Vector3 direction = _desiredPos - before; direction.y = 0;
+                float step = Mathf.Min(budget, remaining);
+                Vector3 goal = before + direction.normalized * step;
+                goal.y = Mathf.Sin(Time.time * 2.3f) * .035f;
+                MoveOnGround(goal);
+                float travelled = GroundDistance(before, transform.position);
+                budget -= travelled;
+                if (travelled < step * .5f) break;
+            }
+        }
+        private float RemainingPathDistance()
+        {
+            float length = GroundDistance(transform.position, _desiredPos);
+            Vector3 last = _desiredPos;
+            foreach (Vector3 point in _breadcrumbs) { length += GroundDistance(last, point); last = point; }
+            return length + (orpheus != null ? GroundDistance(last, orpheus.position) : 0);
+        }
+
+        private void MoveOnGround(Vector3 goal)
+        {
+            Vector3 pos = transform.position, delta = goal - pos; delta.y = 0;
+            for (int i = 0; i < 2 && delta.sqrMagnitude > .000001f; i++)
+            {
+                if (!ChamberCollision.SweepObstacle(pos + Vector3.up * .5f, delta, .32f, out var hit)) { pos += delta; break; }
+                float distance = Mathf.Max(0, hit.distance - .02f);
+                Vector3 travel = delta.normalized * Mathf.Min(distance, delta.magnitude);
+                pos += travel;
+                Vector3 normal = hit.normal; normal.y = 0;
+                delta = Vector3.ProjectOnPlane(delta - travel, normal.normalized);
+            }
+            var map = PaintedChamberMap.Active;
+            if (map == null || map.IsWalkable(pos, .3f)) transform.position = new Vector3(pos.x, goal.y, pos.z);
         }
 
         private void UpdateSoulTetherVisual()
@@ -413,7 +522,7 @@ namespace OrpheusBelow
             if (_generatedSpriteRenderer != null && _spriteAnimator != null && _spriteAnimator.IsReady)
             {
                 Color gc = _generatedSpriteRenderer.color;
-                gc.a = Mathf.Lerp(0.78f, 1f, _focus01);
+                gc.a = Mathf.Lerp(0.94f, 1f, _focus01);
                 _generatedSpriteRenderer.color = gc;
             }
         }

@@ -298,7 +298,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag:
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    b666ca39964a3e54b903741ac4d5767f: -7688055179876221928
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -732,7 +732,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag:
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    b666ca39964a3e54b903741ac4d5767f: -7398779745189084198
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -1957,7 +1957,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag:
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    b666ca39964a3e54b903741ac4d5767f: -2599273838936651668
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -3347,7 +3347,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag:
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    b666ca39964a3e54b903741ac4d5767f: -358019801979270271
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -3984,6 +3984,21 @@ MonoBehaviour:
     - {x: 691, y: 488}
     - {x: 644, y: 462}
     height: 1.4
+  stairs:
+  - name: FinalGateStairs
+    polygon:
+    - {x: 247, y: 398}
+    - {x: 386, y: 312}
+    - {x: 469, y: 347}
+    - {x: 332, y: 437}
+    uphill: {x: -110, y: -100}
+  - name: ArrivalStairs
+    polygon:
+    - {x: 1030, y: 786}
+    - {x: 1201, y: 687}
+    - {x: 1337, y: 749}
+    - {x: 1171, y: 851}
+    uphill: {x: -140, y: -90}
   entrance: {x: 1262, y: 802}
   exit: {x: 333, y: 253}
   well: {x: 1180, y: 772}
@@ -4019,7 +4034,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag:
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    b666ca39964a3e54b903741ac4d5767f: 171674582939763516
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -4473,7 +4488,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag:
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    b666ca39964a3e54b903741ac4d5767f: 1878998725757780256
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -4683,7 +4698,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag:
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    b666ca39964a3e54b903741ac4d5767f: 2068761117013740873
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -6211,7 +6226,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag:
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    b666ca39964a3e54b903741ac4d5767f: 7627770597947622747
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
@@ -6421,7 +6436,7 @@ Sprite:
   m_IsPolygon: 0
   m_PackingTag:
   m_RenderDataKey:
-    00000000000000000000000000000000: 0
+    b666ca39964a3e54b903741ac4d5767f: 8039210122062839323
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:

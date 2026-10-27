@@ -655,6 +655,7 @@ namespace OrpheusBelow
 
             CurrentHealth = Mathf.Max(0f, CurrentHealth - (dmg * DifficultySettings.DamageMultiplier));
             UnderworldSoundscape.Instance?.PlayHurt();
+            _eurydice?.NotifyThreat(1.4f);
             _invulnTimer = 0.68f;
 
             OrpheusFluteChannel.Instance?.InterruptByDamage();
@@ -724,6 +725,7 @@ namespace OrpheusBelow
         {
             if (IsGameOver || IsVictory) return;
             IsVictory = true;
+            _eurydice?.Celebrate(3f);
             Time.timeScale = 1f;
         }
     }

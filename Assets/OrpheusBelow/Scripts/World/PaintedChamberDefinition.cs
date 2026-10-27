@@ -16,6 +16,14 @@ namespace OrpheusBelow
             public float height = 4f;
         }
 
+        [Serializable]
+        public class StairZone
+        {
+            public string name;
+            public Vector2[] polygon;
+            public Vector2 uphill;
+        }
+
         public int index;
         public string title;
         public Texture2D painting;
@@ -26,6 +34,7 @@ namespace OrpheusBelow
         [Tooltip("Coordinates are pixels from the top-left of the original 1536 × 1024 painting.")]
         public Vector2[] walkableBoundary;
         public Cover[] cover = Array.Empty<Cover>();
+        public StairZone[] stairs = Array.Empty<StairZone>();
         public Vector2 entrance;
         public Vector2 exit;
         public Vector2 well;
@@ -39,6 +48,23 @@ namespace OrpheusBelow
             float x = (pixel.x / 1536f - .5f) * imageWidth;
             float y = (.5f - pixel.y / 1024f) * imageHeight;
             return UnderworldCamera2D.IsoRightXZ * x + UnderworldCamera2D.IsoUpXZ * (y / Mathf.Sin(36f * Mathf.Deg2Rad));
+        }
+
+        public bool StairMotion(Vector3 localPoint, Vector3 groundDelta, out bool ascending)
+        {
+            ascending = false;
+            groundDelta.y = 0;
+            if (groundDelta.sqrMagnitude < .000001f || stairs == null) return false;
+            Vector2 pixel = GroundToImage(localPoint);
+            foreach (var stair in stairs)
+            {
+                if (stair.polygon == null || !PaintedPolygon.Contains(stair.polygon, pixel)) continue;
+                Vector3 axis = ImageToGround(stair.uphill) - ImageToGround(Vector2.zero);
+                float alignment = Vector3.Dot(groundDelta.normalized, axis.normalized);
+                if (Mathf.Abs(alignment) < .35f) continue;
+                ascending = alignment > 0; return true;
+            }
+            return false;
         }
 
         public Vector2 GroundToImage(Vector3 point)

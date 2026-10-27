@@ -102,6 +102,7 @@ namespace OrpheusBelow.EditorTools
 
         private static void Author(PaintedChamberDefinition d, int i)
         {
+            AuthorStairs(d, i);
             d.index = i;
             d.name = "Chamber_" + i.ToString("D2");
             d.painting = Resources.Load<Texture2D>("PaintedChambers/Chamber_" + i.ToString("D2"));
@@ -212,6 +213,47 @@ namespace OrpheusBelow.EditorTools
                     };
                     break;
             }
+        }
+
+        public static void UpdateStairZones()
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                var layout = Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_" + i.ToString("D2"));
+                if (layout == null) continue;
+                AuthorStairs(layout, i); EditorUtility.SetDirty(layout);
+            }
+        }
+
+        private static void AuthorStairs(PaintedChamberDefinition d, int i)
+        {
+            var zones = new List<PaintedChamberDefinition.StairZone>();
+            void Add(string name, Vector2[] polygon, float dx, float dy)
+                => zones.Add(new PaintedChamberDefinition.StairZone { name = name, polygon = polygon, uphill = new Vector2(dx, dy) });
+            if (i == 1)
+            {
+                Add("CourtPortalSteps", P(1070,568,1190,514,1250,531,1158,610), 100,-65);
+                Add("CourtWesternTerrace", P(243,760,382,687,464,707,347,792), 90,-65);
+            }
+            else if (i == 2)
+            {
+                Add("LowerBurialSteps", P(420,846,637,734,800,776,589,891), 170,-100);
+                Add("MiddleBurialSteps", P(553,679,793,552,1000,603,758,742), 155,-100);
+                Add("UpperBurialSteps", P(489,462,711,357,927,403,715,517), 155,-100);
+                Add("EasternTerraceSteps", P(932,486,1125,387,1283,419,1090,532), 155,-95);
+                Add("RearBurialGateSteps", P(690,226,821,154,937,183,809,267), 95,-80);
+            }
+            else if (i == 3)
+            {
+                Add("VaultExitSteps", P(1156,425,1268,365,1346,398,1234,468), 100,-70);
+                Add("VesselCourtSteps", P(381,763,596,658,744,697,535,807), 160,-95);
+            }
+            else if (i == 4)
+            {
+                Add("FinalGateStairs", P(247,398,386,312,469,347,332,437), -110,-100);
+                Add("ArrivalStairs", P(1030,786,1201,687,1337,749,1171,851), -140,-90);
+            }
+            d.stairs = zones.ToArray();
         }
     }
 }

@@ -2,6 +2,12 @@
 
 ## Latest revision — 27 October 2026
 
+### Eurydice Look 02 (current)
+
+Eurydice now uses the approved **Look 02 / Broad Oil** ivory/gold/oxblood design and the supplied red-haired facial references. Five transparent atlases in `Resources/Characters/Eurydice/Look02/` supply **148 frames** for eight-direction idle/walking, stair motion, joy, fear, listening, teaching, sanctuary, shatter/reform and surrounding painted effects. The visible silhouette is approximately **30% larger**.
+
+Ground-only movement and facing hysteresis keep idle quiet. Actual tutorial, acoustic reply, abduction, rescue, chamber-clear and victory events select reactions. Stair polygons in the painted layout assets distinguish ascent from descent. The pause menu freezes playback; tutorial gestures use the UI clock while gameplay is paused. `Orpheus Below/Bake Eurydice Look 02` rebuilds the saved sprite library. See [animation behavior and verification](docs/eurydice-look02-animation-guide.md) and [exact production prompts](docs/eurydice-look02-image-prompts.json). Older four-state/dark-crimson Eurydice notes below describe the retained fallback.
+
 ### Authored scene mapping (current)
 
 The active route now uses the **five newest** images from `D:/Serban/TEST`, copied unchanged into `Resources/PaintedChambers/`. Open `Assets/OrpheusBelow/Scenes/PaintedChamber_00.unity` to start. The five saved scene assets are registered first in Build Settings, and real scene transitions follow the painted exits. Bootstrap version is **11**.

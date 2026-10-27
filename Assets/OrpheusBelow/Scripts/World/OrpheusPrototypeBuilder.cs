@@ -385,6 +385,7 @@ namespace OrpheusBelow
         {
             if (_chamberCleared) return;
             _chamberCleared = true;
+            Object.FindFirstObjectByType<BlurredEurydice>()?.Celebrate(1.8f);
 
             ChamberRuntimeData ch = chambers[CurrentChamberIndex];
             ProceduralLyreAudio.Instance?.PlayCadenceComplete();

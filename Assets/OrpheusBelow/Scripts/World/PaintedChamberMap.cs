@@ -290,6 +290,14 @@ namespace OrpheusBelow
             if (!showNavigationGizmos || definition == null) return;
             DrawBoundary(definition.walkableBoundary, new Color(.2f, 1f, .4f));
             foreach (var obstacle in definition.cover) DrawBoundary(obstacle.footprint, Color.red);
+            if (definition.stairs != null) foreach (var stair in definition.stairs)
+            {
+                DrawBoundary(stair.polygon, new Color(.95f, .65f, .15f));
+                Vector2 center = Vector2.zero; foreach (var p in stair.polygon) center += p;
+                center /= stair.polygon.Length;
+                Gizmos.color = new Color(.95f, .65f, .15f);
+                Gizmos.DrawLine(ToWorld(center), ToWorld(center + stair.uphill * .3f));
+            }
             Gizmos.color = Color.cyan; Gizmos.DrawWireSphere(ToWorld(definition.exit), 1.2f);
         }
 
