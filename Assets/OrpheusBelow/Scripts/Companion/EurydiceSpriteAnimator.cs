@@ -3,13 +3,14 @@ using UnityEngine;
 namespace OrpheusBelow
 {
     // Retain the old sheet's first four serialized indices.
-    public enum EurydiceAnimationState { Idle, Glide, Teaching, Shatter, Joy, Fear, Listen, Sanctuary, StairAscent, StairDescent, Turn, Reform }
+    public enum EurydiceAnimationState { Idle, Glide, Teaching, Shatter, Joy, Fear, Listen, Sanctuary, StairAscent, StairDescent, Turn, Reform, Run, Walk = Glide }
 
     public sealed class EurydiceSpriteAnimator : MonoBehaviour
     {
         private SpriteRenderer _renderer, _effects;
         private EurydiceAnimationLibrary _library;
         private Sprite[] _legacy = System.Array.Empty<Sprite>();
+        private bool _greekLegacy;
         private EurydiceAnimationState _state;
         private EurydiceFacing _facing, _turnFrom;
         private float _elapsed, _effectTime, _speed;
@@ -26,7 +27,13 @@ namespace OrpheusBelow
         {
             _renderer = GetComponent<SpriteRenderer>();
             _library = Resources.Load<EurydiceAnimationLibrary>(EurydiceAnimationLibrary.ResourcePath);
-            if (_library == null) _legacy = SliceSheet(Resources.Load<Texture2D>("Characters/Eurydice/Eurydice_DarkCrimson_4x4"));
+            if (_library == null)
+            {
+                var texture = Resources.Load<Texture2D>("Characters/Eurydice/Eurydice_GreekOil_4x4");
+                _greekLegacy = texture != null;
+                _legacy = _greekLegacy ? SliceSheet(texture, allowSinglePixelRemainder: true)
+                    : SliceSheet(Resources.Load<Texture2D>("Characters/Eurydice/Eurydice_DarkCrimson_4x4"), pixelsPerUnit: 256f);
+            }
             if (_renderer != null) { _renderer.enabled = IsReady; ApplyFrame(); }
         }
 
@@ -67,7 +74,7 @@ namespace OrpheusBelow
             if (paused || deltaTime <= 0 || !IsReady) return;
             _elapsed += deltaTime; _effectTime += deltaTime;
             float fps = UsesLook02 ? EurydiceAnimationLibrary.Fps(_state) : 8f;
-            if (_state == EurydiceAnimationState.Glide || _state == EurydiceAnimationState.StairAscent || _state == EurydiceAnimationState.StairDescent)
+            if (_state == EurydiceAnimationState.Glide || _state == EurydiceAnimationState.Run || _state == EurydiceAnimationState.StairAscent || _state == EurydiceAnimationState.StairDescent)
                 fps *= Mathf.Clamp(_speed / 3f, .65f, 1.5f);
             int count = UsesLook02 ? EurydiceAnimationLibrary.FrameCount(_state) : 4;
             bool loop = UsesLook02 ? EurydiceAnimationLibrary.Loops(_state) : _state != EurydiceAnimationState.Shatter;
@@ -109,13 +116,20 @@ namespace OrpheusBelow
                     _effects.color = new Color(1, 1, 1, alpha);
                 }
             }
-            else _renderer.sprite = _legacy[GetFrameIndex((EurydiceAnimationState)Mathf.Min((int)_state, 3), _frame)];
+            else _renderer.sprite = _legacy[_greekLegacy ? GetFrameIndex(_state, _frame) : Mathf.Min((int)_state, 3) * 4 + Mathf.Clamp(_frame, 0, 3)];
         }
 
-        public static int GetFrameIndex(EurydiceAnimationState state, int frame) => (int)state * 4 + Mathf.Clamp(frame, 0, 3);
-        public static Sprite[] SliceSheet(Texture2D texture, int columns = 4, int rows = 4, float pixelsPerUnit = 256f)
+        public static int GetFrameIndex(EurydiceAnimationState state, int frame)
         {
-            if (texture == null || columns <= 0 || rows <= 0 || pixelsPerUnit <= 0 || texture.width % columns != 0 || texture.height % rows != 0)
+            int row = state == EurydiceAnimationState.Glide ? 1 : state == EurydiceAnimationState.Run ? 2
+                : state == EurydiceAnimationState.Teaching || state == EurydiceAnimationState.Shatter ? 3 : 0;
+            return row * 4 + Mathf.Clamp(frame, 0, 3);
+        }
+        public static Sprite[] SliceSheet(Texture2D texture, int columns = 4, int rows = 4, float pixelsPerUnit = 160f, bool allowSinglePixelRemainder = false)
+        {
+            if (texture == null || columns <= 0 || rows <= 0 || pixelsPerUnit <= 0 || texture.width < columns || texture.height < rows ||
+                (!allowSinglePixelRemainder && (texture.width % columns != 0 || texture.height % rows != 0)) ||
+                (allowSinglePixelRemainder && (texture.width % columns > 1 || texture.height % rows > 1)))
                 return System.Array.Empty<Sprite>();
             int width = texture.width / columns, height = texture.height / rows;
             var sprites = new Sprite[columns * rows];

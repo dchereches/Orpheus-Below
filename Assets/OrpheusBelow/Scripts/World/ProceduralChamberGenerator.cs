@@ -338,6 +338,7 @@ namespace OrpheusBelow
             portalVis.transform.localPosition = new Vector3(0f, 1.45f, 0f);
             portalVis.transform.localScale = new Vector3(2.4f, 3.0f, 1f);
             SpriteRenderer portalSr = RenderPipeline2DSetup.AttachBillboardSprite(portalVis, RenderPipeline2DSetup.SoftGlowSprite, Color.red, 10);
+            portalVis.AddComponent<PortalLocationParticles>().SetAccent(theme.parallaxFire);
 
             GameObject floorRing = new GameObject("DoorThresholdRune");
             floorRing.transform.SetParent(doorGo.transform, false);
@@ -483,6 +484,7 @@ namespace OrpheusBelow
             portalVis.transform.localPosition = new Vector3(-0.3f, 1.45f, -0.3f);
             portalVis.transform.localScale = new Vector3(2.2f, 2.9f, 1f);
             SpriteRenderer portalSr = RenderPipeline2DSetup.AttachBillboardSprite(portalVis, RenderPipeline2DSetup.SoftGlowSprite, Color.red, 10);
+            portalVis.AddComponent<PortalLocationParticles>().SetAccent(theme.parallaxFire);
 
             GameObject floorRing = new GameObject("DoorThresholdRune");
             floorRing.transform.SetParent(doorGo.transform, false);

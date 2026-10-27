@@ -46,4 +46,6 @@ EditMode tests cover stationary vertical bobbing, all eight directions, facing r
 
 The project has four known pre-existing test failures: three tutorial-sequencing assertions and `OffBeatOrdinaryDamageCannotDefeatGuardian`. Keep these distinct from the Look 02 regression results.
 
-Final results: **53 passed / 4 pre-existing failures**. All Look 02 tests pass, including gutter isolation, follow speed/corners, paused teaching initialization and shatter cleanup. The in-engine animation verifier passes with zero runtime errors. The five-chamber render regression also passes: cover occlusion in both directions, transitions, carried health/cadences, final victory, restart and return to title. A timed sequence of in-engine animation samples is saved as `Logs/EurydiceLook02/eurydice-look02-preview.mp4` and `.gif`.
+Final merged results: **54 passed / 4 pre-existing failures**. All Look 02 tests pass, including gutter isolation, follow speed/corners, paused teaching initialization and shatter cleanup. The in-engine animation verifier passes with zero runtime errors. The five-chamber render regression also passes: cover occlusion in both directions, transitions, carried health/cadences, final victory, restart and return to title. A timed sequence of in-engine animation samples is saved as `Logs/EurydiceLook02/eurydice-look02-preview.mp4` and `.gif`.
+
+The concurrent menu/input polish is retained. Look 02 remains the primary library, with legacy Walk/Run state names and Greek-oil sheet slicing retained for compatibility.

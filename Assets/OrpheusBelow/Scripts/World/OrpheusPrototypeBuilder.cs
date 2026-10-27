@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace OrpheusBelow
 {
@@ -13,6 +14,7 @@ namespace OrpheusBelow
     public class HadesChamberDirector : MonoBehaviour
     {
         public static HadesChamberDirector Instance { get; private set; }
+        public static bool IsDevMenuOpen { get; private set; }
 
         [System.Serializable]
         public class WaveSpawnSpec
@@ -56,10 +58,15 @@ namespace OrpheusBelow
         private AsphodelTutorialStep _shownTutorialStep = AsphodelTutorialStep.Complete;
         private bool _firstTutorialTriggered;
         private bool _shownWardenHint;
+        private bool _devChordWasHeld;
+        private int _devSelection;
+        private float _devPreviousTimeScale = 1f;
+        private Vector2 _devScroll;
 
         private void Awake()
         {
             Instance = this;
+            IsDevMenuOpen = false;
         }
 
         private void Start()
@@ -72,6 +79,32 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            Keyboard keyboard = Keyboard.current;
+            bool chordHeld = keyboard != null && keyboard.zKey.isPressed && keyboard.xKey.isPressed;
+            bool chordPressed = chordHeld && !_devChordWasHeld;
+            _devChordWasHeld = chordHeld;
+
+            if (IsDevMenuOpen)
+            {
+                if (keyboard != null)
+                {
+                    if (keyboard.escapeKey.wasPressedThisFrame || chordPressed) SetDevMenuOpen(false);
+                    else if (keyboard.downArrowKey.wasPressedThisFrame) _devSelection = Mathf.Min(chambers.Count - 1, _devSelection + 1);
+                    else if (keyboard.upArrowKey.wasPressedThisFrame) _devSelection = Mathf.Max(0, _devSelection - 1);
+                    else if (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame) DevTravelToChamber(_devSelection);
+                }
+                return;
+            }
+
+            if (chordPressed && chambers.Count > 0 && !UnderworldFrontEnd.BlocksGameplay && !OrpheusHud.IsTutorialModalActive)
+            {
+                _devSelection = Mathf.Clamp(CurrentChamberIndex, 0, chambers.Count - 1);
+                _devPreviousTimeScale = Time.timeScale;
+                IsDevMenuOpen = true;
+                Time.timeScale = 0f;
+                return;
+            }
+
             if (UnderworldFrontEnd.BlocksGameplay) return;
             if (OrpheusHud.IsTutorialModalActive) return;
 
@@ -108,6 +141,49 @@ namespace OrpheusBelow
             }
 
             ShowCurrentTutorialStep();
+        }
+
+        private void SetDevMenuOpen(bool open)
+        {
+            if (IsDevMenuOpen == open) return;
+            IsDevMenuOpen = open;
+            if (!open) Time.timeScale = _devPreviousTimeScale;
+        }
+
+        private void DevTravelToChamber(int index)
+        {
+            if (index < 0 || index >= chambers.Count) return;
+            SetDevMenuOpen(false);
+            TransitionToChamber(index);
+        }
+
+        private void OnGUI()
+        {
+            if (!IsDevMenuOpen || chambers.Count == 0) return;
+            float width = Mathf.Min(620f, Screen.width - 48f);
+            float height = Mathf.Min(720f, Screen.height - 48f);
+            GUILayout.BeginArea(new Rect((Screen.width - width) * 0.5f, (Screen.height - height) * 0.5f, width, height), GUI.skin.box);
+            GUILayout.Space(8f);
+            GUILayout.Label("DEVELOPER CHAMBER SELECT", GUI.skin.label, GUILayout.Height(28f));
+            GUILayout.Label($"Current: {CurrentChamberIndex + 1:00} — {ProceduralChamberGenerator.ChamberNames[Mathf.Clamp(CurrentChamberIndex, 0, ProceduralChamberGenerator.ChamberNames.Length - 1)]}");
+            GUILayout.Label("Select a chamber and press Enter. Close with Esc or Z + X.");
+            GUILayout.Space(8f);
+            _devScroll = GUILayout.BeginScrollView(_devScroll, GUILayout.Height(height - 170f));
+            for (int i = 0; i < chambers.Count; i++)
+            {
+                if (i == 0) GUILayout.Label("ASPHODEL MEADOWS");
+                else if (i == 2) GUILayout.Label("TARTARUS");
+                string marker = i == CurrentChamberIndex ? "CURRENT  ·  " : i == _devSelection ? "SELECTED  ·  " : string.Empty;
+                if (GUILayout.Button($"{marker}{i + 1:00}  —  {chambers[i].chamberTitle}", GUILayout.Height(30f))) _devSelection = i;
+            }
+            GUILayout.EndScrollView();
+            GUILayout.BeginHorizontal();
+            bool travel = GUILayout.Button($"TRAVEL TO {_devSelection + 1:00}", GUILayout.Height(38f));
+            bool close = GUILayout.Button("CLOSE", GUILayout.Height(38f));
+            GUILayout.EndHorizontal();
+            GUILayout.EndArea();
+            if (travel) DevTravelToChamber(_devSelection);
+            else if (close) SetDevMenuOpen(false);
         }
 
         public string GetCurrentChamberTitle()
@@ -632,6 +708,7 @@ namespace OrpheusBelow
             portalVis.transform.localPosition = new Vector3(-0.3f, 1.45f, -0.3f);
             portalVis.transform.localScale = new Vector3(2.2f, 2.9f, 1f);
             SpriteRenderer portalSr = RenderPipeline2DSetup.AttachBillboardSprite(portalVis, RenderPipeline2DSetup.SoftGlowSprite, Color.red, 10);
+            portalVis.AddComponent<PortalLocationParticles>().SetAccent(new Color(0.9f, 0.58f, 0.30f));
 
             GameObject floorRing = new GameObject("DoorThresholdRune");
             floorRing.transform.SetParent(doorGo.transform, false);

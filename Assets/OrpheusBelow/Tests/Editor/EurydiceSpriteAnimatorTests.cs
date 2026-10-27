@@ -22,7 +22,8 @@ namespace OrpheusBelow.Tests
 
         [TestCase(EurydiceAnimationState.Idle, 0, 0)]
         [TestCase(EurydiceAnimationState.Glide, 2, 6)]
-        [TestCase(EurydiceAnimationState.Teaching, 3, 11)]
+        [TestCase(EurydiceAnimationState.Run, 2, 10)]
+        [TestCase(EurydiceAnimationState.Teaching, 3, 15)]
         [TestCase(EurydiceAnimationState.Shatter, 3, 15)]
         public void MapsAnimationStateToExpectedRow(EurydiceAnimationState state, int frame, int expectedIndex)
         {

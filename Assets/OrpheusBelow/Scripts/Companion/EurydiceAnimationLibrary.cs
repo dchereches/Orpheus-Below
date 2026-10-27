@@ -14,7 +14,7 @@ namespace OrpheusBelow
         {
             int direction = (int)facing;
             if (state == EurydiceAnimationState.Idle || state == EurydiceAnimationState.Turn) return idle[direction * 4 + frame % 4];
-            if (state == EurydiceAnimationState.Glide) return walk[direction * 4 + frame % 4];
+            if (state == EurydiceAnimationState.Glide || state == EurydiceAnimationState.Run) return walk[direction * 4 + frame % 4];
             bool west = facing == EurydiceFacing.West || facing == EurydiceFacing.NorthWest || facing == EurydiceFacing.SouthWest;
             if (state == EurydiceAnimationState.StairAscent) return stairs[(west ? 1 : 0) * 6 + frame % 6];
             if (state == EurydiceAnimationState.StairDescent) return stairs[(west ? 3 : 2) * 6 + frame % 6];
@@ -25,11 +25,11 @@ namespace OrpheusBelow
         }
 
         public static int FrameCount(EurydiceAnimationState state)
-            => state == EurydiceAnimationState.Idle || state == EurydiceAnimationState.Glide || state == EurydiceAnimationState.Turn ? 4 : 6;
-        public static bool Loops(EurydiceAnimationState state) => state == EurydiceAnimationState.Idle || state == EurydiceAnimationState.Glide ||
+            => state == EurydiceAnimationState.Idle || state == EurydiceAnimationState.Glide || state == EurydiceAnimationState.Run || state == EurydiceAnimationState.Turn ? 4 : 6;
+        public static bool Loops(EurydiceAnimationState state) => state == EurydiceAnimationState.Idle || state == EurydiceAnimationState.Glide || state == EurydiceAnimationState.Run ||
             state == EurydiceAnimationState.StairAscent || state == EurydiceAnimationState.StairDescent || state == EurydiceAnimationState.Teaching;
         public static float Fps(EurydiceAnimationState state) => state == EurydiceAnimationState.Idle ? 1.6f
             : state == EurydiceAnimationState.Turn ? 22f : state == EurydiceAnimationState.Teaching ? 3.5f
-            : state == EurydiceAnimationState.Glide ? 8f : state == EurydiceAnimationState.StairAscent || state == EurydiceAnimationState.StairDescent ? 6f : 7f;
+            : state == EurydiceAnimationState.Run ? 10f : state == EurydiceAnimationState.Glide ? 8f : state == EurydiceAnimationState.StairAscent || state == EurydiceAnimationState.StairDescent ? 6f : 7f;
     }
 }
