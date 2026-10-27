@@ -159,13 +159,19 @@ namespace OrpheusBelow
 
         private void Update()
         {
-            if (SoundCalibrationMenu.IsOpen)
-            {
-                if (sourceMode == SensorSourceMode.KeyboardPlusPCMicrophone) UpdateMicrophone();
-                return;
-            }
+            bool gameplayBlocked = UnderworldFrontEnd.BlocksGameplay;
 
-            if (UnderworldFrontEnd.BlocksGameplay)
+            // Keep the calibration meter live while menus pause gameplay, but do not
+            // dispatch combat notes while the title, settings, or dev selector is open.
+            if (sourceMode == SensorSourceMode.KeyboardPlusPCMicrophone)
+                UpdateMicrophone(allowPulses: !gameplayBlocked && !SoundCalibrationMenu.IsOpen);
+            else if (sourceMode == SensorSourceMode.KeyboardPlusESP32Serial && !gameplayBlocked)
+                UpdateSerialQueue();
+
+            if (SoundCalibrationMenu.IsOpen)
+                return;
+
+            if (gameplayBlocked)
             {
                 _isCharging = false;
                 _chargeHoldTime = 0f;
@@ -182,14 +188,6 @@ namespace OrpheusBelow
 
             UpdateKeyboardAndMouse();
 
-            if (sourceMode == SensorSourceMode.KeyboardPlusPCMicrophone)
-            {
-                UpdateMicrophone();
-            }
-            else if (sourceMode == SensorSourceMode.KeyboardPlusESP32Serial)
-            {
-                UpdateSerialQueue();
-            }
         }
 
         public void CycleSourceMode()
@@ -322,7 +320,7 @@ namespace OrpheusBelow
             _micClip = null;
         }
 
-        private void UpdateMicrophone()
+        private void UpdateMicrophone(bool allowPulses = true)
         {
             if (_micClip == null || string.IsNullOrEmpty(_micDevice)) return;
             int pos = Microphone.GetPosition(_micDevice) - _micSamples.Length;
@@ -341,6 +339,13 @@ namespace OrpheusBelow
             if (!_isCharging) CurrentLiveLevel = _micEnvelope;
 
             // Peak-hold envelope detector so a single punch/puff fires ONE clean pulse at its true peak!
+            if (!allowPulses)
+            {
+                _micRising = false;
+                _micPeakHold = 0f;
+                return;
+            }
+
             if (_micEnvelope > softMinThreshold)
             {
                 if (_micEnvelope >= _micPeakHold)

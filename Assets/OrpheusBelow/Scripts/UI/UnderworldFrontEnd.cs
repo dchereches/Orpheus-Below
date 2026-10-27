@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -22,7 +23,8 @@ namespace OrpheusBelow
     {
         public static UnderworldFrontEnd Instance { get; private set; }
         public static bool SkipTitleOnce;
-        public static bool BlocksGameplay => _menuBlocksGameplay || Time.frameCount <= _blockThroughFrame;
+        public static bool BlocksGameplay => _menuBlocksGameplay || HadesChamberDirector.IsDevMenuOpen
+                                             || Time.frameCount <= _blockThroughFrame;
 
         private static bool _menuBlocksGameplay;
         private static int _blockThroughFrame = -1;
@@ -39,6 +41,8 @@ namespace OrpheusBelow
         private RawImage _panorama;
         private Texture2D _shadeTexture;
         private EventSystem _events;
+        private CanvasGroup _canvasGroup;
+        private Coroutine _menuFadeRoutine;
         private bool _open, _inRun, _reloading, _ownsSerif, _ownsSans;
         private int _lastWidth, _lastHeight;
 
@@ -50,6 +54,7 @@ namespace OrpheusBelow
         // 1. Microphone & Breath Calibration
         private RectTransform _vuFill;
         private Image _vuFillImg;
+        private RectTransform _softThresholdMarker, _boomThresholdMarker;
         private Text _micStatusText;
         private Slider _sensitivitySlider, _softThresholdSlider, _boomThresholdSlider;
         private Text _sensitivityLabel, _softThresholdLabel, _boomThresholdLabel;
@@ -110,6 +115,7 @@ namespace OrpheusBelow
             if (skip)
             {
                 _canvasObject.SetActive(false);
+                _canvasGroup.alpha = 0f;
                 Time.timeScale = 1f;
                 AudioListener.pause = false;
             }
@@ -159,6 +165,7 @@ namespace OrpheusBelow
             var canvas = root.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 1000;
+            _canvasGroup = root.AddComponent<CanvasGroup>();
 
             var scaler = root.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -261,6 +268,13 @@ namespace OrpheusBelow
             _vuFill.anchorMin = _vuFill.anchorMax = _vuFill.pivot = new Vector2(0f, 1f);
             _vuFillImg = _vuFill.gameObject.AddComponent<Image>();
             _vuFillImg.color = Gold;
+
+            _softThresholdMarker = Rect("SoftThresholdMarker", vuTrack, 0, -3, 2, 28);
+            _softThresholdMarker.anchorMin = _softThresholdMarker.anchorMax = _softThresholdMarker.pivot = new Vector2(0f, 0.5f);
+            _softThresholdMarker.gameObject.AddComponent<Image>().color = Gold;
+            _boomThresholdMarker = Rect("BigBoomThresholdMarker", vuTrack, 0, -3, 2, 28);
+            _boomThresholdMarker.anchorMin = _boomThresholdMarker.anchorMax = _boomThresholdMarker.pivot = new Vector2(0f, 0.5f);
+            _boomThresholdMarker.gameObject.AddComponent<Image>().color = Crimson;
 
             // Live Recognition Pill
             _micStatusText = Label(body, "Listening", 72, 236, 500, 24, 14, Muted, false);
@@ -538,6 +552,15 @@ namespace OrpheusBelow
                     _micStatusText.color = Muted;
                 }
             }
+
+            if (_softThresholdMarker != null)
+                _softThresholdMarker.anchoredPosition = new Vector2(500f * sensor.softMinThreshold, 0f);
+            if (_boomThresholdMarker != null)
+                _boomThresholdMarker.anchoredPosition = new Vector2(500f * sensor.hardBoomThreshold, 0f);
+            if (_softThresholdLabel != null)
+                _softThresholdLabel.text = $"Small / soft note threshold   {sensor.softMinThreshold:P0}";
+            if (_boomThresholdLabel != null)
+                _boomThresholdLabel.text = $"Big / hard boom threshold   {sensor.hardBoomThreshold:P0}";
         }
 
         private void FitPanorama()
@@ -566,6 +589,9 @@ namespace OrpheusBelow
             Time.timeScale = 0f;
             AudioListener.pause = true;
             _canvasObject.SetActive(true);
+            _canvasGroup.alpha = 0f;
+            _canvasGroup.interactable = false;
+            _canvasGroup.blocksRaycasts = false;
             _main.SetActive(true);
             _settings.SetActive(false);
 
@@ -578,11 +604,19 @@ namespace OrpheusBelow
 
             SyncAudioControls();
             Select(_primary);
+            StartMenuFade(1f, true);
         }
 
         private void BeginOrResume()
         {
             UnderworldSoundscape.Instance?.PlayMenuConfirm();
+            if (_menuFadeRoutine != null) StopCoroutine(_menuFadeRoutine);
+            _menuFadeRoutine = StartCoroutine(FadeOutBeforeResume());
+        }
+
+        private IEnumerator FadeOutBeforeResume()
+        {
+            yield return FadeCanvas(0f, 0.22f);
             _inRun = true;
             _open = false;
             _menuBlocksGameplay = false;
@@ -591,6 +625,37 @@ namespace OrpheusBelow
             _canvasObject.SetActive(false);
             Time.timeScale = OrpheusHud.IsTutorialModalActive ? 0f : 1f;
             AudioListener.pause = false;
+            _menuFadeRoutine = null;
+        }
+
+        private void StartMenuFade(float target, bool enableInputAtEnd)
+        {
+            if (_menuFadeRoutine != null) StopCoroutine(_menuFadeRoutine);
+            _menuFadeRoutine = StartCoroutine(FadeMenuRoutine(target, enableInputAtEnd));
+        }
+
+        private IEnumerator FadeMenuRoutine(float target, bool enableInputAtEnd)
+        {
+            yield return FadeCanvas(target, 0.24f);
+            if (enableInputAtEnd && _canvasGroup != null)
+            {
+                _canvasGroup.interactable = true;
+                _canvasGroup.blocksRaycasts = true;
+            }
+            _menuFadeRoutine = null;
+        }
+
+        private IEnumerator FadeCanvas(float target, float duration)
+        {
+            float from = _canvasGroup == null ? target : _canvasGroup.alpha;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                if (_canvasGroup != null) _canvasGroup.alpha = Mathf.Lerp(from, target, Mathf.Clamp01(elapsed / duration));
+                yield return null;
+            }
+            if (_canvasGroup != null) _canvasGroup.alpha = target;
         }
 
         private void ShowSettings()

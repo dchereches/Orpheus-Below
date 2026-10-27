@@ -4,18 +4,20 @@ namespace OrpheusBelow
 {
     public enum EurydiceAnimationState
     {
-        Idle,
-        Glide,
-        Teaching,
-        Shatter
+        Idle = 0,
+        Walk = 1,
+        Glide = Walk,
+        Run = 2,
+        Teaching = 3,
+        Shatter = 4
     }
 
-    /// <summary>Runtime slicer and compact four-state animator for Eurydice's 4x4 sheet.</summary>
+    /// <summary>Runtime slicer and animator for Eurydice's 4x4 idle/walk/run/gesture sheet.</summary>
     public sealed class EurydiceSpriteAnimator : MonoBehaviour
     {
         private const int FramesPerState = 4;
         private const float FrameDuration = 1f / 8f;
-        private const string ResourcePath = "Characters/Eurydice/Eurydice_DarkCrimson_4x4";
+        private const string ResourcePath = "Characters/Eurydice/Eurydice_GreekOil_4x4";
 
         private SpriteRenderer _renderer;
         private Sprite[] _frames = System.Array.Empty<Sprite>();
@@ -30,7 +32,7 @@ namespace OrpheusBelow
         {
             _renderer = GetComponent<SpriteRenderer>();
             Texture2D texture = Resources.Load<Texture2D>(ResourcePath);
-            _frames = SliceSheet(texture);
+            _frames = SliceSheet(texture, allowSinglePixelRemainder: true);
             if (_renderer != null)
             {
                 _renderer.enabled = IsReady;
@@ -41,19 +43,13 @@ namespace OrpheusBelow
         private void Update()
         {
             if (!IsReady || _renderer == null) return;
+            if (_state == EurydiceAnimationState.Shatter) return;
 
             _frameTimer += Time.unscaledDeltaTime;
             while (_frameTimer >= FrameDuration)
             {
                 _frameTimer -= FrameDuration;
-                if (_state == EurydiceAnimationState.Shatter)
-                {
-                    _frame = Mathf.Min(_frame + 1, FramesPerState - 1);
-                }
-                else
-                {
-                    _frame = (_frame + 1) % FramesPerState;
-                }
+                _frame = (_frame + 1) % FramesPerState;
                 ApplyFrame();
             }
         }
@@ -62,8 +58,9 @@ namespace OrpheusBelow
         {
             if (_state == state) return;
             _state = state;
-            _frame = 0;
             _frameTimer = 0f;
+            if (state == EurydiceAnimationState.Shatter) return;
+            _frame = 0;
             ApplyFrame();
         }
 
@@ -77,17 +74,29 @@ namespace OrpheusBelow
 
         public static int GetFrameIndex(EurydiceAnimationState state, int frame)
         {
-            return ((int)state * FramesPerState) + Mathf.Clamp(frame, 0, FramesPerState - 1);
+            int row = state == EurydiceAnimationState.Shatter
+                ? (int)EurydiceAnimationState.Teaching
+                : Mathf.Clamp((int)state, 0, 3);
+            return (row * FramesPerState) + Mathf.Clamp(frame, 0, FramesPerState - 1);
         }
 
-        public static Sprite[] SliceSheet(Texture2D texture, int columns = 4, int rows = 4, float pixelsPerUnit = 256f)
+        public static Sprite[] SliceSheet(
+            Texture2D texture,
+            int columns = 4,
+            int rows = 4,
+            float pixelsPerUnit = 160f,
+            bool allowSinglePixelRemainder = false)
         {
             if (texture == null || columns <= 0 || rows <= 0 || pixelsPerUnit <= 0f ||
-                texture.width % columns != 0 || texture.height % rows != 0)
+                texture.width < columns || texture.height < rows ||
+                (!allowSinglePixelRemainder && (texture.width % columns != 0 || texture.height % rows != 0)) ||
+                (allowSinglePixelRemainder &&
+                 (texture.width % columns > 1 || texture.height % rows > 1)))
             {
                 return System.Array.Empty<Sprite>();
             }
 
+            // Use equal integer-sized cells and ignore any one-pixel remainder at the far edge.
             int frameWidth = texture.width / columns;
             int frameHeight = texture.height / rows;
             Sprite[] sprites = new Sprite[columns * rows];

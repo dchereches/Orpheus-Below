@@ -6,6 +6,21 @@ namespace OrpheusBelow.Editor
     {
         private void OnPreprocessTexture()
         {
+            if (assetPath.Contains("/Resources/Characters/Eurydice/Eurydice_GreekOil_4x4"))
+            {
+                var eurydiceImporter = (TextureImporter)assetImporter;
+                eurydiceImporter.textureType = TextureImporterType.Default;
+                eurydiceImporter.npotScale = TextureImporterNPOTScale.None;
+                eurydiceImporter.maxTextureSize = 2048;
+                eurydiceImporter.mipmapEnabled = false;
+                eurydiceImporter.isReadable = true;
+                eurydiceImporter.alphaIsTransparency = true;
+                eurydiceImporter.textureCompression = TextureImporterCompression.Uncompressed;
+                eurydiceImporter.wrapMode = UnityEngine.TextureWrapMode.Clamp;
+                eurydiceImporter.filterMode = UnityEngine.FilterMode.Bilinear;
+                return;
+            }
+
             if (!assetPath.Contains("/Resources/Art/") && !assetPath.Contains("/Resources/PaintedChambers/")) return;
             var importer = (TextureImporter)assetImporter;
             importer.textureType = TextureImporterType.Default;

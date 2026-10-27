@@ -258,6 +258,7 @@ namespace OrpheusBelow
             foreach (var r in _blurRenderers) if (r != null) r.enabled = false;
             if (_sharpCoreHead != null) _sharpCoreHead.enabled = false;
             if (_sharpCoreRobe != null) _sharpCoreRobe.enabled = false;
+            if (_generatedSpriteRenderer != null) _generatedSpriteRenderer.enabled = false;
         }
 
         private void Update()
@@ -345,8 +346,10 @@ namespace OrpheusBelow
 
             if (IsTeachingPose || _humPoseTimer > 0f)
                 _spriteAnimator.SetState(EurydiceAnimationState.Teaching);
+            else if (speed > 1.15f)
+                _spriteAnimator.SetState(EurydiceAnimationState.Run);
             else if (speed > 0.18f)
-                _spriteAnimator.SetState(EurydiceAnimationState.Glide);
+                _spriteAnimator.SetState(EurydiceAnimationState.Walk);
             else
                 _spriteAnimator.SetState(EurydiceAnimationState.Idle);
         }
