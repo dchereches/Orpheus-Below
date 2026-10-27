@@ -317,7 +317,6 @@ namespace OrpheusBelow
             }
             _tutorialPortrait.gameObject.SetActive(_tutorialPortrait.texture != null);
         }
-        }
 
         public void ShowEurydiceHint(string text, float duration = 3.2f)
         {
