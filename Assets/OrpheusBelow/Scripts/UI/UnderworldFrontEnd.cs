@@ -293,8 +293,8 @@ namespace OrpheusBelow
                 _sensitivityLabel.text = "Sensitivity   " + val.ToString("F1") + "×";
             });
 
-            // Soft Threshold Slider (0.05 to 0.40)
-            _softThresholdLabel = Label(body, "Soft note threshold   14%", 72, 338, 500, 22, 14, Ivory, false);
+            // Small Quaver (♪) Threshold Slider (0.05 to 0.40)
+            _softThresholdLabel = Label(body, "Small Quaver (♪) threshold   14%", 72, 338, 500, 22, 14, Ivory, false);
             _softThresholdSlider = MakeGenericSlider(body, 72, 362, 500, 0.05f, 0.40f, false, val =>
             {
                 SensorPulseInput sensor = SensorPulseInput.Instance;
@@ -303,11 +303,11 @@ namespace OrpheusBelow
                     sensor.softMinThreshold = val;
                     sensor.SaveCalibration();
                 }
-                _softThresholdLabel.text = "Soft note threshold   " + Mathf.RoundToInt(val * 100f) + "%";
+                _softThresholdLabel.text = "Small Quaver (♪) threshold   " + Mathf.RoundToInt(val * 100f) + "%";
             });
 
-            // Hard Boom Threshold Slider (0.45 to 0.85)
-            _boomThresholdLabel = Label(body, "Hard boom threshold   60%", 72, 402, 500, 22, 14, Ivory, false);
+            // Boom Fermata (𝄐) Threshold Slider (0.45 to 0.85)
+            _boomThresholdLabel = Label(body, "Boom Fermata threshold   60%", 72, 402, 500, 22, 14, Ivory, false);
             _boomThresholdSlider = MakeGenericSlider(body, 72, 426, 500, 0.45f, 0.85f, false, val =>
             {
                 SensorPulseInput sensor = SensorPulseInput.Instance;
@@ -316,7 +316,7 @@ namespace OrpheusBelow
                     sensor.hardBoomThreshold = val;
                     sensor.SaveCalibration();
                 }
-                _boomThresholdLabel.text = "Hard boom threshold   " + Mathf.RoundToInt(val * 100f) + "%";
+                _boomThresholdLabel.text = "Boom Fermata threshold   " + Mathf.RoundToInt(val * 100f) + "%";
             });
 
             // Input Mode Toggle Button
@@ -538,12 +538,12 @@ namespace OrpheusBelow
             {
                 if (live >= sensor.hardBoomThreshold)
                 {
-                    _micStatusText.text = "Hard boom (B)   " + Mathf.RoundToInt(live * 100f) + "%";
+                    _micStatusText.text = "Boom Fermata   " + Mathf.RoundToInt(live * 100f) + "%";
                     _micStatusText.color = Crimson;
                 }
                 else if (live >= sensor.softMinThreshold)
                 {
-                    _micStatusText.text = "Soft note (S)   " + Mathf.RoundToInt(live * 100f) + "%";
+                    _micStatusText.text = "Small Quaver (♪)   " + Mathf.RoundToInt(live * 100f) + "%";
                     _micStatusText.color = Gold;
                 }
                 else
@@ -558,9 +558,9 @@ namespace OrpheusBelow
             if (_boomThresholdMarker != null)
                 _boomThresholdMarker.anchoredPosition = new Vector2(500f * sensor.hardBoomThreshold, 0f);
             if (_softThresholdLabel != null)
-                _softThresholdLabel.text = $"Small / soft note threshold   {sensor.softMinThreshold:P0}";
+                _softThresholdLabel.text = $"Small Quaver (♪) threshold   {sensor.softMinThreshold:P0}";
             if (_boomThresholdLabel != null)
-                _boomThresholdLabel.text = $"Big / hard boom threshold   {sensor.hardBoomThreshold:P0}";
+                _boomThresholdLabel.text = $"Boom Fermata threshold   {sensor.hardBoomThreshold:P0}";
         }
 
         private void FitPanorama()

@@ -24,6 +24,13 @@ namespace OrpheusBelow
         public float earshotRadius = 8.5f;
         public float sequenceTimeoutSeconds = 4.2f;
 
+        public IReadOnlyList<char> TargetSequence => _targetSequence;
+        public int CurrentNoteIndex => _currentNoteIndex;
+        public float SequenceTimeRemaining01 => Mathf.Clamp01(_sequenceTimer / Mathf.Max(0.1f, sequenceTimeoutSeconds));
+
+        private Sprite _quaverSprite;
+        private Sprite _fermataSprite;
+
         private OrpheusPlayerController _player;
         private Transform _billboardRoot;
         private Transform _fluteVis;
@@ -72,21 +79,39 @@ namespace OrpheusBelow
             _fluteVis = fluteObj.transform;
             _fluteVis.gameObject.SetActive(false);
 
+            _quaverSprite = Resources.Load<Sprite>("MusicalNotation/symbol_quaver_small");
+            _fermataSprite = Resources.Load<Sprite>("MusicalNotation/symbol_fermata_boom");
+
             _noteDisplayRoot = new GameObject("FluteNoteStave").transform;
             _noteDisplayRoot.SetParent(_billboardRoot, false);
+
+            // Subtle parchment backing ribbon behind the stave so black notes remain crisp against any background
+            GameObject staveBacking = new GameObject("FluteMiniStaffBacking");
+            staveBacking.transform.SetParent(_noteDisplayRoot, false);
+            staveBacking.transform.localPosition = new Vector3(0f, 0f, 0.05f);
+            staveBacking.transform.localScale = new Vector3(1.82f, 0.34f, 1f);
+            RenderPipeline2DSetup.AttachSprite(staveBacking, RenderPipeline2DSetup.SquareSprite, new Color(0.96f, 0.94f, 0.88f, 0.20f), 19);
+
+            // Mini golden staff baseline behind the 4 notes (clean, subtle hairline)
+            GameObject staveLine = new GameObject("FluteMiniStaffLine");
+            staveLine.transform.SetParent(_noteDisplayRoot, false);
+            staveLine.transform.localPosition = new Vector3(0f, -0.015f, 0.04f);
+            staveLine.transform.localScale = new Vector3(1.72f, 0.012f, 1f);
+            RenderPipeline2DSetup.AttachSprite(staveLine, RenderPipeline2DSetup.SquareSprite, new Color(0.95f, 0.82f, 0.45f, 0.45f), 20);
 
             _noteRenderers = new SpriteRenderer[4];
             _noteTransforms = new Transform[4];
 
+            // 4 note runes spread apart above Orpheus for effortless readability
             for (int i = 0; i < 4; i++)
             {
                 GameObject noteGo = new GameObject("NoteRune_" + i);
                 noteGo.transform.SetParent(_noteDisplayRoot, false);
                 noteGo.transform.localPosition = new Vector3((i - 1.5f) * 0.42f, 0f, 0f);
-                noteGo.transform.localScale = new Vector3(0.38f, 0.38f, 1f);
+                noteGo.transform.localScale = new Vector3(0.22f, 0.22f, 1f);
 
                 _noteRenderers[i] = RenderPipeline2DSetup.AttachSprite(
-                    noteGo, RenderPipeline2DSetup.DiamondSprite, new Color(0.8f, 0.8f, 0.8f, 0.3f), 22);
+                    noteGo, _quaverSprite != null ? _quaverSprite : RenderPipeline2DSetup.DiamondSprite, new Color(0.8f, 0.8f, 0.8f, 0.3f), 23);
                 _noteTransforms[i] = noteGo.transform;
             }
 
@@ -175,8 +200,21 @@ namespace OrpheusBelow
             {
                 if (i >= _targetSequence.Count) continue;
                 bool isBoom = _targetSequence[i] == 'B';
-                _noteRenderers[i].sprite = isBoom ? RenderPipeline2DSetup.RingSprite : RenderPipeline2DSetup.DiamondSprite;
-                _noteTransforms[i].localScale = isBoom ? new Vector3(0.48f, 0.48f, 1f) : new Vector3(0.38f, 0.38f, 1f);
+                if (isBoom && _fermataSprite != null)
+                {
+                    _noteRenderers[i].sprite = _fermataSprite;
+                    _noteTransforms[i].localScale = new Vector3(0.22f, 0.22f, 1f);
+                }
+                else if (!isBoom && _quaverSprite != null)
+                {
+                    _noteRenderers[i].sprite = _quaverSprite;
+                    _noteTransforms[i].localScale = new Vector3(0.22f, 0.22f, 1f);
+                }
+                else
+                {
+                    _noteRenderers[i].sprite = isBoom ? RenderPipeline2DSetup.RingSprite : RenderPipeline2DSetup.DiamondSprite;
+                    _noteTransforms[i].localScale = new Vector3(0.22f, 0.22f, 1f);
+                }
             }
         }
 
@@ -188,25 +226,25 @@ namespace OrpheusBelow
             {
                 if (i >= _targetSequence.Count) continue;
                 bool isBoom = _targetSequence[i] == 'B';
+                Vector3 baseScale = new Vector3(0.22f, 0.22f, 1f);
 
                 if (i < _currentNoteIndex)
                 {
-                    // Completed note
-                    _noteRenderers[i].color = new Color(2.6f, 2.2f, 0.5f, 0.95f);
-                    _noteTransforms[i].localScale = (isBoom ? new Vector3(0.48f, 0.48f, 1f) : new Vector3(0.38f, 0.38f, 1f));
+                    // Completed note - illuminates into radiant gold
+                    _noteRenderers[i].color = new Color(1f, 0.88f, 0.25f, 0.95f);
+                    _noteTransforms[i].localScale = baseScale;
                 }
                 else if (i == _currentNoteIndex)
                 {
-                    // Active target note
-                    Color activeCol = isBoom ? new Color(2.8f, 0.35f, 0.25f, 1f) : new Color(2.5f, 2.1f, 0.4f, 1f);
-                    _noteRenderers[i].color = activeCol;
-                    _noteTransforms[i].localScale = (isBoom ? new Vector3(0.55f, 0.55f, 1f) : new Vector3(0.44f, 0.44f, 1f)) * pulse;
+                    // Active target note needed now - simple black with 40% transparency (60% opacity), gently pulsing
+                    _noteRenderers[i].color = new Color(0f, 0f, 0f, 0.60f);
+                    _noteTransforms[i].localScale = baseScale * pulse;
                 }
                 else
                 {
-                    // Upcoming note
-                    _noteRenderers[i].color = new Color(0.7f, 0.75f, 0.85f, 0.32f);
-                    _noteTransforms[i].localScale = (isBoom ? new Vector3(0.44f, 0.44f, 1f) : new Vector3(0.34f, 0.34f, 1f));
+                    // Upcoming notes needed next - simple black with 40% transparency (60% opacity)
+                    _noteRenderers[i].color = new Color(0f, 0f, 0f, 0.60f);
+                    _noteTransforms[i].localScale = baseScale * 0.92f;
                 }
             }
         }

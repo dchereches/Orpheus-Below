@@ -171,6 +171,14 @@ namespace OrpheusBelow
             UnderworldCamera2D cam = UnderworldCamera2D.Instance;
             if (cam == null) return;
 
+            // When a 2D Boss Battle is active, keep background pure void black (no nebulae, spires, or colonnades)
+            if (CerberusRhythmBoss.ActiveBoss != null && CerberusRhythmBoss.ActiveBoss.IsBattleActive)
+            {
+                _visibility01 = 0f;
+                ApplyVisibility(0f, 0f);
+                return;
+            }
+
             // Only show parallax rig when this chamber is the active one and Side2DBlend > 0
             float distToCamFocus = Vector3.Distance(
                 new Vector3(cam.chamberCenter.x, 0f, cam.chamberCenter.z),

@@ -87,6 +87,14 @@ namespace OrpheusBelow
         private Vector3 _noteSpawnLocal;
         private Vector3 _noteTargetLocal;
 
+        // Abyssal Boss Blackout & Musical Notation Sprites
+        private GameObject _blackoutBackdrop;
+        private Color _originalCameraBgColor = Color.black;
+        private bool _savedCameraBg;
+        private Sprite _quaverSprite;
+        private Sprite _fermataSprite;
+        private Sprite _trebleClefSprite;
+
         private float _beatInterval;
         private float _nextBeatTime;
         private int _barrageNotesRemaining;
@@ -97,6 +105,8 @@ namespace OrpheusBelow
             public float targetHitTime;
             public Transform visual;
             public bool resolved;
+            public Vector3 spawnPos;
+            public Vector3 targetPos;
         }
 
         private readonly List<StaveBeatNote> _notes = new List<StaveBeatNote>();
@@ -222,31 +232,58 @@ namespace OrpheusBelow
                 _heads[i] = h.transform;
             }
 
+            // Load transparent PNG musical notation assets
+            _quaverSprite = Resources.Load<Sprite>("MusicalNotation/symbol_quaver_small");
+            _fermataSprite = Resources.Load<Sprite>("MusicalNotation/symbol_fermata_boom");
+            _trebleClefSprite = Resources.Load<Sprite>("MusicalNotation/symbol_treble_clef");
+
             // --- 2D MUSICAL STAVE FOR RHYTHM CLIMAX ---
             _staveRoot = new GameObject("RhythmStave2D").transform;
             _staveRoot.SetParent(transform, false);
             _staveRoot.position = _stageCenter + new Vector3(0f, 3.65f, 0f);
             _staveRoot.rotation = UnderworldCamera2D.Side2DRotation;
 
-            _noteSpawnLocal = new Vector3(4.9f, 0f, 0f);   // Above Boss (Right)
-            _noteTargetLocal = new Vector3(-4.2f, 0f, 0f); // Above Orpheus (Left)
+            _noteSpawnLocal = new Vector3(5.2f, 0f, 0f);   // Above Boss (Right)
+            _noteTargetLocal = new Vector3(-4.4f, 0f, 0f); // Above Orpheus (Left)
 
-            // 3 delicate golden staff hairlines
-            for (int s = -1; s <= 1; s++)
+            // 5 Classical Golden Staff Hairlines (E4, G4, B4, D5, F5)
+            const float lineSpacing = 0.22f;
+            for (int s = -2; s <= 2; s++)
             {
                 GameObject line = new GameObject("StaffLine_" + s);
                 line.transform.SetParent(_staveRoot, false);
-                line.transform.localPosition = new Vector3(0.35f, s * 0.24f, 0.05f);
-                line.transform.localScale = new Vector3(9.8f, 0.03f, 1f);
-                RenderPipeline2DSetup.AttachSprite(line, RenderPipeline2DSetup.SquareSprite, new Color(0.95f, 0.80f, 0.45f, 0.26f), 18);
+                line.transform.localPosition = new Vector3(0.4f, s * lineSpacing, 0.05f);
+                line.transform.localScale = new Vector3(10.8f, 0.024f, 1f);
+                RenderPipeline2DSetup.AttachSprite(line, RenderPipeline2DSetup.SquareSprite, new Color(0.96f, 0.85f, 0.52f, 0.65f), 18);
             }
 
-            // Pulsing Golden Lyre Target Ring on the Left
+            // Subtle Vertical Measure Barlines across the 5 staff lines
+            float[] barlineX = { -2.1f, 0.4f, 2.9f, 5.4f };
+            for (int b = 0; b < barlineX.Length; b++)
+            {
+                GameObject bar = new GameObject("StaffBarline_" + b);
+                bar.transform.SetParent(_staveRoot, false);
+                bar.transform.localPosition = new Vector3(barlineX[b], 0f, 0.04f);
+                bar.transform.localScale = new Vector3(0.025f, lineSpacing * 4.2f, 1f);
+                RenderPipeline2DSetup.AttachSprite(bar, RenderPipeline2DSetup.SquareSprite, new Color(0.90f, 0.78f, 0.45f, 0.40f), 18);
+            }
+
+            // Classical Treble Clef (𝄞) Sprite at the Left Target Hit Register (delicate, refined scale)
+            GameObject clefGo = new GameObject("TrebleClefRegister");
+            clefGo.transform.SetParent(_staveRoot, false);
+            clefGo.transform.localPosition = _noteTargetLocal + new Vector3(0f, 0.02f, 0.02f);
+            clefGo.transform.localScale = new Vector3(0.55f, 0.55f, 1f);
+            if (_trebleClefSprite != null)
+            {
+                RenderPipeline2DSetup.AttachSprite(clefGo, _trebleClefSprite, Color.white, 21);
+            }
+
+            // Pulsing Golden Lyre Target Ring around the Treble Clef
             GameObject ringGo = new GameObject("GoldenLyreHitRing");
             ringGo.transform.SetParent(_staveRoot, false);
             ringGo.transform.localPosition = _noteTargetLocal;
-            ringGo.transform.localScale = new Vector3(1.38f, 1.38f, 1f);
-            _targetRingSr = RenderPipeline2DSetup.AttachSprite(ringGo, RenderPipeline2DSetup.RingSprite, new Color(2.5f, 2.05f, 0.55f, 0.95f), 20);
+            ringGo.transform.localScale = new Vector3(0.58f, 0.58f, 1f);
+            _targetRingSr = RenderPipeline2DSetup.AttachSprite(ringGo, RenderPipeline2DSetup.RingSprite, new Color(2.6f, 2.15f, 0.65f, 0.90f), 20);
             _targetHitRing = ringGo.transform;
 
             _staveRoot.gameObject.SetActive(false);
@@ -263,6 +300,72 @@ namespace OrpheusBelow
             CurrentPhase = DuelPhase.ArenaCombat;
             LastJudgement = "Attack freely! Dodge lunges & floor waves!";
 
+            // --- ABYSSAL BOSS BLACKOUT: Plunge entire stage background into pure inky void black ---
+            if (Camera.main != null)
+            {
+                if (!_savedCameraBg)
+                {
+                    _originalCameraBgColor = Camera.main.backgroundColor;
+                    _savedCameraBg = true;
+                }
+                Camera.main.clearFlags = CameraClearFlags.SolidColor;
+                Camera.main.backgroundColor = Color.black;
+
+                System.Type hdCamType = System.Type.GetType("UnityEngine.Rendering.HighDefinition.HDAdditionalCameraData, Unity.RenderPipelines.HighDefinition.Runtime");
+                if (hdCamType != null)
+                {
+                    Component hdCam = Camera.main.GetComponent(hdCamType);
+                    if (hdCam != null)
+                    {
+                        var clearModeField = hdCamType.GetField("clearColorMode", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                        if (clearModeField != null)
+                        {
+                            object colorEnumVal = System.Enum.ToObject(clearModeField.FieldType, 1);
+                            clearModeField.SetValue(hdCam, colorEnumVal);
+                        }
+                        var bgHdrField = hdCamType.GetField("backgroundColorHDR", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                        if (bgHdrField != null)
+                        {
+                            bgHdrField.SetValue(hdCam, Color.black);
+                        }
+                    }
+                }
+            }
+
+            // Deactivate all UnderworldParallaxRig instances in the scene
+            UnderworldParallaxRig[] rigs = UnityEngine.Object.FindObjectsByType<UnderworldParallaxRig>(FindObjectsSortMode.None);
+            for (int r = 0; r < rigs.Length; r++)
+            {
+                if (rigs[r] != null) rigs[r].gameObject.SetActive(false);
+            }
+
+            if (PaintedChamberMap.Active != null)
+            {
+                if (PaintedChamberMap.Active.background != null) PaintedChamberMap.Active.background.enabled = false;
+                if (PaintedChamberMap.Active.coverRoot != null) PaintedChamberMap.Active.coverRoot.gameObject.SetActive(false);
+            }
+
+            // Massive opaque Unlit black backdrop directly behind the stage plane (ZWrite On, zero ambient reflections)
+            if (_blackoutBackdrop == null)
+            {
+                _blackoutBackdrop = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                _blackoutBackdrop.name = "BossAbyssalBlackoutBackdrop";
+                Collider c = _blackoutBackdrop.GetComponent<Collider>();
+                if (c != null) Destroy(c);
+
+                _blackoutBackdrop.transform.position = _stageCenter + (UnderworldCamera2D.Side2DRotation * Vector3.forward * 4.5f) + new Vector3(0f, 3.5f, 0f);
+                _blackoutBackdrop.transform.rotation = UnderworldCamera2D.Side2DRotation;
+                _blackoutBackdrop.transform.localScale = new Vector3(240f, 140f, 1f);
+
+                MeshRenderer mr = _blackoutBackdrop.GetComponent<MeshRenderer>();
+                if (mr != null)
+                {
+                    mr.material = RenderPipeline2DSetup.GetOpaque3DMaterial(Color.black);
+                    mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    mr.receiveShadows = false;
+                }
+            }
+
             UnderworldCamera2D.Instance?.EnterSide2DBossView(_stageCenter, identity == BossIdentity.CerberusHoundOfHades ? 6.3f : 5.8f);
             OrpheusPlayerController.Instance?.Enter2DBossStage(_stageCenter, minX: -8.2f, maxX: 4.2f);
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 1.2f, 0f), 5.2f, _headBaseColor, 0.45f, upright2D: true);
@@ -274,6 +377,7 @@ namespace OrpheusBelow
         {
             if (UnderworldFrontEnd.BlocksGameplay) return;
             if (_billboardRoot != null) _billboardRoot.rotation = UnderworldCamera2D.CurrentBillboardRotation;
+            if (_blackoutBackdrop != null) _blackoutBackdrop.transform.rotation = UnderworldCamera2D.CurrentBillboardRotation;
             if (_staveRoot != null)
             {
                 _staveRoot.position = _stageCenter + new Vector3(0f, 3.65f, 0f);
@@ -289,7 +393,7 @@ namespace OrpheusBelow
 
             // Animate heads to BPM
             float beatPhase = (Time.time / _beatInterval) * Mathf.PI * 2f;
-            float metronomePulse = 1.32f + Mathf.Pow(Mathf.Max(0f, Mathf.Cos(beatPhase * 0.5f)), 6f) * 0.22f;
+            float metronomePulse = 0.58f + Mathf.Pow(Mathf.Max(0f, Mathf.Cos(beatPhase * 0.5f)), 6f) * 0.08f;
             if (_targetHitRing != null) _targetHitRing.localScale = new Vector3(metronomePulse, metronomePulse, 1f);
 
             for (int i = 0; i < _heads.Length; i++)
@@ -450,7 +554,7 @@ namespace OrpheusBelow
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 1.2f, 0f), 6.5f, new Color(2.8f, 0.4f, 0.2f, 1f), 0.45f, upright2D: true);
 
             OrpheusHud.Instance?.ShowBanner(bossDisplayName + "  —  Stygian Hymn!", 2.8f);
-            LastJudgement = "Deflect the Stave notes! Break the Guardian's hymn!";
+            LastJudgement = "Deflect the Stave notes into the Treble Clef! Break the Guardian's hymn!";
         }
 
         private void UpdateStaveLeap(float dt)
@@ -491,24 +595,41 @@ namespace OrpheusBelow
 
         private void SpawnStaveNote(bool hardBoomRequired, float hitTime)
         {
-            GameObject go = new GameObject(hardBoomRequired ? "Note2D_BOOM" : "Note2D_SOFT");
+            GameObject go = new GameObject(hardBoomRequired ? "Note2D_FERMATA" : "Note2D_QUAVER");
             go.transform.SetParent(_staveRoot, false);
-            go.transform.localPosition = _noteSpawnLocal;
+
+            // Dynamic pitch variation across the 5 classical staff lines (from s = -2 to +2)
+            int pitch = UnityEngine.Random.Range(-2, 3);
+            float pitchY = pitch * 0.22f;
+            Vector3 spawnPos = _noteSpawnLocal + new Vector3(0f, pitchY, 0f);
+            Vector3 targetPos = _noteTargetLocal + new Vector3(0f, pitchY, 0f);
+            go.transform.localPosition = spawnPos;
 
             if (hardBoomRequired)
             {
-                go.transform.localScale = new Vector3(1.22f, 1.22f, 1f);
-                RenderPipeline2DSetup.AttachSprite(go, RenderPipeline2DSetup.RingSprite, new Color(2.9f, 0.28f, 0.25f, 1f), 22);
-
-                GameObject core = new GameObject("BoomCore");
-                core.transform.SetParent(go.transform, false);
-                core.transform.localScale = new Vector3(0.45f, 0.45f, 1f);
-                RenderPipeline2DSetup.AttachSprite(core, RenderPipeline2DSetup.DiamondSprite, new Color(2.9f, 1.2f, 0.3f, 1f), 23);
+                // Hard Boom: Yellow Fermata (𝄐) transparent PNG sprite — delicate, refined note size (a lot smaller)
+                go.transform.localScale = new Vector3(0.18f, 0.18f, 1f);
+                if (_fermataSprite != null)
+                {
+                    RenderPipeline2DSetup.AttachSprite(go, _fermataSprite, Color.white, 24);
+                }
+                else
+                {
+                    RenderPipeline2DSetup.AttachSprite(go, RenderPipeline2DSetup.RingSprite, new Color(2.8f, 2.2f, 0.4f, 1f), 22);
+                }
             }
             else
             {
-                go.transform.localScale = new Vector3(0.74f, 0.74f, 1f);
-                RenderPipeline2DSetup.AttachSprite(go, RenderPipeline2DSetup.DiamondSprite, new Color(2.5f, 2.05f, 0.45f, 1f), 22);
+                // Small Strike: Golden Quaver (♪) transparent PNG sprite — delicate, refined note size (a lot smaller)
+                go.transform.localScale = new Vector3(0.18f, 0.18f, 1f);
+                if (_quaverSprite != null)
+                {
+                    RenderPipeline2DSetup.AttachSprite(go, _quaverSprite, Color.white, 23);
+                }
+                else
+                {
+                    RenderPipeline2DSetup.AttachSprite(go, RenderPipeline2DSetup.DiamondSprite, new Color(2.5f, 2.05f, 0.45f, 1f), 22);
+                }
             }
 
             _notes.Add(new StaveBeatNote
@@ -516,6 +637,8 @@ namespace OrpheusBelow
                 requiresHardBoom = hardBoomRequired,
                 targetHitTime = hitTime,
                 visual = go.transform,
+                spawnPos = spawnPos,
+                targetPos = targetPos,
                 resolved = false
             });
         }
@@ -536,7 +659,7 @@ namespace OrpheusBelow
                 float u = 1f - (rem / noteTravelSeconds);
                 if (n.visual != null)
                 {
-                    n.visual.localPosition = Vector3.LerpUnclamped(_noteSpawnLocal, _noteTargetLocal, u);
+                    n.visual.localPosition = Vector3.LerpUnclamped(n.spawnPos, n.targetPos, u);
                 }
 
                 if (rem < -hitWindowSeconds)
@@ -590,7 +713,7 @@ namespace OrpheusBelow
                 float dmg = isHardBoom ? 52f : 32f;
                 CurrentHealth = Mathf.Max(0f, CurrentHealth - dmg);
 
-                LastJudgement = isHardBoom ? $"Harmonic Boom!  x{HarmonyStreak}" : $"Chord Deflected!  x{HarmonyStreak}";
+                LastJudgement = isHardBoom ? $"Harmonic Fermata!  x{HarmonyStreak}" : $"Quaver Deflected!  x{HarmonyStreak}";
 
                 // Fire radiant lance of energy from player ring into boss in the ruins!
                 if (_targetHitRing != null)
@@ -605,7 +728,7 @@ namespace OrpheusBelow
             else
             {
                 HarmonyStreak = 0;
-                LastJudgement = best.requiresHardBoom ? "Too Soft — Needed Hard Boom" : "Too Loud — Needed Soft Note";
+                LastJudgement = best.requiresHardBoom ? "Too Soft — Needed Fermata (Heavy Strike)" : "Too Loud — Needed Quaver (Small Strike)";
                 StageSweepWave2D.Spawn(transform.position + new Vector3(0f, 0.65f, 0f), _stageCenter, speed: 10.6f);
             }
         }
@@ -710,6 +833,28 @@ namespace OrpheusBelow
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 1.5f, 0f), 8.5f, new Color(2.7f, 2.25f, 1.15f, 0.95f), 0.65f, upright2D: true);
             PacifiedSpiritVessel.Spawn(transform.position, scaleMultiplier: 1.95f);
 
+            // Restore camera & background from Abyssal Blackout
+            if (_blackoutBackdrop != null)
+            {
+                Destroy(_blackoutBackdrop);
+                _blackoutBackdrop = null;
+            }
+            if (_savedCameraBg && Camera.main != null)
+            {
+                Camera.main.backgroundColor = _originalCameraBgColor;
+                _savedCameraBg = false;
+            }
+            if (PaintedChamberMap.Active != null)
+            {
+                if (PaintedChamberMap.Active.background != null) PaintedChamberMap.Active.background.enabled = true;
+                if (PaintedChamberMap.Active.coverRoot != null) PaintedChamberMap.Active.coverRoot.gameObject.SetActive(true);
+            }
+            UnderworldParallaxRig[] rigs = UnityEngine.Object.FindObjectsByType<UnderworldParallaxRig>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int r = 0; r < rigs.Length; r++)
+            {
+                if (rigs[r] != null) rigs[r].gameObject.SetActive(true);
+            }
+
             // Return camera & Orpheus back to 2.5D Isometric Chamber-Crawler!
             UnderworldCamera2D.Instance?.ExitSide2DBossView();
             if (OrpheusPlayerController.Instance != null)
@@ -720,6 +865,31 @@ namespace OrpheusBelow
 
             OnCerberusDefeated?.Invoke();
             Destroy(gameObject, .95f);
+        }
+
+        private void OnDestroy()
+        {
+            if (ActiveBoss == this) ActiveBoss = null;
+            if (_blackoutBackdrop != null)
+            {
+                Destroy(_blackoutBackdrop);
+                _blackoutBackdrop = null;
+            }
+            if (_savedCameraBg && Camera.main != null)
+            {
+                Camera.main.backgroundColor = _originalCameraBgColor;
+                _savedCameraBg = false;
+            }
+            if (PaintedChamberMap.Active != null)
+            {
+                if (PaintedChamberMap.Active.background != null) PaintedChamberMap.Active.background.enabled = true;
+                if (PaintedChamberMap.Active.coverRoot != null) PaintedChamberMap.Active.coverRoot.gameObject.SetActive(true);
+            }
+            UnderworldParallaxRig[] rigs = UnityEngine.Object.FindObjectsByType<UnderworldParallaxRig>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int r = 0; r < rigs.Length; r++)
+            {
+                if (rigs[r] != null) rigs[r].gameObject.SetActive(true);
+            }
         }
     }
 

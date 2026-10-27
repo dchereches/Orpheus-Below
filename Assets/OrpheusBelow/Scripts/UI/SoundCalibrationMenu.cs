@@ -156,12 +156,12 @@ namespace OrpheusBelow
             {
                 if (live >= sensor.hardBoomThreshold)
                 {
-                    _detectionStatusText.text = "● TRIGGERING: HARD ORPHIC BOOM (B)!";
+                    _detectionStatusText.text = "● TRIGGERING: BOOM FERMATA!";
                     _detectionStatusText.color = Crimson;
                 }
                 else if (live >= sensor.softMinThreshold)
                 {
-                    _detectionStatusText.text = "● TRIGGERING: SOFT LYRE PLUCK (S)";
+                    _detectionStatusText.text = "● TRIGGERING: SMALL QUAVER (♪)";
                     _detectionStatusText.color = Gold;
                 }
                 else
@@ -343,16 +343,16 @@ namespace OrpheusBelow
             CreateButton(_panelRoot.transform, "BtnSensUp", "+", 402, curY, 36, 28, () => AdjustSensitivity(+0.2f), out _);
             curY += 34f;
 
-            // Row B: Soft Note Threshold
-            CreateLabel(_panelRoot.transform, "Soft Note Threshold (Whisper/Puff):", 34, curY, 240, 28, 15, Ivory, false);
+            // Row B: Small Quaver (♪) Threshold
+            CreateLabel(_panelRoot.transform, "Small Quaver Threshold ♪ (Whisper/Puff):", 34, curY, 240, 28, 15, Ivory, false);
             CreateButton(_panelRoot.transform, "BtnSoftDown", "-", 280, curY, 36, 28, () => AdjustSoftThreshold(-0.02f), out _);
             _softThresholdValueLabel = CreateLabel(_panelRoot.transform, "0.14 (14%)", 324, curY, 70, 28, 15, Gold, false);
             _softThresholdValueLabel.alignment = TextAnchor.MiddleCenter;
             CreateButton(_panelRoot.transform, "BtnSoftUp", "+", 402, curY, 36, 28, () => AdjustSoftThreshold(+0.02f), out _);
             curY += 34f;
 
-            // Row C: Hard Boom Threshold
-            CreateLabel(_panelRoot.transform, "Hard Boom Threshold (Loud/Exhale):", 34, curY, 240, 28, 15, Ivory, false);
+            // Row C: Boom Fermata (𝄐) Threshold
+            CreateLabel(_panelRoot.transform, "Boom Fermata Threshold (Loud/Exhale):", 34, curY, 240, 28, 15, Ivory, false);
             CreateButton(_panelRoot.transform, "BtnBoomDown", "-", 280, curY, 36, 28, () => AdjustBoomThreshold(-0.02f), out _);
             _boomThresholdValueLabel = CreateLabel(_panelRoot.transform, "0.60 (60%)", 324, curY, 70, 28, 15, Crimson, false);
             _boomThresholdValueLabel.alignment = TextAnchor.MiddleCenter;
@@ -383,8 +383,8 @@ namespace OrpheusBelow
             curY += 40f;
 
             // --- 5. PREVIEW & FOOTER ---
-            CreateButton(_panelRoot.transform, "BtnTestSoft", "♫ Test Soft Pluck", 34, curY, 150, 32, PlayTestSoft, out _);
-            CreateButton(_panelRoot.transform, "BtnTestBoom", "💥 Test Boom", 194, curY, 140, 32, PlayTestBoom, out _);
+            CreateButton(_panelRoot.transform, "BtnTestSoft", "♪ Test Quaver", 34, curY, 150, 32, PlayTestSoft, out _);
+            CreateButton(_panelRoot.transform, "BtnTestBoom", "Test Fermata", 194, curY, 140, 32, PlayTestBoom, out _);
             CreateButton(_panelRoot.transform, "BtnReset", "Reset Defaults", 344, curY, 130, 32, ResetDefaults, out _);
             CreateButton(_panelRoot.transform, "BtnClose", "Close [C]", cardW - 170, curY, 136, 32, () => SetOpen(false), out _, primary: true);
         }

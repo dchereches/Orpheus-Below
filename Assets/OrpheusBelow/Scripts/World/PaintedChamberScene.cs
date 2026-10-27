@@ -27,6 +27,7 @@ namespace OrpheusBelow
         {
             if (index < 0 || index >= UnderworldJourney.ChamberCount || !Application.CanStreamedLevelBeLoaded(ScenePath(index))) return false;
             UnderworldJourney.Progress.Visit(index);
+            SensorPulseInput.Instance?.SaveCalibration();
             _travelling = true;
             _health = OrpheusPlayerController.Instance != null ? OrpheusPlayerController.Instance.CurrentHealth : 100f;
             _cadenceTier = OrpheusLyreCombat.Instance != null ? OrpheusLyreCombat.Instance.UnlockedCadenceTier : 1;
