@@ -25,6 +25,7 @@ namespace OrpheusBelow
 
         public static bool Travel(int index, bool wardenHint)
         {
+            if (VoiceDirector.BlocksGameplay) return false;
             if (index < 0 || index >= UnderworldJourney.ChamberCount || !Application.CanStreamedLevelBeLoaded(ScenePath(index))) return false;
             UnderworldJourney.Progress.Visit(index);
             SensorPulseInput.Instance?.SaveCalibration();

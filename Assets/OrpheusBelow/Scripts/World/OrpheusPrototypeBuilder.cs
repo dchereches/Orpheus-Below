@@ -209,6 +209,7 @@ namespace OrpheusBelow
 
         public void TransitionToChamber(int nextIndex)
         {
+            if (VoiceDirector.BlocksGameplay) return;
             if (_transitioning || nextIndex < 0 || nextIndex >= chambers.Count) return;
             StartCoroutine(TransitionRoutine(nextIndex));
         }
@@ -217,6 +218,7 @@ namespace OrpheusBelow
 
         public bool TryJourneyPassage(ChamberExitDoor door)
         {
+            if (VoiceDirector.BlocksGameplay) return false;
             if (_transitioning || door == null || !door.IsUnlocked) return false;
             var map = PaintedChamberMap.Active;
             if (map == null || map.definition.index != CurrentChamberIndex || door.GetComponentInParent<PaintedChamberMap>() != map) return false;
@@ -276,7 +278,7 @@ namespace OrpheusBelow
 
             while (ScreenFadeAlpha > 0f)
             {
-                if (UnderworldFrontEnd.BlocksGameplay) { yield return null; continue; }
+                if (UnderworldFrontEnd.BlocksMenusOrTransitions) { yield return null; continue; }
                 ScreenFadeAlpha = Mathf.MoveTowards(ScreenFadeAlpha, 0f, Time.unscaledDeltaTime * 3.8f);
                 yield return null;
             }

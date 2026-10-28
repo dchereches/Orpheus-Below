@@ -795,6 +795,25 @@ namespace OrpheusBelow
             _endScreenRoot.SetActive(false);
         }
 
+        private void UpdateSpeechAndTransitionUi(float dt)
+        {
+            var map=PaintedChamberMap.Active;
+            if (_navigationLegend!=null) _navigationLegend.gameObject.SetActive(map!=null && map.overlayRoot!=null && map.overlayRoot.gameObject.activeSelf);
+            var director=HadesChamberDirector.Instance;
+            if (_fadeOverlay!=null && director!=null) _fadeOverlay.color=new Color(.02f,.01f,.04f,director.ScreenFadeAlpha);
+            if (_subtitleRoot==null || _subtitleGroup==null) return;
+            if (_subtitleTimer>0)
+            {
+                if (!UnderworldFrontEnd.BlocksMenusOrTransitions) _subtitleTimer-=dt;
+                _subtitleGroup.alpha=Mathf.MoveTowards(_subtitleGroup.alpha,1,dt*6);
+            }
+            else if (_subtitleGroup.alpha>0)
+            {
+                _subtitleGroup.alpha=Mathf.MoveTowards(_subtitleGroup.alpha,0,dt*3.5f);
+                if (_subtitleGroup.alpha<=.01f) _subtitleRoot.SetActive(false);
+            }
+        }
+
         private void Update()
         {
             Keyboard kb = Keyboard.current;
@@ -810,6 +829,7 @@ namespace OrpheusBelow
                 }
             }
 
+            UpdateSpeechAndTransitionUi(Time.unscaledDeltaTime);
             if (UnderworldFrontEnd.BlocksGameplay) return;
 
             if (kb != null && kb.hKey.wasPressedThisFrame)
@@ -829,8 +849,6 @@ namespace OrpheusBelow
             _controlsCard.SetActive(showControlsHelp && !IsTutorialModalActive);
             _journeyLabel.text = UnderworldJourney.ProgressLabel;
             _journeyObjective.text = UnderworldJourney.Objective;
-            var map = PaintedChamberMap.Active;
-            _navigationLegend.gameObject.SetActive(map != null && map.overlayRoot != null && map.overlayRoot.gameObject.activeSelf);
 
             // 1. Update Vitality & Dash Gems (Original hairline format)
             if (player != null && _hpFill != null)
@@ -957,24 +975,6 @@ namespace OrpheusBelow
                 _whisperText.color = wc;
             }
 
-            // Subtitle fade in / fade out
-            if (_subtitleRoot != null && _subtitleGroup != null)
-            {
-                if (_subtitleTimer > 0f)
-                {
-                    _subtitleTimer -= dt;
-                    _subtitleGroup.alpha = Mathf.MoveTowards(_subtitleGroup.alpha, 1f, dt * 6f);
-                }
-                else if (_subtitleGroup.alpha > 0f)
-                {
-                    _subtitleGroup.alpha = Mathf.MoveTowards(_subtitleGroup.alpha, 0f, dt * 3.5f);
-                    if (_subtitleGroup.alpha <= 0.01f)
-                    {
-                        _subtitleRoot.SetActive(false);
-                    }
-                }
-            }
-
             if (_lookBackRoot != null)
             {
                 bool looking = escorting && player != null && player.LookBackProgress01 > 0.01f && !player.IsGameOver && !player.IsVictory;
@@ -998,11 +998,6 @@ namespace OrpheusBelow
                         _cadenceUnlockRoot.SetActive(false);
                     }
                 }
-            }
-
-            if (_fadeOverlay != null && dir != null)
-            {
-                _fadeOverlay.color = new Color(0.02f, 0.01f, 0.04f, dir.ScreenFadeAlpha);
             }
 
             if (_endScreenRoot != null && player != null)

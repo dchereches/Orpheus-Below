@@ -10,6 +10,8 @@ namespace OrpheusBelow
         public float Volume { get; private set; }
         public bool IsMuted { get; private set; }
         public bool CinematicActive { get; set; }
+        public const float DialogueAmbientGain = .12f;
+        private float _dialogueMix = 1f;
 
         private const int SampleRate = 22050;
         private const float Tau = Mathf.PI * 2f;
@@ -75,6 +77,10 @@ namespace OrpheusBelow
             float depth = director == null ? 0f : Mathf.Clamp01(director.CurrentChamberIndex / (float)(ProceduralChamberGenerator.TotalChambers - 1));
             _wind.volume = Mathf.Lerp(0.23f, 0.34f, depth) + _tension * 0.06f;
             _drone.volume = (menu ? 0.29f : 0.21f) + _tension * 0.17f;
+            _dialogueMix = Mathf.MoveTowards(_dialogueMix, VoiceDirector.BlocksGameplay ? DialogueAmbientGain : 1f,
+                Time.unscaledDeltaTime * (VoiceDirector.BlocksGameplay ? 20f : 2f));
+            _wind.volume *= _dialogueMix;
+            _drone.volume *= _dialogueMix;
             if (CinematicActive) { _wind.volume = 0f; _drone.volume = 0f; }
         }
 
