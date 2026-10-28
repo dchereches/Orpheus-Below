@@ -32,6 +32,7 @@ namespace OrpheusBelow
         private Sprite _fermataSprite;
 
         private OrpheusPlayerController _player;
+        private OrpheusSpriteAnimator _spriteAnimator;
         private Transform _billboardRoot;
         private Transform _fluteVis;
         private Transform _noteDisplayRoot;
@@ -56,6 +57,7 @@ namespace OrpheusBelow
         {
             Instance = this;
             _player = GetComponent<OrpheusPlayerController>();
+            _spriteAnimator = GetComponent<OrpheusSpriteAnimator>();
             BuildFluteVisuals();
         }
 
@@ -154,6 +156,8 @@ namespace OrpheusBelow
 
             if (IsFluteActive)
             {
+                if (_spriteAnimator != null && _spriteAnimator.CurrentState == OrpheusAnimationState.Idle)
+                    _spriteAnimator.SetAulosLoop(true);
                 _sequenceTimer -= dt;
                 if (_sequenceTimer <= 0f)
                 {
@@ -169,6 +173,7 @@ namespace OrpheusBelow
         {
             if (IsFluteActive) return;
             IsFluteActive = true;
+            _spriteAnimator?.EnterFlute();
             StanceEntryCount++;
             GenerateNewMelody();
             if (_noteDisplayRoot != null) _noteDisplayRoot.gameObject.SetActive(true);
@@ -180,6 +185,7 @@ namespace OrpheusBelow
         public void ExitFluteStance()
         {
             IsFluteActive = false;
+            _spriteAnimator?.SetAulosLoop(false);
             if (_noteDisplayRoot != null) _noteDisplayRoot.gameObject.SetActive(false);
             if (_fluteVis != null) _fluteVis.gameObject.SetActive(false);
         }
@@ -258,6 +264,7 @@ namespace OrpheusBelow
 
             if (playedNote == expectedNote)
             {
+                _spriteAnimator?.TriggerFluteNote(isHardBoom);
                 // Correct note played
                 ProceduralLyreAudio.Instance?.PlayFluteNote(isHardBoom);
                 GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.06f, 0f), 2.2f + _currentNoteIndex * 0.8f,
@@ -305,6 +312,7 @@ namespace OrpheusBelow
 
         private void CompleteMelodyOfSorrow()
         {
+            _spriteAnimator?.TriggerRequiem();
             ProceduralLyreAudio.Instance?.PlayFluteFleeCatharsis();
             UnderworldSoundscape.Instance?.PlayImpact(true);
             UnderworldCamera2D.Instance?.AddShake(0.85f);
@@ -379,6 +387,7 @@ namespace OrpheusBelow
 
         private void TriggerDiscordantBacklash(string reason)
         {
+            _spriteAnimator?.TriggerDiscord();
             ProceduralLyreAudio.Instance?.PlayFluteBacklash();
             OrpheusHud.Instance?.ShowSubtleCallout(reason);
 

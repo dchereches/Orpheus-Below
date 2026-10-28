@@ -303,6 +303,7 @@ namespace OrpheusBelow
             if (player != null)
             {
                 player.TeleportToChamberSpawn(ch.playerSpawnWorld);
+                player.TriggerChamberEntranceAnimation();
                 if (index > 0 || UnderworldJourney.IsAscending)
                 {
                     player.Heal(10f);
@@ -356,6 +357,7 @@ namespace OrpheusBelow
             _spawningWave = true;
             // No enemy attack dialogue hints
             yield return new WaitForSeconds(delayBeforeRunes);
+            OrpheusPlayerController.Instance?.TriggerAlertAnimation();
 
             var map = PaintedChamberMap.Active;
             if (map != null && map.definition != null && map.definition.index == CurrentChamberIndex)
@@ -543,6 +545,7 @@ namespace OrpheusBelow
             _chamberCleared = true;
             UnderworldJourney.Progress.ClearCurrentChamber();
             Object.FindFirstObjectByType<BlurredEurydice>()?.Celebrate(1.8f);
+            OrpheusPlayerController.Instance?.TriggerChamberClear();
 
             ChamberRuntimeData ch = chambers[CurrentChamberIndex];
             ProceduralLyreAudio.Instance?.PlayCadenceComplete();

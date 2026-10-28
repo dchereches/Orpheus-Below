@@ -31,6 +31,11 @@ namespace OrpheusBelow
         public float imageWidth = 72f;
         public float imageHeight = 48f;
         public float zoom = 11f;
+        [Header("Orpheus dominant light")]
+        [Tooltip("Screen-space direction from Orpheus toward the chamber's dominant light.")]
+        public Vector2 dominantLightDirection = new Vector2(.7071068f, .7071068f);
+        public Color dominantLightColor = new Color(1f, .62f, .28f, 1f);
+        [Range(.2f, 2f)] public float dominantLightIntensity = 1f;
         [Tooltip("Coordinates are pixels from the top-left of the original 1536 × 1024 painting.")]
         public Vector2[] walkableBoundary;
         public Cover[] cover = Array.Empty<Cover>();
@@ -45,6 +50,16 @@ namespace OrpheusBelow
         public Vector2[] enemySpawns;
         public bool hasGuardian;
         public BossIdentity guardian;
+
+        public Vector2 ResolvedDominantLightDirection
+        {
+            get
+            {
+                Vector2 direction = dominantLightDirection;
+                if (direction.sqrMagnitude < .0001f) direction = new Vector2(.7071068f, .7071068f);
+                return direction.normalized;
+            }
+        }
 
         public Vector3 ImageToGround(Vector2 pixel)
         {

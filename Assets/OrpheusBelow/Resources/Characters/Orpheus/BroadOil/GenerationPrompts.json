@@ -1,0 +1,58 @@
+{
+  "mode": "image-reference generation",
+  "transparentBackground": true,
+  "referencedImagePaths": [
+    "D:/Serban/Test/WhatsApp Image 2026-10-28 at 16.12.58.jpeg",
+    "D:/Serban/Test/WhatsApp Image 2026-10-28 at 16.14.51.jpeg"
+  ],
+  "bodyPrefix": "Create a production-ready transparent sprite atlas for a 2.5D isometric action game. Match the young Orpheus character in reference 1 exactly: tousled dark brown-black hair, lean youthful face and body, ragged charcoal-brown hooded cloak, loose off-white tunic, oxblood sash strips, dark trousers and boots, golden antique lyre. Preserve the simple handmade silhouette and very broad connected oil-paint streaks; avoid tiny detail, outlines, photorealism, pixel art, anime, text, labels, scenery, floor, cast shadow, colored background, warm baked lighting, and cropped limbs. Reference 2 is inspiration only for dramatic readable poses and scale, not costume or background. Neutral studio illumination, consistent proportions, same scale and ground-aligned feet in every cell. Strict 8 columns by 8 rows on a fully transparent canvas, generous transparent gutters, no overlap. Rows from top to bottom are facing South, South-East, East, North-East, North, North-West, West, South-West. ",
+  "requests": [
+    {
+      "file": "Walk.png",
+      "exactPromptSuffix": "LOCOMOTION atlas. Columns are an eight-frame seamless WALK cycle: contact, down, passing, up, contact, down, passing, up. Cloak and sash lag with bold readable arcs, lyre firmly strapped across his back, feet never slide. Each row shows the identical cycle from its specified facing."
+    },
+    {
+      "file": "Run.png",
+      "exactPromptSuffix": "RUN atlas. Columns are an eight-frame seamless fast RUN cycle with strong forward lean, airborne phases and long ragged cloak/sash drag. Lyre remains secure; readable enemy-scale silhouette. Each row is the identical run cycle from its specified facing."
+    },
+    {
+      "file": "DashStairs.png",
+      "exactPromptSuffix": "DASH AND STAIRS atlas. Columns form eight ordered key poses usable across dash start, compressed dash travel, dash strike, dash settle, stair ascent and stair descent: brace, launch, low smear pose, extended travel, lyre-assisted strike, recoil, high stair step, low descending step. Very readable silhouette with broad oil streaks. Each row shows those exact phases from its specified facing."
+    },
+    {
+      "file": "SoftCombat.png",
+      "exactPromptSuffix": "SOFT LYRE COMBAT atlas. Eight ordered columns form a fluid combo sequence: draw lyre forward, ready, low chord slash, recoil, reverse chord slash, recoil, overhead third chord strike, luminous soft-bolt release. Golden lyre is the weapon, not a sword. Bold broad oil arcs, powerful readable enemy-scale silhouette. Every row shows the same sequence from its specified facing."
+    },
+    {
+      "file": "HardCadence.png",
+      "exactPromptSuffix": "HARD CADENCE COMBAT atlas. Eight columns: grounded hard-boom windup, deeper windup, explosive lyre chord release, Hymn of Dawn forward beam pose, Sanctuary protective cast, Sirens convergence vortex pull, full-voice release, phrase resolve. Body-only transparent poses with restrained golden-white musical paint accents attached to hands/lyre; no floor or background. Every row shows the same sequence from its specified facing."
+    },
+    {
+      "file": "LyreSinging.png",
+      "exactPromptSuffix": "LYRE SINGING atlas. Eight columns make a musical performance cycle: lyre draw, poised soft pluck, pluck follow-through, inhale, singing sustain open chest, singing sustain lifted head, full voice crescendo, gentle phrase resolve. Expressive but combat-ready, face readable, broad oil strokes, golden lyre held correctly. Every row shows the same sequence from its specified facing.",
+      "repairMode": "image edit using the first generated LyreSinging.png plus the character reference",
+      "repairPrompt": "Repair and re-layout the supplied Orpheus lyre-singing sprite atlas as a production-ready transparent atlas. Preserve the exact same young Orpheus identity, costume, golden lyre, broad connected oil-paint style, eight directions and the eight performance phases, using the character reference for consistency. Output a spacious STRICT 8 columns by 8 rows grid on a fully transparent square canvas. Rows top to bottom: South, South-East, East, North-East, North, North-West, West, South-West. Columns left to right: lyre draw, poised soft pluck, pluck follow-through, inhale, singing sustain open chest, singing sustain lifted head, full-voice crescendo, gentle phrase resolve. CRITICAL: every figure and every detached paint accent must remain entirely inside its own cell with a broad clear transparent gutter on all four sides; no overlap between rows, no touching cell boundaries, no clipped raised hands, heads, feet, cloak, sash, or lyre. Same consistent enemy-scale body size and foot baseline in all cells. No background, floor, shadow, labels, text, scenery, extra props, new costume, or baked orange lighting."
+    },
+    {
+      "file": "Aulos.png",
+      "exactPromptSuffix": "AULOS FLUTE atlas. Orpheus uses a historically inspired double-pipe aulos, golden-brown wood, while his lyre stays strapped on his back. Eight columns: draw aulos, ready breath, sustained loop A, sustained loop B, soft note, hard note, painful discord recoil, solemn Requiem release. No separate floating instruments. Every row shows the same sequence from its specified facing."
+    },
+    {
+      "file": "Reactions.png",
+      "exactPrompt": "Create a production-ready transparent REACTION sprite atlas for a 2.5D isometric action game. Match the young Orpheus in reference 1 exactly: tousled dark brown-black hair, lean youthful face and body, ragged charcoal-brown hooded cloak, loose off-white tunic, oxblood sash strips, dark trousers and boots, golden antique lyre strapped or clutched consistently. Simple handmade silhouette, very broad connected oil-paint streaks, no tiny detail, outlines, photorealism, pixel art, anime, text, labels, scenery, floor, cast shadow, colored background, warm baked lighting, cropped limbs, or magic effects. Reference 2 is only inspiration for dramatic readable enemy-scale poses. Neutral studio illumination. Strict 8 columns by 8 rows on a fully transparent canvas with generous transparent gutters and no overlap. Rows top to bottom face South, South-East, East, North-East, North, North-West, West, South-West. Columns left to right: breath-exhausted slump, breath recovery inhale, light hit, heavy hit, grounded hurt, rise to feet, defeat collapse, guarded alert. Consistent scale and ground-aligned feet."
+    },
+    {
+      "file": "Narrative.png",
+      "exactPrompt": "Create a production-ready transparent NARRATIVE sprite atlas for a 2.5D isometric action game. Match the young Orpheus in reference 1 exactly: tousled dark brown-black hair, lean youthful face and body, ragged charcoal-brown hooded cloak, loose off-white tunic, oxblood sash strips, dark trousers and boots, golden antique lyre. Simple handmade silhouette, very broad connected oil-paint streaks, no tiny detail, outlines, photorealism, pixel art, anime, text, labels, scenery, floor, cast shadow, colored background, warm baked lighting, cropped limbs, or unrelated props. Reference 2 is only inspiration for dramatic readable enemy-scale staging. Neutral studio illumination. Strict 8 columns by 8 rows on a fully transparent canvas with generous transparent gutters and no overlap. Rows top to bottom face South, South-East, East, North-East, North, North-West, West, South-West. Columns left to right: cautious chamber entrance step, alert, inspect the ground, look-back temptation, fatal look-back shock, kneeling grief for Eurydice, chamber-clear relief, victory raising the golden lyre. Consistent scale and ground-aligned feet."
+    },
+    {
+      "file": "IdleTransitions.png",
+      "exactPrompt": "Create a production-ready transparent IDLE TRANSITIONS sprite atlas for a 2.5D isometric action game. Match the young Orpheus in reference 1 exactly: tousled dark brown-black hair, lean youthful face and body, ragged charcoal-brown hooded cloak, loose off-white tunic, oxblood sash strips, dark trousers and boots, golden antique lyre strapped across his back. Very simple handmade silhouette and broad connected oil-paint streaks; no tiny detail, outlines, photorealism, pixel art, anime, text, labels, scenery, floor, cast shadow, colored background, warm baked lighting, cropped limbs, or magic. Neutral studio illumination. Strict 8 columns by 8 rows on a fully transparent canvas with generous transparent gutters and no overlap. Rows top to bottom face South, South-East, East, North-East, North, North-West, West, South-West. Columns left to right: calm breathing idle, cloak settling, restless weight shift, glance, movement start anticipation, first step, movement stop, clean turn pose. Consistent enemy-scale proportions and ground-aligned feet."
+    },
+    {
+      "file": "Effects.png",
+      "exactPrompt": "Create a production-ready transparent EFFECTS sprite atlas for a painterly 2.5D isometric action game inspired by the fiery contrast and long directional accents of reference 2, but using the broad handmade oil streak language and golden lyre motifs of reference 1. STRICT 8 columns by 8 rows on a fully transparent canvas, generous transparent gutters, no overlap, no characters, no text, no labels, no floor, no scenery, no rectangular glow boxes. Each cell is one centered isolated effect with broad connected impasto strokes. Rows: soft golden chord slashes; oxblood-and-gold dash streaks; hard boom circular shocks; narrow Hymn of Dawn beams; pale sanctuary shields; violet-gold convergence spirals; small musical notes and aulos pulses; dark discord then white-gold Requiem bursts. Columns are eight ordered animation phases from anticipation/spark through expansion to dissipating paint flecks. Neutral source colors, crisp readable silhouettes, transparent RGBA."
+    }
+  ],
+  "compositionRule": "For requests that contain exactPromptSuffix, the exact prompt sent was bodyPrefix immediately followed by exactPromptSuffix. Aulos used the same bodyPrefix with the added aulos/lyre instruction in its suffix. IdleTransitions used only the character reference; all other requests used both references."
+}

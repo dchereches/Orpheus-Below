@@ -45,6 +45,7 @@ namespace OrpheusBelow
         public OrphicBreath Breath { get; } = new OrphicBreath();
 
         private OrpheusPlayerController _player;
+        private OrpheusSpriteAnimator _spriteAnimator;
         private BlurredEurydice _eurydice;
         private int _comboStep;
         private float _comboResetTimer;
@@ -61,6 +62,7 @@ namespace OrpheusBelow
         {
             Instance = this;
             _player = GetComponent<OrpheusPlayerController>();
+            _spriteAnimator = GetComponent<OrpheusSpriteAnimator>();
             RefreshCadenceDisplay();
         }
 
@@ -86,22 +88,30 @@ namespace OrpheusBelow
         private void Update()
         {
             if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive) return;
-            Breath.Tick(Time.deltaTime);
+            AdvanceState(Time.deltaTime);
+        }
+
+        public void AdvanceState(float deltaTime)
+        {
+            Breath.Tick(deltaTime);
             if (_comboResetTimer > 0f)
             {
-                _comboResetTimer -= Time.deltaTime;
+                _comboResetTimer -= deltaTime;
                 if (_comboResetTimer <= 0f) _comboStep = 0;
             }
 
             if (_cadenceTimer > 0f)
             {
-                _cadenceTimer -= Time.deltaTime;
+                _cadenceTimer -= deltaTime;
                 if (_cadenceTimer <= 0f && _cadenceBuffer.Count > 0)
                 {
                     _cadenceBuffer.Clear();
+                    _spriteAnimator?.SetSinging(false);
                     RefreshCadenceDisplay();
                 }
             }
+            if (_spriteAnimator != null && _spriteAnimator.CurrentState == OrpheusAnimationState.BreathExhausted && Breath.Breath >= 24f)
+                _spriteAnimator.TriggerBreath(false);
         }
 
         private void HandleAttackPulse(float intensity, bool isHardBoom)
@@ -122,6 +132,7 @@ namespace OrpheusBelow
             // The guardian's timed score has its own rules; exploration costs never block it.
             if (!_player.IsIn2DBossStage && !Breath.TryPlay(isHardBoom))
             {
+                if (Breath.Breath < (isHardBoom ? 24f : 7f)) _spriteAnimator?.TriggerBreath(true);
                 if (Breath.RecoveryRemaining <= 0f && Time.time >= _nextDryHint)
                 {
                     _nextDryHint = Time.time + 1.5f;
@@ -231,6 +242,7 @@ namespace OrpheusBelow
                 }
             }
 
+            _spriteAnimator?.SetSinging(true);
             RefreshCadenceDisplay();
         }
 
@@ -259,6 +271,7 @@ namespace OrpheusBelow
 
         private void ExecuteHymnOfDawnBeam()
         {
+            _spriteAnimator?.TriggerCadencePerformance(OrpheusAnimationState.HymnBeam);
             RewardCadence();
             ProceduralLyreAudio.Instance?.PlayCadenceComplete();
             OrpheusHud.Instance?.ShowSubtleCallout("Hymn of Dawn  (♪ — ♪ — Boom)");
@@ -304,6 +317,7 @@ namespace OrpheusBelow
 
         private void ExecuteSanctuaryOfEurydice()
         {
+            _spriteAnimator?.TriggerCadencePerformance(OrpheusAnimationState.SanctuaryCast);
             RewardCadence();
             ProceduralLyreAudio.Instance?.PlayCadenceComplete();
             OrpheusHud.Instance?.ShowSubtleCallout("Sanctuary of Eurydice  (Boom — ♪)");
@@ -317,6 +331,7 @@ namespace OrpheusBelow
 
         private void ExecuteSirensConvergenceVortex()
         {
+            _spriteAnimator?.TriggerCadencePerformance(OrpheusAnimationState.ConvergenceCast);
             RewardCadence();
             ProceduralLyreAudio.Instance?.PlayCadenceComplete();
             OrpheusHud.Instance?.ShowSubtleCallout("Siren's Convergence  (♪ — Boom — ♪)");
@@ -370,6 +385,8 @@ namespace OrpheusBelow
 
         private void ExecuteSoftComboStrike(float intensity, bool isDashStrike)
         {
+            _spriteAnimator?.TriggerSoftPerformance(_comboStep + 1);
+            if (isDashStrike) _spriteAnimator?.TriggerDashStrike();
             ProceduralLyreAudio.Instance?.PlaySoftAttack(intensity);
 
             Vector3 aimDir = _player.AimDirectionXZ;
@@ -418,6 +435,7 @@ namespace OrpheusBelow
 
         private void ExecuteHardBoom(float intensity, bool isDashStrike)
         {
+            _spriteAnimator?.TriggerHardBoomPerformance();
             ProceduralLyreAudio.Instance?.PlayHardBoom(intensity);
 
             Vector3 aimDir = _player.AimDirectionXZ;

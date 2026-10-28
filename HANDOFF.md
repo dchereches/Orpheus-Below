@@ -255,6 +255,7 @@ Drop generated textures into the appropriate folder under `Assets/OrpheusBelow/R
 - **Folder:** `Assets/OrpheusBelow/Resources/Characters/`
 - **Format:** Transparent PNG sprite sheets (e.g. `4x4` or `8x1` strips, `256 x 256` per frame).
 - **Orpheus (`Characters/Orpheus/`):**
+  - **Implemented 2026-10-28:** `Characters/Orpheus/BroadOil/` now contains 11 generated transparent 8×8 sources, a complete 48-motion runtime library, eight-direction controlled actions, four-direction cinematic reactions, singing/aulos/combat/narrative coverage, 64 painted effects, 3.9-unit enemy scale, layered directional shadow, and chamber-authored oil rim lighting. See `docs/orpheus-broad-oil-animation-guide.md`.
   - `Orpheus_Idle.png`: Holding golden Lyre, gentle cape flutter (4 frames).
   - `Orpheus_Run.png`: 8-directional run cycle (8 frames).
   - `Orpheus_Dash.png`: Forward elongated dash silhouette with after-image motion blur (3 frames).

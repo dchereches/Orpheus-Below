@@ -43,6 +43,7 @@ namespace OrpheusBelow.EditorTools
             d.guardian = i == 1 ? BossIdentity.Tripod : i == 2 ? BossIdentity.MaskedMonk
                 : i == 3 ? BossIdentity.MysticEyeWarden : i == 4 ? BossIdentity.WingedSentinel
                 : i == 5 ? BossIdentity.Shepherd : BossIdentity.CerberusHoundOfHades;
+            AuthorDominantLight(d, i);
             switch (i)
             {
                 case 0:
@@ -265,6 +266,21 @@ namespace OrpheusBelow.EditorTools
             }
             d.reunionPoint = d.exit;
             AuthorStairs(d, i);
+        }
+
+        private static void AuthorDominantLight(PaintedChamberDefinition d, int i)
+        {
+            switch (i)
+            {
+                case 0: d.dominantLightDirection = new Vector2(.82f, .57f); d.dominantLightColor = new Color(1f, .72f, .34f, 1f); d.dominantLightIntensity = 1.15f; break;
+                case 1: d.dominantLightDirection = new Vector2(-.72f, .69f); d.dominantLightColor = new Color(.96f, .48f, .24f, 1f); d.dominantLightIntensity = 1.28f; break;
+                case 2: d.dominantLightDirection = new Vector2(.34f, .94f); d.dominantLightColor = new Color(.62f, .72f, 1f, 1f); d.dominantLightIntensity = .82f; break;
+                case 3: d.dominantLightDirection = new Vector2(-.93f, .36f); d.dominantLightColor = new Color(.88f, .38f, 1f, 1f); d.dominantLightIntensity = 1.05f; break;
+                case 4: d.dominantLightDirection = new Vector2(.96f, -.28f); d.dominantLightColor = new Color(1f, .36f, .18f, 1f); d.dominantLightIntensity = 1.42f; break;
+                case 5: d.dominantLightDirection = new Vector2(-.45f, -.89f); d.dominantLightColor = new Color(.54f, .82f, .92f, 1f); d.dominantLightIntensity = .76f; break;
+                case 6: d.dominantLightDirection = new Vector2(.67f, -.74f); d.dominantLightColor = new Color(1f, .53f, .22f, 1f); d.dominantLightIntensity = 1.34f; break;
+                default: d.dominantLightDirection = new Vector2(-.83f, -.56f); d.dominantLightColor = new Color(.92f, .24f, .16f, 1f); d.dominantLightIntensity = 1.55f; break;
+            }
         }
 
         public static void AuthorStairs(PaintedChamberDefinition d, int i)

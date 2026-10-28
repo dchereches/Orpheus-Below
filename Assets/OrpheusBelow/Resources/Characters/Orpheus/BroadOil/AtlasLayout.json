@@ -1,0 +1,19 @@
+{
+  "grid": { "columns": 8, "rows": 8 },
+  "bodyRows": ["South", "SouthEast", "East", "NorthEast", "North", "NorthWest", "West", "SouthWest"],
+  "atlases": {
+    "IdleTransitions": ["Idle", "CloakSettle", "RestlessIdle", "Glance", "StartAnticipation", "FirstStep", "Stop", "Turn"],
+    "Walk": ["ContactA", "DownA", "PassingA", "UpA", "ContactB", "DownB", "PassingB", "UpB"],
+    "Run": ["ContactA", "DownA", "AirA", "UpA", "ContactB", "DownB", "AirB", "UpB"],
+    "DashStairs": ["Brace", "Launch", "DashLow", "DashTravel", "DashStrike", "Settle", "StairAscent", "StairDescent"],
+    "SoftCombat": ["LyreDraw", "Ready", "LowChord", "RecoilA", "ReverseChord", "RecoilB", "OverheadThird", "SoftBolt"],
+    "HardCadence": ["BoomWindupA", "BoomWindupB", "BoomRelease", "HymnBeam", "Sanctuary", "Convergence", "FullVoice", "PhraseResolve"],
+    "LyreSinging": ["LyreDraw", "SoftPluck", "PluckFollow", "Inhale", "SustainA", "SustainB", "Crescendo", "Resolve"],
+    "Aulos": ["Draw", "Ready", "LoopA", "LoopB", "SoftNote", "HardNote", "Discord", "Requiem"],
+    "Reactions": ["BreathExhausted", "BreathRecover", "LightHit", "HeavyHit", "GroundedHurt", "Rise", "Defeat", "Alert"],
+    "Narrative": ["ChamberEntrance", "Alert", "Inspect", "LookBackTemptation", "LookBackFatal", "EurydiceGrief", "ChamberClear", "Victory"],
+    "Effects": ["SoftChord", "Dash", "HardBoom", "HymnBeam", "Sanctuary", "Convergence", "MusicalPulse", "DiscordRequiem"]
+  },
+  "effectColumns": ["anticipation", "begin", "expandA", "expandB", "crest", "release", "fadeA", "fadeB"],
+  "runtime": { "visibleHeight": 3.9, "controlledDirections": 8, "passiveDirections": 4, "installedBodySlots": 1360, "distinctBodySourceFrames": 640, "distinctReferencedSpritesIncludingEffects": 704, "effectFrames": 64 }
+}

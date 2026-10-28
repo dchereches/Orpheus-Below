@@ -5625,6 +5625,9 @@ MonoBehaviour:
   imageWidth: 72
   imageHeight: 48
   zoom: 11
+  dominantLightDirection: {x: 0.82, y: 0.57}
+  dominantLightColor: {r: 1, g: 0.72, b: 0.34, a: 1}
+  dominantLightIntensity: 1.15
   walkableBoundary:
   - {x: 215, y: 716}
   - {x: 310, y: 664}

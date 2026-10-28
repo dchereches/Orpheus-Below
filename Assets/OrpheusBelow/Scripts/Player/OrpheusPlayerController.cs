@@ -47,6 +47,9 @@ namespace OrpheusBelow
         private Transform _billboardRoot;
         private Transform _spriteFlipRoot;
         private SpriteRenderer _cloakSr;
+        private GameObject _proceduralVisualRoot;
+        private OrpheusSpriteAnimator _spriteAnimator;
+        private OrpheusGroundShadow _groundShadow;
         private Transform _aimRingRoot;
         private BlurredEurydice _eurydice;
 
@@ -76,6 +79,7 @@ namespace OrpheusBelow
         private float _footstepDustTimer;
         private Vector3 _lastSafeGroundPos;
         private bool _lookedBackFatally;
+        private Vector3 _lastAnimationPosition;
 
         private static readonly Collider[] OverlapBuf = new Collider[24];
 
@@ -97,8 +101,12 @@ namespace OrpheusBelow
             rb.useGravity = false;
 
             _lastSafeGroundPos = transform.position;
+            _lastAnimationPosition = transform.position;
             BuildOrpheusVisuals();
-            gameObject.AddComponent<PaintedActorDepth>();
+            var depth = GetComponent<PaintedActorDepth>();
+            if (depth == null) depth = gameObject.AddComponent<PaintedActorDepth>();
+            depth.Exclude(_spriteAnimator.BodyRenderer);
+            depth.Exclude(_spriteAnimator.EffectsRenderer);
         }
 
         private void Start()
@@ -108,11 +116,9 @@ namespace OrpheusBelow
 
         private void BuildOrpheusVisuals()
         {
-            GameObject shadowGo = new GameObject("GroundShadow");
-            shadowGo.transform.SetParent(transform, false);
-            shadowGo.transform.localPosition = new Vector3(0f, 0.02f, 0f);
-            shadowGo.transform.localScale = new Vector3(0.95f, 0.95f, 1f);
-            RenderPipeline2DSetup.AttachGroundDecal(shadowGo, RenderPipeline2DSetup.CircleSprite, new Color(0f, 0f, 0f, 0.52f), 1);
+            _groundShadow = GetComponent<OrpheusGroundShadow>();
+            if (_groundShadow == null) _groundShadow = gameObject.AddComponent<OrpheusGroundShadow>();
+            _groundShadow.Initialize(this);
 
             _aimRingRoot = new GameObject("AimIndicatorRoot").transform;
             _aimRingRoot.SetParent(transform, false);
@@ -138,23 +144,41 @@ namespace OrpheusBelow
             _spriteFlipRoot.SetParent(_billboardRoot, false);
             _spriteFlipRoot.localScale = Vector3.one * 1.2f;
 
+            _proceduralVisualRoot = new GameObject("ProceduralOrpheusVisual");
+            _proceduralVisualRoot.transform.SetParent(_spriteFlipRoot, false);
+
             GameObject cloakGo = new GameObject("OrpheusCloak");
-            cloakGo.transform.SetParent(_spriteFlipRoot, false);
+            cloakGo.transform.SetParent(_proceduralVisualRoot.transform, false);
             cloakGo.transform.localPosition = new Vector3(0f, 0.68f, 0f);
             cloakGo.transform.localScale = new Vector3(0.72f, 1.32f, 1f);
             _cloakSr = RenderPipeline2DSetup.AttachSprite(cloakGo, RenderPipeline2DSetup.DiamondSprite, new Color(1.15f, 0.16f, 0.28f, 1f), 14);
 
             GameObject headGo = new GameObject("OrpheusHead");
-            headGo.transform.SetParent(_spriteFlipRoot, false);
+            headGo.transform.SetParent(_proceduralVisualRoot.transform, false);
             headGo.transform.localPosition = new Vector3(0.04f, 1.42f, -0.01f);
             headGo.transform.localScale = new Vector3(0.44f, 0.44f, 1f);
             RenderPipeline2DSetup.AttachSprite(headGo, RenderPipeline2DSetup.CircleSprite, new Color(0.97f, 0.89f, 0.79f, 1f), 15);
 
             GameObject lyreGo = new GameObject("GoldenLyre");
-            lyreGo.transform.SetParent(_spriteFlipRoot, false);
+            lyreGo.transform.SetParent(_proceduralVisualRoot.transform, false);
             lyreGo.transform.localPosition = new Vector3(0.38f, 0.84f, -0.02f);
             lyreGo.transform.localScale = new Vector3(0.38f, 0.50f, 1f);
             RenderPipeline2DSetup.AttachSprite(lyreGo, RenderPipeline2DSetup.RingSprite, new Color(2.4f, 1.85f, 0.40f, 1f), 16);
+
+            GameObject bodyGo = new GameObject("OrpheusBroadOilBody");
+            bodyGo.transform.SetParent(_billboardRoot, false);
+            SpriteRenderer body = bodyGo.AddComponent<SpriteRenderer>();
+            body.sortingOrder = 15;
+
+            GameObject effectsGo = new GameObject("OrpheusBroadOilEffects");
+            effectsGo.transform.SetParent(_billboardRoot, false);
+            SpriteRenderer effects = effectsGo.AddComponent<SpriteRenderer>();
+            effects.sortingOrder = 16;
+
+            _spriteAnimator = GetComponent<OrpheusSpriteAnimator>();
+            if (_spriteAnimator == null) _spriteAnimator = gameObject.AddComponent<OrpheusSpriteAnimator>();
+            _spriteAnimator.Initialize(body, effects, _proceduralVisualRoot,
+                Resources.Load<OrpheusAnimationLibrary>(OrpheusAnimationLibrary.ResourcePath));
         }
 
         public void Enter2DBossStage(Vector3 stageCenter, float minX = -8.2f, float maxX = 4.2f)
@@ -295,6 +319,7 @@ namespace OrpheusBelow
                 {
                     _isDashing = false;
                     _postDashStrikeTimer = 0.14f;
+                    TriggerDashSettleAnimation();
                 }
             }
             else
@@ -372,6 +397,7 @@ namespace OrpheusBelow
                 {
                     _isDashing = false;
                     _postDashStrikeTimer = 0.14f;
+                    TriggerDashSettleAnimation();
                     ResolvePostDashChasmLanding();
                 }
             }
@@ -420,6 +446,7 @@ namespace OrpheusBelow
             _isDashing = true;
             _dashTimer = dashDuration;
             _invulnTimer = Mathf.Max(_invulnTimer, dashDuration + 0.05f);
+            _spriteAnimator?.TriggerDashStart();
 
             ProceduralLyreAudio.Instance?.PlayDash();
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.04f, 0f), 1.55f, new Color(2.4f, 0.65f, 0.25f, 0.85f), 0.18f);
@@ -453,6 +480,8 @@ namespace OrpheusBelow
             worldPos.y = 0f;
             transform.position = worldPos;
             _lastSafeGroundPos = worldPos;
+            _lastAnimationPosition = worldPos;
+            _spriteAnimator?.ResetMotion();
             CurrentDashCharges = maxDashCharges;
         }
 
@@ -602,6 +631,30 @@ namespace OrpheusBelow
 
             _billboardRoot.rotation = UnderworldCamera2D.CurrentBillboardRotation;
 
+            if (_spriteAnimator != null)
+            {
+                Vector3 groundDelta = transform.position - _lastAnimationPosition;
+                groundDelta.y = 0f;
+                bool ascending = false;
+                PaintedChamberMap map = PaintedChamberMap.Active;
+                bool onStairs = map != null && map.definition != null &&
+                    map.definition.StairMotion(transform.position - map.transform.position, groundDelta, out ascending);
+                _spriteAnimator.Drive(new OrpheusAnimationInput
+                {
+                    groundDelta = groundDelta,
+                    aimDirection = _lookedBackFatally ? -AimDirectionXZ : AimDirectionXZ,
+                    deltaTime = Mathf.Max(Time.deltaTime, .0001f),
+                    dashing = _isDashing,
+                    onStairs = onStairs,
+                    ascending = ascending,
+                    defeated = IsGameOver,
+                    bossStage = IsIn2DBossStage
+                });
+                _lastAnimationPosition = transform.position;
+                _groundShadow?.ApplyState(_isDashing, OrpheusGroundShadow.IsAttackState(_spriteAnimator.CurrentState),
+                    PaintedChamberMap.Active?.definition);
+            }
+
             float screenX = Vector3.Dot(_lookedBackFatally ? -AimDirectionXZ : AimDirectionXZ, UnderworldCamera2D.IsoRightXZ);
             if (Mathf.Abs(screenX) > 0.05f)
             {
@@ -655,6 +708,7 @@ namespace OrpheusBelow
             if (IsGameOver || IsVictory || _invulnTimer > 0f || _isDashing) return;
 
             CurrentHealth = Mathf.Max(0f, CurrentHealth - (dmg * DifficultySettings.DamageMultiplier));
+            _spriteAnimator?.TriggerHit(dmg >= maxHealth * .25f);
             UnderworldSoundscape.Instance?.PlayHurt();
             _eurydice?.NotifyThreat(1.4f);
             _invulnTimer = 0.68f;
@@ -684,6 +738,7 @@ namespace OrpheusBelow
         {
             if (IsGameOver || IsVictory) return;
             CurrentHealth = Mathf.Max(0f, CurrentHealth - (dmg * DifficultySettings.DamageMultiplier));
+            _spriteAnimator?.TriggerHit(dmg >= maxHealth * .25f);
             UnderworldCamera2D.Instance?.AddShake(0.42f);
 
             if (CurrentHealth <= 0f)
@@ -706,6 +761,7 @@ namespace OrpheusBelow
         private void TriggerLookBackLoss()
         {
             _lookedBackFatally = true;
+            _spriteAnimator?.TriggerLookBack(true);
             IsGameOver = true;
             Time.timeScale = 1f;
             ProceduralLyreAudio.Instance?.PlayLookBackTragedy();
@@ -717,6 +773,7 @@ namespace OrpheusBelow
         {
             if (IsGameOver || IsVictory) return;
             IsGameOver = true;
+            _spriteAnimator?.TriggerGrief();
             Time.timeScale = 1f;
             ProceduralLyreAudio.Instance?.PlayLookBackTragedy();
             GameOverReason = "Mourning Shades dragged Eurydice back into the Stygian dark while you pressed ahead.";
@@ -726,8 +783,15 @@ namespace OrpheusBelow
         {
             if (IsGameOver || IsVictory) return;
             IsVictory = true;
+            _spriteAnimator?.TriggerVictory();
             _eurydice?.Celebrate(3f);
             Time.timeScale = 1f;
         }
+
+        public void TriggerChamberClear() => _spriteAnimator?.TriggerChamberClear();
+        public void TriggerDashSettleAnimation() => _spriteAnimator?.TriggerDashSettle();
+        public void TriggerChamberEntranceAnimation() => _spriteAnimator?.TriggerChamberEntrance();
+        public void TriggerAlertAnimation() => _spriteAnimator?.TriggerAlert();
+        public void TriggerInspectAnimation() => _spriteAnimator?.TriggerInspect();
     }
 }
