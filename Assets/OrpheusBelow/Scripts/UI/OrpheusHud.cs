@@ -197,14 +197,37 @@ namespace OrpheusBelow
             ShowTutorial("Eurydice", text, onConfirm, true);
         }
 
+        public void ShowHadesTutorial(string text, System.Action onConfirm = null)
+        {
+            ShowTutorial("Hades", text, onConfirm, false);
+        }
+
+        public void ShowBossTutorial(string bossName, string text, System.Action onConfirm = null)
+        {
+            ShowTutorial(bossName, text, onConfirm, false);
+        }
+
         private void ShowTutorial(string speaker, string text, System.Action onConfirm, bool companionSpeech)
         {
             ReleaseCompanionTeachingPose();
             CurrentTutorialSpeaker = speaker;
-            if (_tutorialSpeakerText != null) _tutorialSpeakerText.text = speaker;
+            if (_tutorialSpeakerText != null)
+            {
+                _tutorialSpeakerText.text = speaker;
+                if (speaker == "Hades")
+                    _tutorialSpeakerText.color = new Color(0.96f, 0.32f, 0.32f, 1f);
+                else if (speaker == "Eurydice")
+                    _tutorialSpeakerText.color = new Color(1f, 0.72f, 0.76f, 1f);
+                else if (speaker.Contains("Tripod"))
+                    _tutorialSpeakerText.color = new Color(1f, 0.85f, 0.42f, 1f);
+                else if (speaker.Contains("Eye Warden") || speaker.Contains("Mystic Eye"))
+                    _tutorialSpeakerText.color = new Color(0.40f, 0.95f, 0.90f, 1f);
+                else
+                    _tutorialSpeakerText.color = new Color(0.82f, 0.70f, 0.46f, 1f);
+            }
             _tutorialConfirmCallback = onConfirm;
             if (_tutorialBodyText != null) _tutorialBodyText.text = text;
-            SetTutorialPortrait(companionSpeech);
+            SetTutorialPortrait(speaker, companionSpeech);
             if (_tutorialBoxRect != null && _tutorialBodyText != null)
             {
                 float bodyHeight = Mathf.Max(90f, _tutorialBodyText.preferredHeight);
@@ -223,68 +246,71 @@ namespace OrpheusBelow
                 bool showIcons = false;
                 for (int i = 0; i < _dialogueIcons.Length; i++) _dialogueIcons[i].gameObject.SetActive(false);
 
-                if (text.Contains("Quaver") || text.Contains("Soft") || text.Contains("light pluck") || text.Contains("LMB") || text.Contains("♪"))
+                if (speaker == "Artemis")
                 {
-                    showIcons = true;
-                    _dialogueIcons[0].gameObject.SetActive(true);
-                    _dialogueIcons[0].sprite = _quaverSprite;
-                    _dialogueIcons[0].color = new Color(1f, 0.88f, 0.35f, 1f);
-                    if (_dialogueSymbolsCaption != null)
+                    if (text.Contains("Quaver") || text.Contains("Soft") || text.Contains("light pluck") || text.Contains("LMB") || text.Contains("♪"))
                     {
-                        _dialogueSymbolsCaption.text = "Small Quaver (♪)  ·  Light tap [LMB / J]";
-                        _dialogueSymbolsCaption.color = new Color(1f, 0.88f, 0.45f, 0.95f);
+                        showIcons = true;
+                        _dialogueIcons[0].gameObject.SetActive(true);
+                        _dialogueIcons[0].sprite = _quaverSprite;
+                        _dialogueIcons[0].color = new Color(1f, 0.88f, 0.35f, 1f);
+                        if (_dialogueSymbolsCaption != null)
+                        {
+                            _dialogueSymbolsCaption.text = "Small Quaver (♪)  ·  Light tap [LMB / J]";
+                            _dialogueSymbolsCaption.color = new Color(1f, 0.88f, 0.45f, 0.95f);
+                        }
                     }
-                }
-                else if (text.Contains("Fermata") || text.Contains("Boom") || text.Contains("RMB"))
-                {
-                    showIcons = true;
-                    _dialogueIcons[0].gameObject.SetActive(true);
-                    _dialogueIcons[0].sprite = _fermataSprite;
-                    _dialogueIcons[0].color = new Color(1f, 0.90f, 0.28f, 1f);
-                    if (_dialogueSymbolsCaption != null)
+                    else if (text.Contains("Fermata") || text.Contains("Boom") || text.Contains("RMB"))
                     {
-                        _dialogueSymbolsCaption.text = "Boom Fermata  ·  Armor-shatter [RMB / K]";
-                        _dialogueSymbolsCaption.color = new Color(1f, 0.90f, 0.45f, 0.95f);
+                        showIcons = true;
+                        _dialogueIcons[0].gameObject.SetActive(true);
+                        _dialogueIcons[0].sprite = _fermataSprite;
+                        _dialogueIcons[0].color = new Color(1f, 0.90f, 0.28f, 1f);
+                        if (_dialogueSymbolsCaption != null)
+                        {
+                            _dialogueSymbolsCaption.text = "Boom Fermata  ·  Armor-shatter [RMB / K]";
+                            _dialogueSymbolsCaption.color = new Color(1f, 0.90f, 0.45f, 0.95f);
+                        }
                     }
-                }
-                else if (text.Contains("Hymn") || text.Contains("Cadence") || text.Contains("Dawn"))
-                {
-                    showIcons = true;
-                    _dialogueIcons[0].gameObject.SetActive(true);
-                    _dialogueIcons[0].sprite = _quaverSprite;
-                    _dialogueIcons[0].color = new Color(1f, 0.88f, 0.35f, 1f);
-
-                    _dialogueIcons[1].gameObject.SetActive(true);
-                    _dialogueIcons[1].sprite = _quaverSprite;
-                    _dialogueIcons[1].color = new Color(1f, 0.88f, 0.35f, 1f);
-
-                    _dialogueIcons[2].gameObject.SetActive(true);
-                    _dialogueIcons[2].sprite = _fermataSprite;
-                    _dialogueIcons[2].color = new Color(1f, 0.90f, 0.28f, 1f);
-
-                    if (_dialogueSymbolsCaption != null)
+                    else if (text.Contains("Hymn") || text.Contains("Cadence") || text.Contains("Dawn"))
                     {
-                        _dialogueSymbolsCaption.text = "Hymn of Dawn  [ ♪ — ♪ — Fermata ]";
-                        _dialogueSymbolsCaption.color = new Color(1f, 0.90f, 0.55f, 0.95f);
+                        showIcons = true;
+                        _dialogueIcons[0].gameObject.SetActive(true);
+                        _dialogueIcons[0].sprite = _quaverSprite;
+                        _dialogueIcons[0].color = new Color(1f, 0.88f, 0.35f, 1f);
+
+                        _dialogueIcons[1].gameObject.SetActive(true);
+                        _dialogueIcons[1].sprite = _quaverSprite;
+                        _dialogueIcons[1].color = new Color(1f, 0.88f, 0.35f, 1f);
+
+                        _dialogueIcons[2].gameObject.SetActive(true);
+                        _dialogueIcons[2].sprite = _fermataSprite;
+                        _dialogueIcons[2].color = new Color(1f, 0.90f, 0.28f, 1f);
+
+                        if (_dialogueSymbolsCaption != null)
+                        {
+                            _dialogueSymbolsCaption.text = "Hymn of Dawn  [ ♪ — ♪ — Fermata ]";
+                            _dialogueSymbolsCaption.color = new Color(1f, 0.90f, 0.55f, 0.95f);
+                        }
                     }
-                }
-                else if (text.Contains("Aulos") || text.Contains("Flute") || text.Contains("flute"))
-                {
-                    showIcons = true;
-                    _dialogueIcons[0].gameObject.SetActive(true);
-                    _dialogueIcons[0].sprite = _quaverSprite;
-                    _dialogueIcons[0].color = new Color(1f, 0.88f, 0.35f, 1f);
-
-                    _dialogueIcons[1].gameObject.SetActive(true);
-                    _dialogueIcons[1].sprite = _fermataSprite;
-                    _dialogueIcons[1].color = new Color(1f, 0.90f, 0.28f, 1f);
-
-                    _dialogueIcons[2].gameObject.SetActive(false);
-
-                    if (_dialogueSymbolsCaption != null)
+                    else if (text.Contains("Aulos") || text.Contains("Flute") || text.Contains("flute"))
                     {
-                        _dialogueSymbolsCaption.text = "Aulos Requiem  ·  Play [ ♪ Quaver / Fermata ]";
-                        _dialogueSymbolsCaption.color = new Color(0.95f, 0.85f, 0.55f, 0.95f);
+                        showIcons = true;
+                        _dialogueIcons[0].gameObject.SetActive(true);
+                        _dialogueIcons[0].sprite = _quaverSprite;
+                        _dialogueIcons[0].color = new Color(1f, 0.88f, 0.35f, 1f);
+
+                        _dialogueIcons[1].gameObject.SetActive(true);
+                        _dialogueIcons[1].sprite = _fermataSprite;
+                        _dialogueIcons[1].color = new Color(1f, 0.90f, 0.28f, 1f);
+
+                        _dialogueIcons[2].gameObject.SetActive(false);
+
+                        if (_dialogueSymbolsCaption != null)
+                        {
+                            _dialogueSymbolsCaption.text = "Aulos Requiem  ·  Play [ ♪ Quaver / Fermata ]";
+                            _dialogueSymbolsCaption.color = new Color(0.95f, 0.85f, 0.55f, 0.95f);
+                        }
                     }
                 }
 
@@ -299,25 +325,49 @@ namespace OrpheusBelow
             _tutorialUsesCompanionPose = false;
         }
 
-        private void SetTutorialPortrait(bool companionSpeech)
+        private void SetTutorialPortrait(string speaker, bool companionSpeech)
         {
             if (_tutorialPortrait == null) return;
             _tutorialPortrait.uvRect = new Rect(0f, 0f, 1f, 1f);
-            _tutorialPortrait.texture = companionSpeech ? null
-                : Resources.Load<Texture2D>("Characters/Artemis/GuidePortrait");
-            if (companionSpeech)
+
+            Texture2D tex = null;
+            if (speaker == "Eurydice" || companionSpeech)
             {
-                var library = Resources.Load<EurydiceAnimationLibrary>(EurydiceAnimationLibrary.ResourcePath);
-                if (library != null && library.idle != null && library.idle.Length > 0 && library.idle[0] != null)
+                tex = Resources.Load<Texture2D>("Characters/Eurydice/Portrait");
+                if (tex == null)
                 {
-                    Sprite frame = library.idle[0];
-                    Rect rect = frame.rect;
-                    float side = Mathf.Min(rect.width, rect.height * .48f);
-                    _tutorialPortrait.texture = frame.texture;
-                    _tutorialPortrait.uvRect = new Rect((rect.center.x - side * .5f) / frame.texture.width,
-                        (rect.yMax - side) / frame.texture.height, side / frame.texture.width, side / frame.texture.height);
+                    var library = Resources.Load<EurydiceAnimationLibrary>(EurydiceAnimationLibrary.ResourcePath);
+                    if (library != null && library.idle != null && library.idle.Length > 0 && library.idle[0] != null)
+                    {
+                        Sprite frame = library.idle[0];
+                        Rect rect = frame.rect;
+                        float side = Mathf.Min(rect.width, rect.height * .48f);
+                        _tutorialPortrait.texture = frame.texture;
+                        _tutorialPortrait.uvRect = new Rect((rect.center.x - side * .5f) / frame.texture.width,
+                            (rect.yMax - side) / frame.texture.height, side / frame.texture.width, side / frame.texture.height);
+                        _tutorialPortrait.gameObject.SetActive(true);
+                        return;
+                    }
                 }
             }
+            else if (speaker == "Hades")
+            {
+                tex = Resources.Load<Texture2D>("Characters/Hades/Portrait");
+            }
+            else if (speaker.Contains("Tripod"))
+            {
+                tex = Resources.Load<Texture2D>("Characters/Tripod/Portrait");
+            }
+            else if (speaker.Contains("Eye Warden") || speaker.Contains("Mystic Eye"))
+            {
+                tex = Resources.Load<Texture2D>("Characters/MysticEyeWarden/Portrait");
+            }
+            else
+            {
+                tex = Resources.Load<Texture2D>("Characters/Artemis/GuidePortrait");
+            }
+
+            _tutorialPortrait.texture = tex;
             _tutorialPortrait.gameObject.SetActive(_tutorialPortrait.texture != null);
         }
 
@@ -630,7 +680,7 @@ namespace OrpheusBelow
                 new Vector2(178f, -59f), new Vector2(608f, 90f), 22, FontStyle.Normal,
                 TextAnchor.UpperLeft, new Color(.94f, .92f, .86f),
                 anchorMin: Vector2.up, anchorMax: Vector2.up, pivot: Vector2.up);
-            _tutorialBodyText.verticalOverflow = VerticalWrapMode.Truncate;
+            _tutorialBodyText.verticalOverflow = VerticalWrapMode.Overflow;
             _tutorialBodyText.font = _bodyFont;
             _tutorialBodyText.lineSpacing = 1.12f;
 
@@ -968,8 +1018,8 @@ namespace OrpheusBelow
                 if (player.IsGameOver)
                 {
                     _endScreenRoot.SetActive(true);
-                    bool looked = player.GameOverReason.StartsWith("You turned back");
-                    bool abducted = player.GameOverReason.StartsWith("Mourning Shades");
+                    bool looked = player.GameOverReason.Contains("turned back");
+                    bool abducted = player.GameOverReason.Contains("Mourning Shades") || player.GameOverReason.Contains("dragged");
 
                     _endScreenBg.color = (looked || abducted)
                         ? new Color(0.03f, 0.02f, 0.06f, 0.82f)
@@ -983,7 +1033,7 @@ namespace OrpheusBelow
                     _endScreenRoot.SetActive(true);
                     _endScreenBg.color = new Color(0.10f, 0.08f, 0.03f, 0.82f);
                     _endTitleText.text = "Into the Upper Light";
-                    _endBodyText.text = "You descended alone to the deepest throne and found Eurydice.\nTogether you climbed through the underworld, trusting her voice behind you.\nIn the warm light of day, she steps beside you — whole and alive.\n\nPress [R] to play again.";
+                    _endBodyText.text = "\"The dawn... Orpheus, look! The golden sun strikes the marble columns! We made it... we are alive!\"\n\nYou descended alone to the deepest throne and found Eurydice.\nTogether you climbed through the underworld, trusting her voice behind you.\nIn the warm light of day, she steps beside you — whole and alive.\n\nPress [R] to play again.";
                 }
             }
         }

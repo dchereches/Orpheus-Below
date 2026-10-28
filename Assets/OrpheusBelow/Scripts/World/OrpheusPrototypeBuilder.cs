@@ -61,6 +61,12 @@ namespace OrpheusBelow
         private bool _firstTutorialTriggered;
         private bool _shownWardenHint;
         private bool _devChordWasHeld;
+        private bool _spokenHadesChamber2;
+        private bool _spokenHadesChamber4;
+        private bool _spokenHadesChamber7Arrival;
+        private bool _spokenHadesAscent5;
+        private bool _spokenHadesAscent3;
+        private bool _spokenHadesAscent1;
         private int _devSelection;
         private float _devPreviousTimeScale = 1f;
         private Vector2 _devScroll;
@@ -224,7 +230,18 @@ namespace OrpheusBelow
                 var companion = OrpheusPrototypeBuilder.AddCompanion(transform, OrpheusPlayerController.Instance.transform);
                 UnderworldCamera2D.Instance.eurydiceTarget = companion.transform;
                 OrpheusHud.Instance?.ShowBanner("Eurydice has joined you  ·  Begin the ascent", 4f);
-                OrpheusHud.Instance?.ShowArtemisTutorial("You have found her, Orpheus. Lead her back through the chambers to my sanctuary. Trust the voice behind you; do not look back. Wait at each passage until she is near.");
+                OrpheusHud.Instance?.ShowHadesTutorial(
+                    "Take her, minstrel. But hear the law of Tartarus: Walk ahead. She shall follow in your shadow. If you turn your head to look upon her before the sun strikes your brow—she is mine forever.",
+                    () =>
+                    {
+                        OrpheusHud.Instance?.ShowEurydiceTutorial(
+                            "Orpheus...? Is that your lyre I hear through the frost? It is truly you... You came into the dark for me. Walk ahead—I will follow your music.",
+                            () =>
+                            {
+                                OrpheusHud.Instance?.ShowArtemisTutorial(
+                                    "You have found her, Orpheus. Lead her back through the chambers to my sanctuary. Trust the voice behind you; do not look back. Wait at each passage until she is near.");
+                            });
+                    });
                 return true;
             }
             if (door.journeyRole == JourneyDoorRole.Deeper)
@@ -329,6 +346,43 @@ namespace OrpheusBelow
             OrpheusHud.Instance?.ShowBanner(ch.chamberTitle, 2.8f);
 
             if (index == 0) _firstTutorialTriggered = false;
+
+            if (UnderworldJourney.IsAscending)
+            {
+                if (index == 5 && !_spokenHadesAscent5)
+                {
+                    _spokenHadesAscent5 = true;
+                    OrpheusHud.Instance?.ShowHadesTutorial("Hear how quietly she walks behind you, Orpheus. Is she truly there? Or do you lead an empty shadow?");
+                }
+                else if (index == 3 && !_spokenHadesAscent3)
+                {
+                    _spokenHadesAscent3 = true;
+                    OrpheusHud.Instance?.ShowHadesTutorial("A poet's greatest curse is curiosity. How easy it would be to glance over your shoulder... just once.");
+                }
+                else if (index == 1 && !_spokenHadesAscent1)
+                {
+                    _spokenHadesAscent1 = true;
+                    OrpheusHud.Instance?.ShowHadesTutorial("The light is so close, musician. Can you trust what you cannot see?");
+                }
+            }
+            else
+            {
+                if (index == 2 && !_spokenHadesChamber2)
+                {
+                    _spokenHadesChamber2 = true;
+                    OrpheusHud.Instance?.ShowHadesTutorial("A breath of living air stumbles down my halls. Turn back, son of Apollo. The earth does not yield what it has swallowed.");
+                }
+                else if (index == 4 && !_spokenHadesChamber4)
+                {
+                    _spokenHadesChamber4 = true;
+                    OrpheusHud.Instance?.ShowHadesTutorial("Your strings will fray before the weight of my kingdom softens. Mourn above like all the rest.");
+                }
+                else if (index == 7 && !_spokenHadesChamber7Arrival)
+                {
+                    _spokenHadesChamber7Arrival = true;
+                    OrpheusHud.Instance?.ShowHadesTutorial("You dare stand before the throne of the Unseen? No living feet tread this carpet, Orpheus. Speak. Why should the King of Shadows release what fate has sealed?");
+                }
+            }
 
             if (UnderworldJourney.Progress.IsCleared(index))
             {

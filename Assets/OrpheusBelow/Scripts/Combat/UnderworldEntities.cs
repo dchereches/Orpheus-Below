@@ -890,7 +890,7 @@ namespace OrpheusBelow
     public class TemptationWhisperZone : MonoBehaviour
     {
         [TextArea]
-        public string whisperMessage = "The Stygian mist swallows Eurydice's footsteps behind you...   [Play a Soft Note to Hear Her — or Hold Q]";
+        public string whisperMessage = "Eurydice: \"The fog is so thick... Keep your eyes on the road ahead! Trust my voice!\"";
 
         private void OnTriggerEnter(Collider other)
         {

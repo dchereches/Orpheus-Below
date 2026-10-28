@@ -162,7 +162,14 @@ namespace OrpheusBelow
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.08f, 0f), 3.4f,
                 new Color(2.8f, 2.2f, 0.55f, 1f), 0.45f);
 
-            OrpheusHud.Instance?.ShowSubtleCallout("+35 HP  ·  Nectar of the Gods", 2.2f);
+            if (UnderworldJourney.HasEurydice)
+            {
+                OrpheusHud.Instance?.ShowSubtleCallout("Eurydice: \"A moment of rest... The nectar smells of sunlight and wild thyme.\"", 3.2f);
+            }
+            else
+            {
+                OrpheusHud.Instance?.ShowSubtleCallout("+35 HP  ·  Nectar of the Gods", 2.2f);
+            }
 
             // Depleted well appearance
             if (_nectarDecal != null)

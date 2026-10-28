@@ -189,8 +189,8 @@ namespace OrpheusBelow
                 if (newlyAdded && !_shownAbductorHint)
                 {
                     _shownAbductorHint = true;
-                    OrpheusHud.Instance?.ShowEurydiceHint(
-                        "That Shade is taking me. Strike it now; later, B - S will raise my Sanctuary.", 4.2f);
+                    OrpheusHud.Instance?.ShowSubtleCallout(
+                        "Eurydice: \"Orpheus, they have me! Break their hold before they pull me into the deep!\"", 4.2f);
                 }
             }
         }
@@ -234,6 +234,7 @@ namespace OrpheusBelow
                     if (ab != null) ab.OnOrphicHit(55f, 0.85f, true, transform.position);
                 }
                 GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.06f, 0f), 5.0f, new Color(2.6f, 2.15f, 0.60f, 1f), 0.38f);
+                OrpheusHud.Instance?.ShowSubtleCallout("Eurydice: \"The golden circle holds! Their claws cannot touch me!\"", 3.2f);
             }
 
             if (_replyCooldown <= 0f)
@@ -244,12 +245,25 @@ namespace OrpheusBelow
             }
         }
 
+        private static readonly string[] AcousticPingReplies = new string[]
+        {
+            "Eurydice: \"I am here, Orpheus. Right behind you.\"",
+            "Eurydice: \"I hear the note... I am keeping pace.\"",
+            "Eurydice: \"Right here, my love. Do not turn.\""
+        };
+        private int _pingReplyIndex;
+
         private IEnumerator HumReplyRoutine()
         {
             yield return new WaitForSeconds(0.20f);
             if (IsVanished) yield break;
             ProceduralLyreAudio.Instance?.PlayEurydiceHumReply();
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.05f, 0f), 3.2f, new Color(0.75f, 1.85f, 2.4f, 0.90f), 0.42f);
+            if (_sanctuaryTimer <= 0f)
+            {
+                OrpheusHud.Instance?.ShowSubtleCallout(AcousticPingReplies[_pingReplyIndex % AcousticPingReplies.Length], 2.4f);
+                _pingReplyIndex++;
+            }
         }
 
         public void SetLookBackFocus(float focus01)
