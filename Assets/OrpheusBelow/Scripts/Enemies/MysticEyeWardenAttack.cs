@@ -13,7 +13,7 @@ namespace OrpheusBelow
         public const float RecallSeconds = .48f;
         public const float RecoverySeconds = .35f;
         public const float StaffSpeed = 14f;
-        public const float StaffDamage = 20f;
+        public const float StaffDamage = 30f;
         public const float StaffRadius = .32f;
         public const float FanAngle = 22f;
         public const float FanSpeed = 13f;

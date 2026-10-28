@@ -114,7 +114,7 @@ namespace OrpheusBelow.EditorTools
                     if (SceneManager.GetActiveScene().path != PaintedChamberScene.ScenePath(Course[_visit])) throw new Exception("Incorrect scene path");
                     bool escort = _visit > 7; var companion = UnityEngine.Object.FindFirstObjectByType<BlurredEurydice>();
                     if (UnderworldJourney.HasEurydice != escort || (companion != null) != escort) throw new Exception("Wrong solo/escort leg at visit " + _visit);
-                    if (_visit > 0 && (Mathf.Abs(player.CurrentHealth - 93) > .1f || OrpheusLyreCombat.Instance.UnlockedCadenceTier != 3))
+                    if (_visit > 0 && (Mathf.Abs(player.CurrentHealth - 83) > .1f || OrpheusLyreCombat.Instance.UnlockedCadenceTier != 3))
                         throw new Exception("Health/cadence continuity failed at visit " + _visit + " hp=" + player.CurrentHealth);
                     if (escort && director.chambers[Course[_visit]].guardianBoss != null) throw new Exception("A pacified guardian respawned on ascent");
                     if (escort && !UnderworldJourney.Progress.TutorialComplete) throw new Exception("Tutorial completion lost on return");

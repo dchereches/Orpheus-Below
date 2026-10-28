@@ -11,7 +11,7 @@ namespace OrpheusBelow
         public const float WarningSeconds = .85f;
         public const float RecoverySeconds = .6f;
         public const float BellSpeed = 7f;
-        public const float BellDamage = 13f;
+        public const float BellDamage = 22f;
         public const float BellRadius = .4f;
         public const float BellHeight = .7f;
         public const float BellLifetime = 1.6f;

@@ -13,7 +13,7 @@ namespace OrpheusBelow
         public const float HitAtSeconds = .16f;
         public const float RecoverySeconds = .42f;
         public const float CooldownSeconds = .48f;
-        public const float SwordDamage = 26f;
+        public const float SwordDamage = 38f;
 
         public enum SwordPhase { Cooldown, Windup, Strike, Recover }
         public enum SwordPattern { Sweep, Thrust, BladeFan }

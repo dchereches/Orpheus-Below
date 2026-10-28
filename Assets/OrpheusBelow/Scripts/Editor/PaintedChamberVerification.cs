@@ -173,7 +173,7 @@ namespace OrpheusBelow.EditorTools
                 {
                     if (_index == 1 && !_checkedTravel)
                     {
-                        if (Mathf.Abs(player.CurrentHealth - 93f) > .1f || OrpheusLyreCombat.Instance.UnlockedCadenceTier != 3)
+                        if (Mathf.Abs(player.CurrentHealth - 83f) > .1f || OrpheusLyreCombat.Instance.UnlockedCadenceTier != 3)
                             throw new Exception("Scene transition did not preserve health/cadences plus chamber respite");
                         _checkedTravel = true;
                     }

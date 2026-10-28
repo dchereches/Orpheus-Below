@@ -12,7 +12,7 @@ namespace OrpheusBelow
         public const float FollowThroughSeconds = .22f;
         public const float RecoverySeconds = .6f;
         public const float WaveSpeed = 8f;
-        public const float WaveDamage = 20f;
+        public const float WaveDamage = 30f;
         public const float WaveRadius = .7f;
         public const float WaveHeight = .8f;
         public const float WaveLifetime = 3.5f;

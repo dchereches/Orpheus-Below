@@ -69,17 +69,7 @@ namespace OrpheusBelow
         }
         public static string Intro(int depth)
         {
-            switch(depth)
-            {
-                case 0: return "The hooded skeleton raises its pistol before firing. The Monk marks a dark circle before stone falls. Step clear of their warnings, use cover against shots, and answer with your lyre.";
-                case 1: return "The Tripod's rings gather a sonic wave. Dash through it as it reaches you. A second pulse may follow; save your other dash.";
-                case 2: return "The Masked Monk calls stone from above. A dark circle locks onto the floor before each boulder falls. Leave the circle, then strike while he recovers.";
-                case 3: return "The Mystic Eye Warden commits his aim before throwing the eye-staff. Dash past the staff, then answer while he recalls it.";
-                case 4: return "The Winged Sentinel raises his sword slowly. Its shadow marks the full sweep. Leave that area or time a dash through the blow, then punish the recovery.";
-                case 5: return "The Shepherd's bell calls a small flock. Each sheep warns its dash before charging. Step aside, scatter the flock with music, and reach the Shepherd between summons.";
-                case 6: return "Cerberus waits, then commits to a bite or a broad tail whip. Watch his stance and the shadow, evade the strike, and play during his recovery.";
-                default: return string.Empty;
-            }
+            return string.Empty;
         }
     }
 }

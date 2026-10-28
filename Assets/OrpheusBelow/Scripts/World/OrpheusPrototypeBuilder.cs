@@ -305,8 +305,8 @@ namespace OrpheusBelow
                 player.TeleportToChamberSpawn(ch.playerSpawnWorld);
                 if (index > 0 || UnderworldJourney.IsAscending)
                 {
-                    player.Heal(20f);
-                    OrpheusHud.Instance?.ShowSubtleCallout("+20 HP Restored  ·  Chamber Respite", 2.2f);
+                    player.Heal(10f);
+                    OrpheusHud.Instance?.ShowSubtleCallout("+10 HP Restored  ·  Chamber Respite", 2.2f);
                 }
             }
 
@@ -354,10 +354,7 @@ namespace OrpheusBelow
         private IEnumerator SpawnWaveWithRunesRoutine(ChamberRuntimeData ch, List<WaveSpawnSpec> specs, float delayBeforeRunes)
         {
             _spawningWave = true;
-            if (chambers.Count > 0 && ch == chambers[0] && _currentWaveIndex == 0)
-            {
-                OrpheusHud.Instance?.ShowArtemisHint(ChamberEncounterPlan.Intro(0), 4.5f);
-            }
+            // No enemy attack dialogue hints
             yield return new WaitForSeconds(delayBeforeRunes);
 
             var map = PaintedChamberMap.Active;
@@ -504,6 +501,9 @@ namespace OrpheusBelow
             if (step == _shownTutorialStep) return;
             _shownTutorialStep = step;
 
+            bool usingMic = (SensorPulseInput.Instance != null && SensorPulseInput.Instance.sourceMode == SensorSourceMode.KeyboardPlusPCMicrophone)
+                         || SensorPulseInput.GlobalSourceMode == SensorSourceMode.KeyboardPlusPCMicrophone;
+
             string text;
             switch (step)
             {
@@ -511,19 +511,23 @@ namespace OrpheusBelow
                     text = "Orpheus, I am Artemis. Clear chambers to move further into the underworld! Move with W, A, S, D or the left stick.";
                     break;
                 case AsphodelTutorialStep.SoftNote:
-                    text = "To defend yourself with a Quaver [♪], press J or Left Click (or make a gentle sound if using the mic) to strike shades and hold the tempo.";
+                    text = usingMic
+                        ? "To defend yourself with a Quaver [♪], press J or Left Click (or make a gentle sound if using the mic) to strike shades and hold the tempo."
+                        : "To defend yourself with a Quaver [♪], press J or Left Click to strike shades and hold the tempo.";
                     break;
                 case AsphodelTutorialStep.HardBoom:
-                    text = "To cause a big repelling move, press K or Right Click (or make a loud sound if using the mic) to unleash a Boom Fermata—blasting enemies away and shattering armor!";
+                    text = usingMic
+                        ? "To cause a big repelling move, press K or Right Click (or make a loud sound if using the mic) to unleash a Boom Fermata—blasting enemies away and shattering armor!"
+                        : "To cause a big repelling move, press K or Right Click to unleash a Boom Fermata—blasting enemies away and shattering armor!";
                     break;
                 case AsphodelTutorialStep.Flute:
-                    text = "Combos can force enemies to flee! Press F (or Left Trigger) to draw your Aulos and see the combo needed for the Cataclysmic Requiem.";
+                    text = "Combos can force enemies to flee! Press F to draw your Aulos and see the combo needed for the Cataclysmic Requiem.";
                     break;
                 case AsphodelTutorialStep.Dash:
-                    text = "Press F to holster your Aulos when ready. Space or Shift grants two invulnerable dashes to evade strikes and reposition safely.";
+                    text = "Press F to holster your Aulos when ready. Space or Shift grants two invulnerable dashes to reposition swiftly.";
                     break;
                 case AsphodelTutorialStep.Cadence:
-                    text = "Pluck cadences like [ ♪ — ♪ — Fermata ] (Hymn of Dawn) to restore breath and crack grief-armor. Clear the chamber to unseal the exit!";
+                    text = "Pluck cadences like [ ♪ — ♪ — Fermata ] to restore breath and crack grief-armor. Clear the chamber to unseal the exit!";
                     break;
                 default:
                     OrpheusHud.Instance?.HideEurydiceTutorial();

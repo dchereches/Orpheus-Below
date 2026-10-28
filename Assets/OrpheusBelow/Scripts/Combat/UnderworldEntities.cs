@@ -55,11 +55,11 @@ namespace OrpheusBelow
                 case ShadeArchetype.SummonedSheep:
                     return new ShadeBalance(36f, 7f, 14f, .9f, .7f, 0f, 0f);
                 case ShadeArchetype.MaskedMonk:
-                    return new ShadeBalance(200f,2.1f,0f,1.05f,1.35f,24f,0f);
+                    return new ShadeBalance(300f,2.1f,0f,1.05f,1.35f,36f,0f);
                 case ShadeArchetype.WingedSentinel:
-                    return new ShadeBalance(250f,1.7f,26f,1.3f,1.8f,0f,0f);
+                    return new ShadeBalance(380f,1.7f,38f,1.3f,1.8f,0f,0f);
                 case ShadeArchetype.Shepherd:
-                    return new ShadeBalance(230f,2f,0f,1.4f,1.2f,0f,0f);
+                    return new ShadeBalance(340f,2f,0f,1.4f,1.2f,0f,0f);
                 default:
                     return new ShadeBalance(82f, 4.6f, 0f, 0f, 0.34f, 0f, 0f);
             }

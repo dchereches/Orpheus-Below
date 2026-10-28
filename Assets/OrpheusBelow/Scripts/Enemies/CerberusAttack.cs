@@ -23,9 +23,9 @@ namespace OrpheusBelow
         public const float TailRadius = 4.20f;
         public const float PounceRadius = 1.25f;
         public const float MaximumPounceDistance = 6.2f;
-        public const float BiteDamage = 18f;
-        public const float TailDamage = 22f;
-        public const float PounceDamage = 20f;
+        public const float BiteDamage = 28f;
+        public const float TailDamage = 34f;
+        public const float PounceDamage = 30f;
 
         public AttackPhase Phase { get; private set; } = AttackPhase.Waiting;
         public float AttackTimer { get; private set; }

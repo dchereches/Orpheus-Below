@@ -9,7 +9,7 @@ namespace OrpheusBelow
         public const float WarningSeconds = 0.65f;
         public const float FallSeconds = 0.3f;
         public const float ImpactRadius = 2.3f;
-        public const float ImpactDamage = 24f;
+        public const float ImpactDamage = 36f;
         public const float RecoverySeconds = 0.4f;
         public const float RestSeconds = 0.45f;
         public const float StaggerSeconds = 0.16f;

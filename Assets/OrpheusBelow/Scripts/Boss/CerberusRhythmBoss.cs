@@ -164,7 +164,7 @@ namespace OrpheusBelow
                     _headBaseColor = new Color(.9f, .7f, .3f); break;
             }
 
-            maxHealth *= 2.40f;
+            maxHealth *= 3.60f;
             hitWindowSeconds = 0.23f;
             CurrentHealth = maxHealth;
             _beatInterval = 60f / Mathf.Max(50f, bpm);
@@ -467,7 +467,7 @@ namespace OrpheusBelow
                     // Contact damage with player if not dashing
                     if (!player.IsDashing && Vector3.Distance(transform.position, player.transform.position) < 1.65f)
                     {
-                        player.TakeDamage(18f, transform.position);
+                        player.TakeDamage(28f, transform.position);
                         GroundShockwaveRing.Spawn(player.transform.position, 2.2f, _headBaseColor, 0.2f, upright2D: true);
                     }
                 }
@@ -942,7 +942,7 @@ namespace OrpheusBelow
                 float pHoriz = Vector3.Dot(p.transform.position - _stageCenter, UnderworldCamera2D.IsoRightXZ);
                 if (Mathf.Abs(pHoriz - _horizOffset) < 0.62f)
                 {
-                    p.TakeDamage(15f, transform.position);
+                    p.TakeDamage(24f, transform.position);
                     Destroy(gameObject);
                     return;
                 }
@@ -998,7 +998,7 @@ namespace OrpheusBelow
                 {
                     Vector3 diff = p.transform.position - transform.position;
                     diff.y = 0f;
-                    if (diff.magnitude < 0.95f) p.TakeDamage(16f, transform.position);
+                    if (diff.magnitude < 0.95f) p.TakeDamage(25f, transform.position);
                 }
                 Destroy(gameObject);
             }
