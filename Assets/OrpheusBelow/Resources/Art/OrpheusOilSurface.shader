@@ -75,12 +75,7 @@ Shader "OrpheusBelow/OrpheusOilSurface"
                 float3 paint = (sum / weight) * (1.0 + bristle);
                 float3 rgb = lerp(source.rgb, paint, finish);
 
-                float2 lightStep = normalize(_RimDirection.xy + float2(0.0001, 0.0001)) *
-                    abs(_MainTex_TexelSize.xy) * 4.0;
-                float inwardAlpha = tex2D(_MainTex, FrameUV(uv - lightStep)).a;
-                float rim = source.a * saturate(1.0 - inwardAlpha) * saturate(_RimIntensity);
-                rim *= 0.55 + 0.45 * smoothstep(0.0, 1.0, dot(local - 0.5, normalize(_RimDirection.xy)) + 0.5);
-                rgb += _RimColor.rgb * rim * _RimColor.a;
+                // Rim highlights disabled per user direction (eliminates purple/blue outlines)
                 return float4(rgb * i.color.rgb, source.a * i.color.a);
             }
             ENDCG

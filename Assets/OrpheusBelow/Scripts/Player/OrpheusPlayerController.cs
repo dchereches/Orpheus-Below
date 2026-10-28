@@ -194,12 +194,14 @@ namespace OrpheusBelow
             CurrentDashCharges = maxDashCharges;
 
             if (_aimRingRoot != null) _aimRingRoot.gameObject.SetActive(false);
+            if (_billboardRoot != null) _billboardRoot.localScale = Vector3.one * 0.70f;
         }
 
         public void Exit2DBossStage()
         {
             IsIn2DBossStage = false;
             if (_aimRingRoot != null) _aimRingRoot.gameObject.SetActive(true);
+            if (_billboardRoot != null) _billboardRoot.localScale = Vector3.one;
             _lastSafeGroundPos = transform.position;
         }
 
@@ -311,7 +313,7 @@ namespace OrpheusBelow
                 _ghostSpawnTimer -= dt;
                 if (_ghostSpawnTimer <= 0f)
                 {
-                    _ghostSpawnTimer = 0.028f;
+                    _ghostSpawnTimer = 0.068f;
                     SpawnDashAfterimage();
                 }
 
@@ -389,7 +391,7 @@ namespace OrpheusBelow
                 _ghostSpawnTimer -= dt;
                 if (_ghostSpawnTimer <= 0f)
                 {
-                    _ghostSpawnTimer = 0.028f;
+                    _ghostSpawnTimer = 0.068f;
                     SpawnDashAfterimage();
                 }
 
@@ -445,6 +447,7 @@ namespace OrpheusBelow
             _lungeVelXZ = Vector3.zero;
             _isDashing = true;
             _dashTimer = dashDuration;
+            _ghostSpawnTimer = 0.068f;
             _invulnTimer = Mathf.Max(_invulnTimer, dashDuration + 0.05f);
             _spriteAnimator?.TriggerDashStart();
 
@@ -630,6 +633,8 @@ namespace OrpheusBelow
             if (_billboardRoot == null || _spriteFlipRoot == null) return;
 
             _billboardRoot.rotation = UnderworldCamera2D.CurrentBillboardRotation;
+            float targetVisualScale = IsIn2DBossStage ? 0.70f : 1.0f;
+            _billboardRoot.localScale = Vector3.one * targetVisualScale;
 
             if (_spriteAnimator != null)
             {
@@ -683,12 +688,33 @@ namespace OrpheusBelow
         private void SpawnDashAfterimage()
         {
             GameObject ghost = new GameObject("HadesDashAfterimage");
-            ghost.transform.position = transform.position + new Vector3(0f, 0.68f, 0f);
-            ghost.transform.localScale = new Vector3(0.70f, 1.32f, 1f) * 1.2f;
-            SpriteRenderer sr = RenderPipeline2DSetup.AttachSprite(
-                ghost, RenderPipeline2DSetup.DiamondSprite, new Color(2.4f, 0.50f, 0.22f, 0.62f), 11);
+            Vector3 pos = _billboardRoot != null ? _billboardRoot.position : transform.position;
+            ghost.transform.position = pos;
             ghost.transform.rotation = UnderworldCamera2D.CurrentBillboardRotation;
-            ghost.AddComponent<RisingAshParticle>().Init(sr, driftUpSpeed: 0.5f, duration: 0.22f);
+
+            Sprite currentSprite = _spriteAnimator != null && _spriteAnimator.BodyRenderer != null
+                ? _spriteAnimator.BodyRenderer.sprite
+                : null;
+
+            SpriteRenderer sr = ghost.AddComponent<SpriteRenderer>();
+            sr.sharedMaterial = RenderPipeline2DSetup.Get2DSpriteMaterial();
+            sr.sortingOrder = 14;
+
+            if (currentSprite != null)
+            {
+                sr.sprite = currentSprite;
+                ghost.transform.localScale = _billboardRoot != null ? _billboardRoot.lossyScale : Vector3.one;
+                sr.color = new Color(0.95f, 0.45f, 0.22f, 0.32f);
+            }
+            else
+            {
+                ghost.transform.position = transform.position + new Vector3(0f, 0.68f, 0f);
+                ghost.transform.localScale = new Vector3(0.70f, 1.32f, 1f) * 1.2f;
+                sr.sprite = RenderPipeline2DSetup.DiamondSprite;
+                sr.color = new Color(1.0f, 0.45f, 0.22f, 0.32f);
+            }
+
+            ghost.AddComponent<RisingAshParticle>().Init(sr, driftUpSpeed: 0.18f, duration: 0.22f);
         }
 
         private void SpawnFootstepDust()

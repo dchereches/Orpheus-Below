@@ -37,7 +37,7 @@ namespace OrpheusBelow
                 rect.width / texture.width, rect.height / texture.height));
             Properties.SetVector(RimDirection, new Vector4(direction.x, direction.y, 0f, 0f));
             Properties.SetColor(RimColor, lightColor);
-            Properties.SetFloat(RimIntensity, Mathf.Clamp(intensity, 0f, 2f));
+            Properties.SetFloat(RimIntensity, 0f); // Rim highlights disabled
             renderer.SetPropertyBlock(Properties);
         }
 

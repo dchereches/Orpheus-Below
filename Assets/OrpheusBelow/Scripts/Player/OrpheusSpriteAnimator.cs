@@ -120,14 +120,9 @@ namespace OrpheusBelow
             CancelQueuedBelow(61);
             OrpheusAnimationState strike = comboIndex <= 1 ? OrpheusAnimationState.SoftStrike1
                 : comboIndex == 2 ? OrpheusAnimationState.SoftStrike2 : OrpheusAnimationState.SoftStrike3;
-            if (comboIndex <= 1)
-            {
-                BeginOneShot(OrpheusAnimationState.LyreDraw, 60, false, .05f);
-                QueueOneShot(strike, 60);
-            }
-            else BeginOneShot(strike, 60);
-            QueueOneShot(OrpheusAnimationState.SoftPluck, 59);
-            if (comboIndex >= 3) QueueOneShot(OrpheusAnimationState.SoftBolt, 59);
+            // Immediate strike execution for snappy, responsive action-combat
+            BeginOneShot(strike, 60);
+            if (comboIndex >= 3) QueueOneShot(OrpheusAnimationState.SoftBolt, 60);
         }
 
         public void TriggerDashStrike() => BeginOneShot(OrpheusAnimationState.DashStrike, 65);
@@ -292,6 +287,11 @@ namespace OrpheusBelow
             int effectFrame = Mathf.Clamp(Mathf.FloorToInt(_elapsed * 12f), 0, 7);
             _effects.sprite = _library.effects[row * 8 + effectFrame];
             _effects.enabled = _effects.sprite != null;
+            if (_effects.enabled)
+            {
+                // Soft semi-transparent tint for dash effects (row 1)
+                _effects.color = row == 1 ? new Color(1f, 0.55f, 0.40f, 0.42f) : Color.white;
+            }
         }
 
         private static int EffectRow(OrpheusAnimationState state)

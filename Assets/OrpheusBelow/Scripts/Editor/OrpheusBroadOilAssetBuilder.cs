@@ -51,16 +51,16 @@ namespace OrpheusBelow.EditorTools
             AddSequence(clips, sheets, OrpheusAnimationState.DashStart, "DashStairs", false, 14f, 0, 0, 1, 1);
             AddSequence(clips, sheets, OrpheusAnimationState.DashTravel, "DashStairs", true, 16f, 2, 3, 2, 3);
             AddSequence(clips, sheets, OrpheusAnimationState.DashSettle, "DashStairs", false, 12f, 5, 5, 5, 5);
-            AddSequence(clips, sheets, OrpheusAnimationState.DashStrike, "DashStairs", false, 14f, 3, 4, 4, 5);
+            AddSequence(clips, sheets, OrpheusAnimationState.DashStrike, "DashStairs", false, 22f, 3, 4, 4, 5);
             AddSequence(clips, sheets, OrpheusAnimationState.StairAscent, "DashStairs", true, 8f, 6, 6, 6, 6);
             AddSequence(clips, sheets, OrpheusAnimationState.StairDescent, "DashStairs", true, 8f, 7, 7, 7, 7);
 
-            Add(clips, sheets, OrpheusAnimationState.SoftStrike1, "SoftCombat", 0, false, 13f);
-            Add(clips, sheets, OrpheusAnimationState.SoftStrike2, "SoftCombat", 2, false, 13f);
-            Add(clips, sheets, OrpheusAnimationState.SoftStrike3, "SoftCombat", 4, false, 12f);
-            AddSequence(clips, sheets, OrpheusAnimationState.SoftBolt, "SoftCombat", false, 12f, 5, 6, 7, 7);
-            AddSequence(clips, sheets, OrpheusAnimationState.HardBoomWindup, "HardCadence", false, 8f, 0, 0, 1, 1);
-            AddSequence(clips, sheets, OrpheusAnimationState.HardBoomRelease, "HardCadence", false, 11f, 1, 2, 2, 2);
+            Add(clips, sheets, OrpheusAnimationState.SoftStrike1, "SoftCombat", 0, false, 24f);
+            Add(clips, sheets, OrpheusAnimationState.SoftStrike2, "SoftCombat", 2, false, 24f);
+            Add(clips, sheets, OrpheusAnimationState.SoftStrike3, "SoftCombat", 4, false, 24f);
+            AddSequence(clips, sheets, OrpheusAnimationState.SoftBolt, "SoftCombat", false, 20f, 5, 6, 7, 7);
+            AddSequence(clips, sheets, OrpheusAnimationState.HardBoomWindup, "HardCadence", false, 16f, 0, 0, 1, 1);
+            AddSequence(clips, sheets, OrpheusAnimationState.HardBoomRelease, "HardCadence", false, 20f, 1, 2, 2, 2);
             AddSequence(clips, sheets, OrpheusAnimationState.HymnBeam, "HardCadence", false, 10f, 3, 3, 3, 3);
             AddSequence(clips, sheets, OrpheusAnimationState.SanctuaryCast, "HardCadence", false, 9f, 4, 4, 4, 4);
             AddSequence(clips, sheets, OrpheusAnimationState.ConvergenceCast, "HardCadence", false, 10f, 5, 5, 5, 5);
@@ -262,15 +262,22 @@ namespace OrpheusBelow.EditorTools
             for (int i = 1; i < count; i++)
             {
                 int target = Mathf.RoundToInt(first + spacing * i);
-                int radius = Mathf.Max(3, Mathf.RoundToInt(spacing * .28f));
-                int start = Mathf.Max(cuts[i - 1] + 2, target - radius);
-                int end = Mathf.Min(coverage.Length - 2, target + radius);
-                int best = Mathf.Clamp(target, start, end), bestScore = int.MaxValue;
+                // Allow dynamic wide search (up to 58% spacing) so wide lunging/slashing poses (up to 220px) are not cut off
+                int radius = Mathf.Max(8, Mathf.RoundToInt(spacing * .58f));
+                int start = Mathf.Max(cuts[i - 1] + 6, target - radius);
+                int end = Mathf.Min(coverage.Length - 6, target + radius);
+                int best = Mathf.Clamp(target, start, end);
+                int bestScore = int.MaxValue;
                 for (int p = start; p <= end; p++)
                 {
-                    int score = coverage[p - 1] + coverage[p] + coverage[p + 1];
-                    if (score < bestScore || score == bestScore && Mathf.Abs(p - target) < Mathf.Abs(best - target))
-                    { best = p; bestScore = score; }
+                    // Strongly prioritize zero / low-alpha gutters over slicing through poses
+                    int cov = coverage[p - 1] + coverage[p] + coverage[p + 1];
+                    int score = cov * 1000 + Mathf.Abs(p - target);
+                    if (score < bestScore)
+                    {
+                        best = p;
+                        bestScore = score;
+                    }
                 }
                 cuts[i] = best;
             }

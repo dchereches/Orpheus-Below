@@ -617,6 +617,7 @@ namespace OrpheusBelow
         private Vector3 _vel;
         private float _life;
         private float _maxLife;
+        private float _startAlpha = 0.7f;
 
         public void Init(SpriteRenderer sr, float driftUpSpeed = 1.4f, float duration = 1.2f)
         {
@@ -624,6 +625,7 @@ namespace OrpheusBelow
             _vel = new Vector3(Random.Range(-0.45f, 0.45f), driftUpSpeed * Random.Range(0.7f, 1.3f), Random.Range(-0.45f, 0.45f));
             _maxLife = Mathf.Max(0.08f, duration);
             _life = _maxLife;
+            _startAlpha = sr != null ? sr.color.a : 0.7f;
         }
 
         private void Update()
@@ -634,7 +636,7 @@ namespace OrpheusBelow
             if (_sr != null)
             {
                 Color c = _sr.color;
-                c.a = Mathf.Clamp01(_life / _maxLife) * 0.7f;
+                c.a = Mathf.Clamp01(_life / _maxLife) * _startAlpha;
                 _sr.color = c;
             }
             if (_life <= 0f) Destroy(gameObject);
