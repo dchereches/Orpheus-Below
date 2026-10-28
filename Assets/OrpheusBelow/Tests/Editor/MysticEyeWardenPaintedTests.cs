@@ -56,10 +56,10 @@ namespace OrpheusBelow.Tests
         [Test]
         public void StaffThrowGivesAFullWaitAndCommittedWarning()
         {
-            Assert.That(MysticEyeWardenAttack.WaitSeconds, Is.GreaterThanOrEqualTo(1.5f));
-            Assert.That(MysticEyeWardenAttack.WindupSeconds, Is.GreaterThanOrEqualTo(.9f));
+            Assert.That(MysticEyeWardenAttack.WaitSeconds, Is.InRange(.45f, .8f));
+            Assert.That(MysticEyeWardenAttack.WindupSeconds, Is.InRange(.55f, .85f));
             Assert.That(MysticEyeWardenAttack.RecallSeconds, Is.GreaterThan(.4f));
-            Assert.That(MysticEyeWardenAttack.RecoverySeconds, Is.GreaterThanOrEqualTo(.8f));
+            Assert.That(MysticEyeWardenAttack.RecoverySeconds, Is.InRange(.25f, .5f));
         }
 
         [Test]

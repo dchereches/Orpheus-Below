@@ -8,6 +8,7 @@ namespace OrpheusBelow
     public static class ChamberEncounterPlan
     {
         public static bool IsMajorBoss(int depth) => depth == 1 || depth == 3 || depth == 6;
+        public static int WaveCount(int depth, bool ascending) => !ascending && IsMajorBoss(depth) ? 0 : ascending || depth >= 4 ? 3 : 2;
         public static BossIdentity BossAt(int depth) => depth == 1 ? BossIdentity.Tripod : depth == 3 ? BossIdentity.MysticEyeWarden : BossIdentity.CerberusHoundOfHades;
         public static bool IsMiniBoss(ShadeArchetype type) => type == ShadeArchetype.MaskedMonk || type == ShadeArchetype.WingedSentinel || type == ShadeArchetype.Shepherd;
         public static PaintedEnemyKind ArtFor(ShadeArchetype type)
@@ -28,7 +29,7 @@ namespace OrpheusBelow
         public static List<HadesChamberDirector.WaveSpawnSpec> Wave(int depth,int number,bool ascending)
         {
             var result = new List<HadesChamberDirector.WaveSpawnSpec>();
-            if(number != 1) return result;
+            if(number < 1 || number > WaveCount(depth, ascending)) return result;
             var roster = new List<ShadeArchetype>();
             if(ascending)
             {
@@ -55,6 +56,10 @@ namespace OrpheusBelow
                         roster.Add(ShadeArchetype.BrimstoneCaster); roster.Add(ShadeArchetype.MaskedMonk); roster.Add(ShadeArchetype.WingedSentinel); roster.Add(ShadeArchetype.Shepherd); break;
                 }
             }
+            if (number > 1) roster.RemoveAll(type => type == ShadeArchetype.BrimstoneCaster);
+            int desiredCount = !ascending && depth == 0 && number == 1 ? 3 : Mathf.Min(7, 4 + (depth >= 4 ? 1 : 0) + (number == 3 ? 1 : 0));
+            while (roster.Count < desiredCount)
+                roster.Add((roster.Count + number + depth) % 2 == 0 ? ShadeArchetype.MaskedMonk : ShadeArchetype.WingedSentinel);
             for(int i=0;i<roster.Count;i++)
             {
                 float angle = i * Mathf.PI * 2 / Mathf.Max(1,roster.Count);

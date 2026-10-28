@@ -84,11 +84,11 @@ namespace OrpheusBelow.Tests
         public void FlockAndAttackCadenceProvideReadableCounterplay()
         {
             Assert.That(ShepherdAttack.MaximumLivingSheep, Is.EqualTo(3));
-            Assert.That(ShepherdAttack.WarningSeconds, Is.GreaterThanOrEqualTo(1));
-            Assert.That(ShepherdAttack.RestSeconds, Is.GreaterThanOrEqualTo(2));
-            Assert.That(ShepherdAttack.RecoverySeconds, Is.GreaterThanOrEqualTo(1.2f));
+            Assert.That(ShepherdAttack.WarningSeconds, Is.InRange(.7f, 1f));
+            Assert.That(ShepherdAttack.RestSeconds, Is.InRange(.3f, .7f));
+            Assert.That(ShepherdAttack.RecoverySeconds, Is.InRange(.4f, .8f));
             Assert.That(SheepAttack.WarningSeconds, Is.GreaterThanOrEqualTo(.65f));
-            Assert.That(SheepAttack.DashSpeed, Is.EqualTo(11));
+            Assert.That(SheepAttack.DashSpeed, Is.EqualTo(14));
             Assert.That(SheepAttack.DashDamage, Is.EqualTo(14));
         }
     }

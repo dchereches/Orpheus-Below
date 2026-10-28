@@ -43,7 +43,8 @@ namespace OrpheusBelow.Tests
                 var room = ProceduralChamberGenerator.GenerateChamber(root.transform,depth,8,Vector3.zero);
                 Assert.That(room.wave1.Exists(s=>s.archetype.ToString()==creature),Is.True,creature+" is missing from the normal spawn roster.");
                 Assert.That(room.guardianBoss,Is.Null,"Mini-bosses fight on the painted chamber floor.");
-                Assert.That(room.wave2,Is.Empty,"The unique encounter must not be buried under a second generic wave.");
+                Assert.That(room.wave2.Count, Is.GreaterThanOrEqualTo(4), "A cleared floor group must be followed by authored reinforcements.");
+                Assert.That(room.wave3.Count > 0, Is.EqualTo(depth >= 4));
             }
             finally { Object.DestroyImmediate(root); }
         }

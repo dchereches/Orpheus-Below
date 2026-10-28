@@ -71,6 +71,8 @@ namespace OrpheusBelow
         private int _combatActionIndex = 0;
         private bool _isLunging;
         private PaintedEnemyActor _paintedActor;
+        private BossRhythmPressure _rhythmPressure;
+        public BossRhythmPressure RhythmPressure => _rhythmPressure;
         private float _lungeTimer;
         private Vector3 _lungeStartPos;
         private Vector3 _lungeEndPos;
@@ -181,6 +183,9 @@ namespace OrpheusBelow
                 : id == BossIdentity.MaskedMonk ? PaintedEnemyKind.MaskedMonk
                 : id == BossIdentity.Shepherd ? PaintedEnemyKind.Shepherd : PaintedEnemyKind.Cerberus;
             _paintedActor.Configure(kind, boss: this, stageCenter: _stageCenter);
+            _rhythmPressure = GetComponent<BossRhythmPressure>();
+            if (_rhythmPressure == null) _rhythmPressure = gameObject.AddComponent<BossRhythmPressure>();
+            _rhythmPressure.Initialize(_paintedActor, _stageCenter);
             if (_paintedActor.Art.IsReady) _billboardRoot.gameObject.SetActive(false);
             gameObject.SetActive(false);
         }
@@ -375,7 +380,11 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            var terminalPlayer = OrpheusPlayerController.Instance;
+            if (terminalPlayer != null && (terminalPlayer.IsGameOver || terminalPlayer.IsVictory))
+            { _paintedActor?.Cancel(); _rhythmPressure?.Cancel(); return; }
             if (UnderworldFrontEnd.BlocksGameplay) return;
+            if (OrpheusHud.IsTutorialModalActive) return;
             if (_billboardRoot != null) _billboardRoot.rotation = UnderworldCamera2D.CurrentBillboardRotation;
             if (_blackoutBackdrop != null) _blackoutBackdrop.transform.rotation = UnderworldCamera2D.CurrentBillboardRotation;
             if (_staveRoot != null)
@@ -387,7 +396,7 @@ namespace OrpheusBelow
             if (IsDefeated || !IsBattleActive) return;
 
             OrpheusPlayerController player = OrpheusPlayerController.Instance;
-            if (player == null || player.IsGameOver || player.IsVictory) { _paintedActor?.Cancel(); return; }
+            if (player == null || player.IsGameOver || player.IsVictory) { _paintedActor?.Cancel(); _rhythmPressure?.Cancel(); return; }
 
             float dt = Time.deltaTime;
 
@@ -540,6 +549,7 @@ namespace OrpheusBelow
             if (CurrentPhase == DuelPhase.StaveLeap || CurrentPhase == DuelPhase.StaveBarrage) return;
 
             CurrentPhase = DuelPhase.StaveLeap;
+            _rhythmPressure?.Initialize(_paintedActor, _stageCenter);
             _paintedActor?.Cancel();
             _paintedActor?.Art.Play(EnemyMotion.Windup, .75f);
             PaintedEnemyProjectile.ClearAll();
@@ -554,7 +564,7 @@ namespace OrpheusBelow
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 1.2f, 0f), 6.5f, new Color(2.8f, 0.4f, 0.2f, 1f), 0.45f, upright2D: true);
 
             OrpheusHud.Instance?.ShowBanner(bossDisplayName + "  —  Stygian Hymn!", 2.8f);
-            LastJudgement = "Deflect the Stave notes into the Treble Clef! Break the Guardian's hymn!";
+            LastJudgement = "Answer the notes and dodge the marked strikes. Keep moving through the hymn!";
         }
 
         private void UpdateStaveLeap(float dt)
@@ -574,6 +584,7 @@ namespace OrpheusBelow
 
         private void UpdateStaveBarrage(float dt, OrpheusPlayerController player)
         {
+            _rhythmPressure?.Tick(dt, player.transform.position);
             if (_barrageNotesRemaining > 0 && Time.time >= _nextBeatTime)
             {
                 bool isBoom = (_barrageNotesRemaining % 2 == 1);
@@ -739,6 +750,7 @@ namespace OrpheusBelow
         private void EnterCrashedStunned()
         {
             CurrentPhase = DuelPhase.CrashedStunned;
+            _rhythmPressure?.Cancel();
             _paintedActor?.Cancel();
             _paintedActor?.Art.Play(EnemyMotion.Hurt, 5f);
             _crashStunTimer = 5.0f;
@@ -808,6 +820,7 @@ namespace OrpheusBelow
             if (IsDefeated) return;
             IsDefeated = true;
             IsBattleActive = false;
+            _rhythmPressure?.Cancel();
             _paintedActor?.Cancel(true);
             if (ActiveBoss == this) ActiveBoss = null;
 
@@ -869,6 +882,7 @@ namespace OrpheusBelow
 
         private void OnDestroy()
         {
+            _rhythmPressure?.Cancel();
             if (ActiveBoss == this) ActiveBoss = null;
             if (_blackoutBackdrop != null)
             {

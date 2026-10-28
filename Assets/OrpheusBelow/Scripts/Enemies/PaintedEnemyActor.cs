@@ -28,12 +28,15 @@ namespace OrpheusBelow
             }
             Art.Configure(library);
             if (GetComponent<PaintedActorDepth>() == null) gameObject.AddComponent<PaintedActorDepth>();
+            EnemyGroundShadow.Ensure(this);
             var type = typeof(PaintedEnemyActor).Assembly.GetType("OrpheusBelow." + kind + "Attack");
             if (createPattern && type != null && Pattern == null) Pattern = (PaintedAttackPattern)gameObject.AddComponent(type);
             Pattern?.Initialize(this); _cancelled = false;
         }
         public void Tick(float dt)
         {
+            if (OwnerShade != null && (OwnerShade.IsPacified || OwnerShade.IsStunned || OwnerShade.CurrentHealth <= 0))
+            { Cancel(); return; }
             var player = OrpheusPlayerController.Instance;
             if (player == null || player.IsGameOver || player.IsVictory) { Cancel(); return; }
             if (dt <= 0 || UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive) return;

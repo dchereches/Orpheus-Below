@@ -14,6 +14,30 @@ namespace OrpheusBelow
         private int _cursor;
         private bool _hasPlan;
 
+        public static bool CanReach(PaintedChamberMap map, Vector3 start, Vector3 goal, float clearance = .45f)
+        {
+            if (map == null || map.definition == null) return false;
+            var grid = GetGrid(map.definition, clearance);
+            start -= map.transform.position; goal -= map.transform.position;
+            if (grid.ClearSegment(start, goal)) return true;
+            var path = new List<Vector3>();
+            grid.FindPath(start, goal, path);
+            return path.Count > 0 && (path[path.Count - 1] - goal).sqrMagnitude < .01f;
+        }
+
+        /// <summary>Select only the player's connected floor, within ten metres of actual walking travel.</summary>
+        public static bool TryFindSpawn(PaintedChamberMap map, Vector3 anchor, Vector3 desired,
+            IList<Vector3> occupied, out Vector3 point)
+        {
+            point = anchor;
+            if (map == null || map.definition == null) return false;
+            Vector3 offset = map.transform.position;
+            anchor = map.NearestWalkable(anchor, .45f) - offset;
+            if (!GetGrid(map.definition, .45f).TryFindSpawn(anchor, desired - offset, occupied, offset, out var local)) return false;
+            point = local + offset;
+            return true;
+        }
+
         public Vector3 NextWaypoint(PaintedChamberMap map, Vector3 current, Vector3 goal, float clearance = .45f)
         {
             if (map == null || map.definition == null) return current;
@@ -126,6 +150,45 @@ namespace OrpheusBelow
             private byte[] _connections;
             private int[] _parents;
             private int[] _queue;
+
+            public bool TryFindSpawn(Vector3 anchor, Vector3 desired, IList<Vector3> occupied, Vector3 offset, out Vector3 point)
+            {
+                point = anchor;
+                EnsureNodes();
+                int first = NearestNode(anchor, true);
+                if (first < 0) return false;
+                var distances = new float[_nodes.Length];
+                for (int i = 0; i < distances.Length; i++) distances[i] = float.PositiveInfinity;
+                distances[first] = Vector3.Distance(anchor, _nodes[first]);
+                int head = 0, tail = 0, best = -1;
+                float score = float.PositiveInfinity;
+                _queue[tail++] = first;
+                while (head < tail)
+                {
+                    int at = _queue[head++];
+                    Vector3 candidate = _nodes[at];
+                    bool separated = true;
+                    if (occupied != null) foreach (var other in occupied)
+                        if ((candidate + offset - other).sqrMagnitude < 1.6f * 1.6f) { separated = false; break; }
+                    if (separated && (candidate - anchor).sqrMagnitude >= 9f && Layout.IsWalkable(candidate, .65f))
+                    {
+                        float candidateScore = (candidate - desired).sqrMagnitude + Mathf.Abs(distances[at] - 6f) * .15f;
+                        if (candidateScore < score) { best = at; score = candidateScore; }
+                    }
+                    byte connections = Connections(at);
+                    for (int direction = 0; direction < 4; direction++)
+                    {
+                        if ((connections & (1 << direction)) == 0) continue;
+                        int next = at + DeltaX[direction] + DeltaY[direction] * Width;
+                        if (!float.IsPositiveInfinity(distances[next])) continue;
+                        float distance = distances[at] + Vector3.Distance(candidate, _nodes[next]);
+                        if (distance > 10f) continue;
+                        distances[next] = distance; _queue[tail++] = next;
+                    }
+                }
+                if (best < 0) return false;
+                point = _nodes[best]; return true;
+            }
 
             public NavigationGrid(PaintedChamberDefinition layout, float clearance)
             {

@@ -2,6 +2,12 @@
 
 ## Latest revision — 28 October 2026
 
+### Faster combat, connected spawning and rhythm dodging (current)
+
+Bootstrap version **16** adds two early waves and three deeper/return waves, with three to six enemies per group. Summons are resolved into the player's connected floor region, within ten metres of walking travel, with floor clearance and spacing; this prevents enemies appearing on remote lava-side ledges. Sheep summons use the same rule. Passages wait for the final wave.
+
+Nine dedicated enemy workers implemented three attacks per design, faster cooldowns/recovery, persistent soft ground shadows and complete warning/damage/cancellation behavior. Boss musical phases now include independent warned strikes and painted projectile sweeps even when all notes are played correctly. See [attack kits, spawning and verification](docs/combat-pressure-2026-10-28.md). Current artwork and character proportions remain unchanged. Integrate this tested checkout into the **active Unity project at `D:/Serban/software-projects/Orpheus-Below`** before calling a change delivered; a separate worktree alone does not update that running editor.
+
 ### Broad oil cast and encounter variety (current)
 
 Bootstrap version **15** promotes Masked Monks, Winged Sentinels and Shepherds to recurring floor enemies with their dedicated attacks and no overhead/boss health bars. Skeleton slots across the full journey drop from 27 to 6; former mini-boss appearances rise from 3 to 25. Tripod, Eye Warden and Cerberus remain immediate descent bosses, with doubled health (528, 672 and 1104 HP). Each encounter has at most one Shepherd and three summoned sheep.

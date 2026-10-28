@@ -87,6 +87,7 @@ namespace OrpheusBelow
         public bool IsFleeing { get; private set; }
         public float CurrentHealth => _hp;
         public bool IsPacified => _pacified;
+        public bool IsStunned => _stunTimer > 0f;
         public bool IsMiniBoss => ChamberEncounterPlan.IsMiniBoss(archetype);
         public PaintedEnemyActor PaintedActor => _paintedActor;
         public string DisplayName => archetype == ShadeArchetype.MaskedMonk ? "Masked Monk" : archetype == ShadeArchetype.WingedSentinel ? "Winged Sentinel" : archetype == ShadeArchetype.Shepherd ? "Shepherd of the Lost Flock" : ChamberEncounterPlan.ArtFor(archetype).ToString();
@@ -189,12 +190,6 @@ namespace OrpheusBelow
 
             _hp = maxHealth;
             _aiCooldown = UnityEngine.Random.Range(0.25f, 0.75f);
-
-            GameObject sh = new GameObject("ShadeShadow");
-            sh.transform.SetParent(transform, false);
-            sh.transform.localPosition = new Vector3(0f, 0.02f, 0f);
-            sh.transform.localScale = new Vector3(0.95f, 0.95f, 1f);
-            RenderPipeline2DSetup.AttachGroundDecal(sh, RenderPipeline2DSetup.CircleSprite, new Color(0f, 0f, 0f, 0.52f), 1);
 
             GameObject tel = new GameObject("AttackTelegraphLine");
             tel.transform.SetParent(transform, false);
@@ -702,7 +697,8 @@ namespace OrpheusBelow
 
             OnShadeSlain?.Invoke(this);
             OnShadeSlain = null;
-            Destroy(gameObject, .85f);
+            if (Application.isPlaying) Destroy(gameObject, .85f);
+            else DestroyImmediate(gameObject);
         }
     }
 

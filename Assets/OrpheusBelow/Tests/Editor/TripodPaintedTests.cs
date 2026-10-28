@@ -10,10 +10,10 @@ namespace OrpheusBelow.Tests
         [Test]
         public void SonicPulsesHaveWarningAndARechargeableDoubleDashGap()
         {
-            Assert.That(TripodAttack.WaitSeconds, Is.GreaterThanOrEqualTo(1.5f));
-            Assert.That(TripodAttack.WindupSeconds, Is.GreaterThanOrEqualTo(1f));
+            Assert.That(TripodAttack.WaitSeconds, Is.InRange(.4f, .8f));
+            Assert.That(TripodAttack.WindupSeconds, Is.InRange(.7f, 1f));
             Assert.That(TripodAttack.PulseGapSeconds, Is.GreaterThan(.48f + .135f));
-            Assert.That(TripodAttack.RecoverySeconds, Is.GreaterThanOrEqualTo(1f));
+            Assert.That(TripodAttack.RecoverySeconds, Is.InRange(.4f, .8f));
             Assert.That(TripodAttack.WaveRadius, Is.GreaterThanOrEqualTo(.65f));
         }
 

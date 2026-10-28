@@ -53,9 +53,9 @@ namespace OrpheusBelow.Tests
         [Test]
         public void MaskedMonkProvidesFullWarningAndRecoveryWindows()
         {
-            Assert.That(MaskedMonkAttack.WarningSeconds, Is.GreaterThanOrEqualTo(1.15f));
+            Assert.That(MaskedMonkAttack.WarningSeconds, Is.InRange(.55f, .85f));
             Assert.That(MaskedMonkAttack.FallSeconds, Is.GreaterThan(0f));
-            Assert.That(MaskedMonkAttack.RecoverySeconds, Is.GreaterThanOrEqualTo(0.8f));
+            Assert.That(MaskedMonkAttack.RecoverySeconds, Is.InRange(.3f, .6f));
         }
     }
 }

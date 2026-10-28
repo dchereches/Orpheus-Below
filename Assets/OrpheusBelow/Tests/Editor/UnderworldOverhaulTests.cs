@@ -19,7 +19,7 @@ namespace OrpheusBelow.Tests
                 var first = ProceduralChamberGenerator.GenerateWaveSpecs(i, 1);
                 var second = ProceduralChamberGenerator.GenerateWaveSpecs(i, 2);
                 Assert.That(first.Count, ChamberEncounterPlan.IsMajorBoss(i) ? Is.Zero : Is.GreaterThan(0));
-                Assert.That(second, Is.Empty);
+                  Assert.That(second.Count, ChamberEncounterPlan.IsMajorBoss(i) ? Is.Zero : Is.GreaterThan(0));
                 foreach (var spawn in first)
                 {
                     Assert.That(Mathf.Abs(spawn.localOffsetXZ.x), Is.LessThan(size.x * 0.5f - 2));

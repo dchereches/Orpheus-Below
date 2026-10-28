@@ -272,7 +272,7 @@ namespace OrpheusBelow
                 playerSpawnWorld = NearestWalkable(ToWorld(UnderworldJourney.IsAscending ? definition.returnSpawn : definition.entrance), .65f),
                 cameraLeashRadius = 200f, cameraOrthoOverride = definition.zoom,
                 exitDoor = ActivePassage, guardianBoss = guardian, interiorObstaclesRoot = coverRoot,
-                wave1 = Wave(1, arena), wave2 = Wave(2, arena)
+                wave1 = Wave(1, arena), wave2 = Wave(2, arena), wave3 = Wave(3, arena)
             };
             return _runtime;
         }

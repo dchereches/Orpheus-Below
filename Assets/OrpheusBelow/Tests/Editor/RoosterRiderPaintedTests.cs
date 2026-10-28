@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace OrpheusBelow.Tests
 {
-    public sealed class RoosterRiderPaintedTests
+    public sealed class RoosterRiderPaintedTests : CombatGameplayTestContext
     {
         private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
 
@@ -21,6 +21,7 @@ namespace OrpheusBelow.Tests
                 actor.Configure(PaintedEnemyKind.RoosterRider, shade);
                 var pattern = rider.GetComponent<RoosterRiderAttack>();
                 var target = companion.AddComponent<BlurredEurydice>();
+                Set(target, "_shownAbductorHint", true);
                 target.RegisterAbductor(shade);
                 Set(pattern, "_target", target);
                 Set(pattern, "_registered", true);
@@ -47,11 +48,19 @@ namespace OrpheusBelow.Tests
         public void RiderSeeksAClearApproachBeforeCommittingItsDash()
         {
             JourneyProgress previous = UnderworldJourney.Progress;
+            var previousPlayer = OrpheusPlayerController.Instance;
+            var previousMap = PaintedChamberMap.Active;
+            float previousScale = Time.timeScale;
             var rider = new GameObject("BlockedRiderTest");
             var companion = new GameObject("BlockedCompanionTest");
             var cover = new GameObject("DashBlockingCover");
             try
             {
+                // This is a standalone clear-lane contract, independent of the open scene's map,
+                // terminal player state, or paused menu clock.
+                typeof(OrpheusPlayerController).GetProperty("Instance").SetValue(null, null);
+                typeof(PaintedChamberMap).GetProperty("Active").SetValue(null, null);
+                Time.timeScale = 1f;
                 UnderworldJourney.Reset();
                 UnderworldJourney.Progress.Visit(7); UnderworldJourney.Progress.ClearCurrentChamber(); UnderworldJourney.Progress.TryRescue();
                 var shade = rider.AddComponent<ShadeEnemy>(); shade.SetupArchetype(ShadeArchetype.MourningAbductor);
@@ -69,6 +78,9 @@ namespace OrpheusBelow.Tests
             }
             finally
             {
+                typeof(OrpheusPlayerController).GetProperty("Instance").SetValue(null, previousPlayer);
+                typeof(PaintedChamberMap).GetProperty("Active").SetValue(null, previousMap);
+                Time.timeScale = previousScale;
                 typeof(UnderworldJourney).GetProperty("Progress").SetValue(null, previous);
                 Object.DestroyImmediate(rider); Object.DestroyImmediate(companion);
                 if (cover != null) Object.DestroyImmediate(cover);

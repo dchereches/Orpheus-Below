@@ -53,22 +53,23 @@ namespace OrpheusBelow.Tests
         }
 
         [Test]
-        public void AlternateCleaveWarnsSmallerLockedForwardCircle()
+        public void CommittedThrustUsesLinkedWarningCellsInsideItsLockedBound()
         {
             BeginWindup(new Vector3(8f, 0f, 3f));
             _attack.Cancel();
             BeginWindup(new Vector3(8f, 0f, 3f));
             Assert.That(_attack.LockedRadius, Is.EqualTo(WingedSentinelAttack.CleaveRadius));
             Assert.That(Vector3.Distance(_guardian.transform.position, _attack.LockedCenter), Is.EqualTo(2.7f).Within(0.001f));
-            Assert.That(Warning.Radius, Is.EqualTo(_attack.LockedRadius));
+            Assert.That(_attack.CurrentPattern, Is.EqualTo(WingedSentinelAttack.SwordPattern.Thrust));
+            Assert.That(Warning.Radius, Is.InRange(.5f, .9f));
         }
 
         [Test]
         public void SwordLeavesLongVisibleWarningAndRecoveryWindows()
         {
-            Assert.That(WingedSentinelAttack.WarningSeconds, Is.GreaterThanOrEqualTo(1.4f));
-            Assert.That(WingedSentinelAttack.RecoverySeconds, Is.GreaterThanOrEqualTo(1.1f));
-            Assert.That(WingedSentinelAttack.CooldownSeconds, Is.GreaterThanOrEqualTo(1.5f));
+            Assert.That(WingedSentinelAttack.WarningSeconds, Is.InRange(.85f, 1.2f));
+            Assert.That(WingedSentinelAttack.RecoverySeconds, Is.InRange(.3f, .6f));
+            Assert.That(WingedSentinelAttack.CooldownSeconds, Is.InRange(.3f, .7f));
             Assert.That(WingedSentinelAttack.HitAtSeconds, Is.GreaterThan(0f).And.LessThan(WingedSentinelAttack.AttackSeconds));
         }
 

@@ -37,9 +37,10 @@ namespace OrpheusBelow
             public GameObject roomRoot;
             public List<WaveSpawnSpec> wave1 = new List<WaveSpawnSpec>();
             public List<WaveSpawnSpec> wave2 = new List<WaveSpawnSpec>();
+            public List<WaveSpawnSpec> wave3 = new List<WaveSpawnSpec>();
         }
 
-        public const int PrototypeBuildVersion = 15;
+        public const int PrototypeBuildVersion = 16;
         public int initialChamberIndex;
 
         public int buildVersion = PrototypeBuildVersion;
@@ -359,6 +360,27 @@ namespace OrpheusBelow
             }
             yield return new WaitForSeconds(delayBeforeRunes);
 
+            var map = PaintedChamberMap.Active;
+            if (map != null && map.definition != null && map.definition.index == CurrentChamberIndex)
+            {
+                var safeSpecs = new List<WaveSpawnSpec>();
+                var occupied = new List<Vector3>();
+                Vector3 anchor = OrpheusPlayerController.Instance != null ? OrpheusPlayerController.Instance.transform.position : ch.playerSpawnWorld;
+                foreach (var spec in specs)
+                {
+                    Vector3 desired = ch.centerWorld + new Vector3(spec.localOffsetXZ.x, 0, spec.localOffsetXZ.y);
+                    if (!PaintedEnemyNavigation.TryFindSpawn(map, anchor, desired, occupied, out var point))
+                    {
+                        Debug.LogWarning("[Encounter] No safe connected summon slot for " + spec.archetype);
+                        continue;
+                    }
+                    occupied.Add(point);
+                    safeSpecs.Add(new WaveSpawnSpec { archetype = spec.archetype,
+                        localOffsetXZ = new Vector2(point.x - ch.centerWorld.x, point.z - ch.centerWorld.z) });
+                }
+                specs = safeSpecs;
+            }
+
             List<GameObject> runes = new List<GameObject>();
             foreach (WaveSpawnSpec s in specs)
             {
@@ -399,7 +421,8 @@ namespace OrpheusBelow
             }
 
             _spawningWave = false;
-            if(!UnderworldJourney.IsAscending && ActiveMiniBoss != null)
+            if (specs.Count == 0) { AdvanceWaveOrBoss(ch); yield break; }
+            if(_currentWaveIndex == 0 && !UnderworldJourney.IsAscending && ActiveMiniBoss != null)
             {
                 string intro = ChamberEncounterPlan.Intro(CurrentChamberIndex);
                 if(!string.IsNullOrEmpty(intro) && CurrentChamberIndex != 0) OrpheusHud.Instance?.ShowArtemisTutorial(intro);
@@ -414,17 +437,20 @@ namespace OrpheusBelow
             if (_aliveShades.Count == 0)
             {
                 ChamberRuntimeData ch = chambers[CurrentChamberIndex];
-                if (_currentWaveIndex == 0 && ch.wave2 != null && ch.wave2.Count > 0)
-                {
-                    _currentWaveIndex = 1;
-                    OrpheusHud.Instance?.ShowSubtleCallout("Second Wave");
-                    StartCoroutine(SpawnWaveWithRunesRoutine(ch, ch.wave2, 0.28f));
-                }
-                else
-                {
-                    BeginChamberBossShowdown(ch);
-                }
+                AdvanceWaveOrBoss(ch);
             }
+        }
+
+        private void AdvanceWaveOrBoss(ChamberRuntimeData chamber)
+        {
+            var next = _currentWaveIndex == 0 ? chamber.wave2 : _currentWaveIndex == 1 ? chamber.wave3 : null;
+            if (next != null && next.Count > 0)
+            {
+                _currentWaveIndex++;
+                OrpheusHud.Instance?.ShowSubtleCallout(_currentWaveIndex == 1 ? "Second Wave" : "Final Wave");
+                StartCoroutine(SpawnWaveWithRunesRoutine(chamber, next, .55f));
+            }
+            else BeginChamberBossShowdown(chamber);
         }
 
         private void BeginChamberBossShowdown(ChamberRuntimeData ch)

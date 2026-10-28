@@ -47,6 +47,12 @@ namespace OrpheusBelow
             shadow._shadow = RenderPipeline2DSetup.AttachGroundDecal(fill, RenderPipeline2DSetup.CircleSprite, new Color(.04f, .025f, .015f, .28f), 6);
             var rim = new GameObject("WarningEdge"); rim.transform.SetParent(go.transform, false); rim.transform.localScale = Vector3.one * radius * 2;
             shadow._edge = RenderPipeline2DSetup.AttachGroundDecal(rim, RenderPipeline2DSetup.RingSprite, new Color(.62f, .37f, .12f, .4f), 7);
+            if (OrpheusPlayerController.Instance != null && OrpheusPlayerController.Instance.IsIn2DBossStage)
+            {
+                // A flat ground decal is edge-on in the duel camera; show its actual horizontal reach.
+                fill.transform.rotation = rim.transform.rotation = UnderworldCamera2D.CurrentBillboardRotation;
+                fill.transform.localScale = rim.transform.localScale = new Vector3(radius * 2, radius * .45f, 1f);
+            }
             var owner = PaintedEnemyActor.CurrentAttackOwner;
             if (owner != null && (owner.Kind == PaintedEnemyKind.MaskedMonk || owner.Kind == PaintedEnemyKind.WingedSentinel))
             {
