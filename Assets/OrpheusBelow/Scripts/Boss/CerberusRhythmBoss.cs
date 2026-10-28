@@ -376,14 +376,6 @@ namespace OrpheusBelow
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 1.2f, 0f), 5.2f, _headBaseColor, 0.45f, upright2D: true);
 
             OrpheusHud.Instance?.ShowBanner(bossDisplayName + "  —  2D Guardian Duel", 3.2f);
-            if (identity == BossIdentity.CantorOfFury)
-            {
-                OrpheusHud.Instance?.ShowBossTutorial("The Tripod", "A mortal pulse vibrates upon our brass. The oracle sings only of burial!");
-            }
-            else if (identity == BossIdentity.OarsmanOfStyx)
-            {
-                OrpheusHud.Instance?.ShowBossTutorial("Mystic Eye Warden", "We see your heartbeat, trespasser. Every thread of your despair is laid bare.");
-            }
         }
 
         private void Update()
@@ -861,13 +853,9 @@ namespace OrpheusBelow
             UnderworldCamera2D.Instance?.AddShake(0.65f);
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 1.5f, 0f), 8.5f, new Color(2.7f, 2.25f, 1.15f, 0.95f), 0.65f, upright2D: true);
             PacifiedSpiritVessel.Spawn(transform.position, scaleMultiplier: 1.95f);
-            if (identity == BossIdentity.CantorOfFury)
+            if (identity == BossIdentity.CerberusHoundOfHades)
             {
-                OrpheusHud.Instance?.ShowBossTutorial("The Tripod", "The resonance fades... Pass, musician, into deeper silence.");
-            }
-            else if (identity == BossIdentity.OarsmanOfStyx)
-            {
-                OrpheusHud.Instance?.ShowBossTutorial("Mystic Eye Warden", "The pupil clouds with tears... We can no longer bear your light.");
+                VoiceDirector.Instance?.Play(VoiceLineId.Hades_YouPacified);
             }
 
             // Restore camera & background from Abyssal Blackout

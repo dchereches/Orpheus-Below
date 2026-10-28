@@ -230,18 +230,7 @@ namespace OrpheusBelow
                 var companion = OrpheusPrototypeBuilder.AddCompanion(transform, OrpheusPlayerController.Instance.transform);
                 UnderworldCamera2D.Instance.eurydiceTarget = companion.transform;
                 OrpheusHud.Instance?.ShowBanner("Eurydice has joined you  ·  Begin the ascent", 4f);
-                OrpheusHud.Instance?.ShowHadesTutorial(
-                    "Take her, minstrel. But hear the law of Tartarus: Walk ahead. She shall follow in your shadow. If you turn your head to look upon her before the sun strikes your brow—she is mine forever.",
-                    () =>
-                    {
-                        OrpheusHud.Instance?.ShowEurydiceTutorial(
-                            "Orpheus...? Is that your lyre I hear through the frost? It is truly you... You came into the dark for me. Walk ahead—I will follow your music.",
-                            () =>
-                            {
-                                OrpheusHud.Instance?.ShowArtemisTutorial(
-                                    "You have found her, Orpheus. Lead her back through the chambers to my sanctuary. Trust the voice behind you; do not look back. Wait at each passage until she is near.");
-                            });
-                    });
+                VoiceDirector.Instance?.PlayReunionSequence();
                 return true;
             }
             if (door.journeyRole == JourneyDoorRole.Deeper)
@@ -352,17 +341,17 @@ namespace OrpheusBelow
                 if (index == 5 && !_spokenHadesAscent5)
                 {
                     _spokenHadesAscent5 = true;
-                    OrpheusHud.Instance?.ShowHadesTutorial("Hear how quietly she walks behind you, Orpheus. Is she truly there? Or do you lead an empty shadow?");
+                    VoiceDirector.Instance?.Play(VoiceLineId.Hades_HearHow);
                 }
                 else if (index == 3 && !_spokenHadesAscent3)
                 {
                     _spokenHadesAscent3 = true;
-                    OrpheusHud.Instance?.ShowHadesTutorial("A poet's greatest curse is curiosity. How easy it would be to glance over your shoulder... just once.");
+                    VoiceDirector.Instance?.Play(VoiceLineId.Hades_APoets);
                 }
                 else if (index == 1 && !_spokenHadesAscent1)
                 {
                     _spokenHadesAscent1 = true;
-                    OrpheusHud.Instance?.ShowHadesTutorial("The light is so close, musician. Can you trust what you cannot see?");
+                    VoiceDirector.Instance?.Play(VoiceLineId.Hades_TheLight);
                 }
             }
             else
@@ -370,17 +359,17 @@ namespace OrpheusBelow
                 if (index == 2 && !_spokenHadesChamber2)
                 {
                     _spokenHadesChamber2 = true;
-                    OrpheusHud.Instance?.ShowHadesTutorial("A breath of living air stumbles down my halls. Turn back, son of Apollo. The earth does not yield what it has swallowed.");
+                    VoiceDirector.Instance?.Play(VoiceLineId.Hades_ABreath);
                 }
                 else if (index == 4 && !_spokenHadesChamber4)
                 {
                     _spokenHadesChamber4 = true;
-                    OrpheusHud.Instance?.ShowHadesTutorial("Your strings will fray before the weight of my kingdom softens. Mourn above like all the rest.");
+                    VoiceDirector.Instance?.Play(VoiceLineId.Hades_YourStrings);
                 }
                 else if (index == 7 && !_spokenHadesChamber7Arrival)
                 {
                     _spokenHadesChamber7Arrival = true;
-                    OrpheusHud.Instance?.ShowHadesTutorial("You dare stand before the throne of the Unseen? No living feet tread this carpet, Orpheus. Speak. Why should the King of Shadows release what fate has sealed?");
+                    VoiceDirector.Instance?.Play(VoiceLineId.Hades_YouDare);
                 }
             }
 
@@ -468,8 +457,8 @@ namespace OrpheusBelow
                 if (s.archetype == ShadeArchetype.ArmoredWarden && !_shownWardenHint)
                 {
                     _shownWardenHint = true;
-                    OrpheusHud.Instance?.ShowArtemisHint(
-                        "Bronze grief-armor turns Soft Notes aside. Break it with a Hard Boom.", 4.0f);
+                    OrpheusHud.Instance?.ShowSubtleCallout(
+                        "Bronze grief-armor turns Soft Notes aside. Break it with a Hard Boom.", 3.5f);
                 }
             }
 
@@ -477,8 +466,7 @@ namespace OrpheusBelow
             if (specs.Count == 0) { AdvanceWaveOrBoss(ch); yield break; }
             if(_currentWaveIndex == 0 && !UnderworldJourney.IsAscending && ActiveMiniBoss != null)
             {
-                string intro = ChamberEncounterPlan.Intro(CurrentChamberIndex);
-                if(!string.IsNullOrEmpty(intro) && CurrentChamberIndex != 0) OrpheusHud.Instance?.ShowArtemisTutorial(intro);
+
             }
         }
 
@@ -529,8 +517,7 @@ namespace OrpheusBelow
                     HandleChamberCleared();
                 };
                 ch.guardianBoss.ActivateGuardianDuel();
-                string intro = ChamberEncounterPlan.Intro(CurrentChamberIndex);
-                if(!string.IsNullOrEmpty(intro)) OrpheusHud.Instance?.ShowArtemisTutorial(intro);
+
             }
             else
             {
@@ -557,40 +544,30 @@ namespace OrpheusBelow
             if (step == _shownTutorialStep) return;
             _shownTutorialStep = step;
 
-            bool usingMic = (SensorPulseInput.Instance != null && SensorPulseInput.Instance.sourceMode == SensorSourceMode.KeyboardPlusPCMicrophone)
-                         || SensorPulseInput.GlobalSourceMode == SensorSourceMode.KeyboardPlusPCMicrophone;
-
-            string text;
             switch (step)
             {
                 case AsphodelTutorialStep.Move:
-                    text = "Orpheus, I am Artemis. Clear chambers to move further into the underworld! Move with W, A, S, D or the left stick.";
+                    VoiceDirector.Instance?.Play(VoiceLineId.Narrator_ClearChambers);
                     break;
                 case AsphodelTutorialStep.SoftNote:
-                    text = usingMic
-                        ? "To defend yourself with a Quaver [♪], press J or Left Click (or make a gentle sound if using the mic) to strike shades and hold the tempo."
-                        : "To defend yourself with a Quaver [♪], press J or Left Click to strike shades and hold the tempo.";
+                    VoiceDirector.Instance?.Play(VoiceLineId.Narrator_DefendYourself);
                     break;
                 case AsphodelTutorialStep.HardBoom:
-                    text = usingMic
-                        ? "To cause a big repelling move, press K or Right Click (or make a loud sound if using the mic) to unleash a Boom Fermata—blasting enemies away and shattering armor!"
-                        : "To cause a big repelling move, press K or Right Click to unleash a Boom Fermata—blasting enemies away and shattering armor!";
+                    VoiceDirector.Instance?.Play(VoiceLineId.Narrator_RepellingMove);
                     break;
                 case AsphodelTutorialStep.Flute:
-                    text = "Combos can force enemies to flee! Press F to draw your Aulos and see the combo needed for the Cataclysmic Requiem.";
+                    VoiceDirector.Instance?.Play(VoiceLineId.Narrator_CombosFlee);
                     break;
                 case AsphodelTutorialStep.Dash:
-                    text = "Press F to holster your Aulos when ready. Space or Shift grants two invulnerable dashes to reposition swiftly.";
+                    VoiceDirector.Instance?.Play(VoiceLineId.Narrator_PressF);
                     break;
                 case AsphodelTutorialStep.Cadence:
-                    text = "Pluck cadences like [ ♪ — ♪ — Fermata ] to restore breath and crack grief-armor. Clear the chamber to unseal the exit!";
+                    VoiceDirector.Instance?.Play(VoiceLineId.Narrator_PluckCadences);
                     break;
                 default:
-                    OrpheusHud.Instance?.HideEurydiceTutorial();
-                    return;
+                    OrpheusHud.Instance?.HideSubtitle();
+                    break;
             }
-
-            OrpheusHud.Instance?.ShowArtemisTutorial(text);
         }
 
         private void HandleChamberCleared()

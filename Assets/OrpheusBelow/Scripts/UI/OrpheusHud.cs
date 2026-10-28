@@ -76,6 +76,13 @@ namespace OrpheusBelow
         private GameObject _lookBackRoot;
         private RectTransform _lookBackFill;
 
+        // Literary non-blocking subtitles at screen bottom (real-time voice acting)
+        private GameObject _subtitleRoot;
+        private CanvasGroup _subtitleGroup;
+        private Text _subtitleSpeakerText;
+        private Text _subtitleBodyText;
+        private float _subtitleTimer;
+
         // Bottom-anchored dialogue; Artemis teaches, Eurydice speaks after the rescue.
         private RectTransform _canvasRoot;
         private GameObject _tutorialBoxRoot;
@@ -121,6 +128,11 @@ namespace OrpheusBelow
                 return;
             }
             Instance = this;
+
+            if (VoiceDirector.Instance == null)
+            {
+                gameObject.AddComponent<VoiceDirector>();
+            }
 
             _serifFont = LoadClassicalFont();
             _bodyFont = Font.CreateDynamicFontFromOSFont(new[] { "Segoe UI", "Arial" }, 24);
@@ -180,142 +192,71 @@ namespace OrpheusBelow
             _calloutTimer = duration;
         }
 
+        public void ShowSubtitle(string speaker, Color speakerColor, string text, float duration)
+        {
+            if (_subtitleRoot == null) return;
+            _subtitleRoot.SetActive(true);
+            if (_subtitleSpeakerText != null)
+            {
+                _subtitleSpeakerText.text = speaker.ToUpperInvariant();
+                _subtitleSpeakerText.color = speakerColor;
+            }
+            if (_subtitleBodyText != null)
+            {
+                _subtitleBodyText.text = text;
+                float h = Mathf.Max(40f, _subtitleBodyText.preferredHeight + 8f);
+                _subtitleBodyText.rectTransform.sizeDelta = new Vector2(940f, h);
+                RectTransform rt = _subtitleRoot.GetComponent<RectTransform>();
+                if (rt != null) rt.sizeDelta = new Vector2(980f, Mathf.Max(84f, h + 36f));
+            }
+            _subtitleTimer = duration;
+        }
+
+        public void HideSubtitle()
+        {
+            _subtitleTimer = 0f;
+        }
+
         public void ShowArtemisTutorial(string text, System.Action onConfirm = null)
         {
-            ShowTutorial("Artemis", text, onConfirm, false);
+            CurrentTutorialSpeaker = "Narrator";
+            VoiceDirector.Instance?.PlayNarratorTutorial(text, onConfirm);
         }
 
         public void ShowArtemisHint(string text, float duration = 3.2f)
         {
-            // Guidance stays readable until acknowledged, as with the control lessons.
-            ShowArtemisTutorial(text);
+            ShowSubtleCallout(text, duration);
         }
 
         public void ShowEurydiceTutorial(string text, System.Action onConfirm = null)
         {
             if (_eurydice == null) _eurydice = Object.FindFirstObjectByType<BlurredEurydice>();
-            ShowTutorial("Eurydice", text, onConfirm, true);
+            CurrentTutorialSpeaker = "Eurydice";
+            VoiceDirector.Instance?.PlayEurydiceTutorial(text, onConfirm);
         }
 
         public void ShowHadesTutorial(string text, System.Action onConfirm = null)
         {
-            ShowTutorial("Hades", text, onConfirm, false);
+            CurrentTutorialSpeaker = "Hades";
+            VoiceDirector.Instance?.PlayHadesTutorial(text, onConfirm);
         }
 
         public void ShowBossTutorial(string bossName, string text, System.Action onConfirm = null)
         {
-            ShowTutorial(bossName, text, onConfirm, false);
+            // Unvoiced boss dialogues removed as requested; game remains real-time
+            onConfirm?.Invoke();
         }
 
         private void ShowTutorial(string speaker, string text, System.Action onConfirm, bool companionSpeech)
         {
             ReleaseCompanionTeachingPose();
             CurrentTutorialSpeaker = speaker;
-            if (_tutorialSpeakerText != null)
-            {
-                _tutorialSpeakerText.text = speaker;
-                if (speaker == "Hades")
-                    _tutorialSpeakerText.color = new Color(0.96f, 0.32f, 0.32f, 1f);
-                else if (speaker == "Eurydice")
-                    _tutorialSpeakerText.color = new Color(1f, 0.72f, 0.76f, 1f);
-                else if (speaker.Contains("Tripod"))
-                    _tutorialSpeakerText.color = new Color(1f, 0.85f, 0.42f, 1f);
-                else if (speaker.Contains("Eye Warden") || speaker.Contains("Mystic Eye"))
-                    _tutorialSpeakerText.color = new Color(0.40f, 0.95f, 0.90f, 1f);
-                else
-                    _tutorialSpeakerText.color = new Color(0.82f, 0.70f, 0.46f, 1f);
-            }
-            _tutorialConfirmCallback = onConfirm;
-            if (_tutorialBodyText != null) _tutorialBodyText.text = text;
-            SetTutorialPortrait(speaker, companionSpeech);
-            if (_tutorialBoxRect != null && _tutorialBodyText != null)
-            {
-                float bodyHeight = Mathf.Max(90f, _tutorialBodyText.preferredHeight);
-                _tutorialBodyText.rectTransform.sizeDelta = new Vector2(608f, bodyHeight);
-                _tutorialBoxRect.sizeDelta = new Vector2(820f, Mathf.Max(196f, bodyHeight + 107f));
-            }
-            if (_tutorialBoxRoot != null) _tutorialBoxRoot.SetActive(true);
-            IsTutorialModalActive = true;
-            Time.timeScale = 0f;
-            _tutorialUsesCompanionPose = companionSpeech;
-            if (_tutorialUsesCompanionPose) _eurydice?.SetTeachingPose(true);
-
-            // Update dialogue musical symbol illustration tray
-            if (_dialogueSymbolsRoot != null && _dialogueIcons != null)
-            {
-                bool showIcons = false;
-                for (int i = 0; i < _dialogueIcons.Length; i++) _dialogueIcons[i].gameObject.SetActive(false);
-
-                if (speaker == "Artemis")
-                {
-                    if (text.Contains("Quaver") || text.Contains("Soft") || text.Contains("light pluck") || text.Contains("LMB") || text.Contains("♪"))
-                    {
-                        showIcons = true;
-                        _dialogueIcons[0].gameObject.SetActive(true);
-                        _dialogueIcons[0].sprite = _quaverSprite;
-                        _dialogueIcons[0].color = new Color(1f, 0.88f, 0.35f, 1f);
-                        if (_dialogueSymbolsCaption != null)
-                        {
-                            _dialogueSymbolsCaption.text = "Small Quaver (♪)  ·  Light tap [LMB / J]";
-                            _dialogueSymbolsCaption.color = new Color(1f, 0.88f, 0.45f, 0.95f);
-                        }
-                    }
-                    else if (text.Contains("Fermata") || text.Contains("Boom") || text.Contains("RMB"))
-                    {
-                        showIcons = true;
-                        _dialogueIcons[0].gameObject.SetActive(true);
-                        _dialogueIcons[0].sprite = _fermataSprite;
-                        _dialogueIcons[0].color = new Color(1f, 0.90f, 0.28f, 1f);
-                        if (_dialogueSymbolsCaption != null)
-                        {
-                            _dialogueSymbolsCaption.text = "Boom Fermata  ·  Armor-shatter [RMB / K]";
-                            _dialogueSymbolsCaption.color = new Color(1f, 0.90f, 0.45f, 0.95f);
-                        }
-                    }
-                    else if (text.Contains("Hymn") || text.Contains("Cadence") || text.Contains("Dawn"))
-                    {
-                        showIcons = true;
-                        _dialogueIcons[0].gameObject.SetActive(true);
-                        _dialogueIcons[0].sprite = _quaverSprite;
-                        _dialogueIcons[0].color = new Color(1f, 0.88f, 0.35f, 1f);
-
-                        _dialogueIcons[1].gameObject.SetActive(true);
-                        _dialogueIcons[1].sprite = _quaverSprite;
-                        _dialogueIcons[1].color = new Color(1f, 0.88f, 0.35f, 1f);
-
-                        _dialogueIcons[2].gameObject.SetActive(true);
-                        _dialogueIcons[2].sprite = _fermataSprite;
-                        _dialogueIcons[2].color = new Color(1f, 0.90f, 0.28f, 1f);
-
-                        if (_dialogueSymbolsCaption != null)
-                        {
-                            _dialogueSymbolsCaption.text = "Hymn of Dawn  [ ♪ — ♪ — Fermata ]";
-                            _dialogueSymbolsCaption.color = new Color(1f, 0.90f, 0.55f, 0.95f);
-                        }
-                    }
-                    else if (text.Contains("Aulos") || text.Contains("Flute") || text.Contains("flute"))
-                    {
-                        showIcons = true;
-                        _dialogueIcons[0].gameObject.SetActive(true);
-                        _dialogueIcons[0].sprite = _quaverSprite;
-                        _dialogueIcons[0].color = new Color(1f, 0.88f, 0.35f, 1f);
-
-                        _dialogueIcons[1].gameObject.SetActive(true);
-                        _dialogueIcons[1].sprite = _fermataSprite;
-                        _dialogueIcons[1].color = new Color(1f, 0.90f, 0.28f, 1f);
-
-                        _dialogueIcons[2].gameObject.SetActive(false);
-
-                        if (_dialogueSymbolsCaption != null)
-                        {
-                            _dialogueSymbolsCaption.text = "Aulos Requiem  ·  Play [ ♪ Quaver / Fermata ]";
-                            _dialogueSymbolsCaption.color = new Color(0.95f, 0.85f, 0.55f, 0.95f);
-                        }
-                    }
-                }
-
-                _dialogueSymbolsRoot.SetActive(showIcons);
-            }
+            if (speaker == "Hades")
+                VoiceDirector.Instance?.PlayHadesTutorial(text, onConfirm);
+            else if (speaker == "Eurydice")
+                VoiceDirector.Instance?.PlayEurydiceTutorial(text, onConfirm);
+            else
+                VoiceDirector.Instance?.PlayNarratorTutorial(text, onConfirm);
         }
 
         private void ReleaseCompanionTeachingPose()
@@ -655,7 +596,40 @@ namespace OrpheusBelow
             _lookBackFill = CreateBarFill(lbRt, "LookBackFill", new Vector2(0f, 2f), new Vector2(0f, 3f), new Color(0.98f, 0.28f, 0.46f, 0.95f), out _);
             _lookBackRoot.SetActive(false);
 
-            // --- 4. FIXED BOTTOM-CENTER DIALOGUE TEXT BOX (ENTER TO CONTINUE) ---
+            // --- 4. FIXED BOTTOM-CENTER SUBTITLE DISPLAY (REAL-TIME VOICE ACTING) ---
+            RectTransform subRt = CreateRect("SubtitleCluster", root,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, 72f), new Vector2(980f, 84f));
+            _subtitleRoot = subRt.gameObject;
+            _subtitleGroup = subRt.gameObject.AddComponent<CanvasGroup>();
+            _subtitleGroup.alpha = 0f;
+            _subtitleGroup.blocksRaycasts = false;
+
+            Image subBg = subRt.gameObject.AddComponent<Image>();
+            subBg.color = new Color(0.02f, 0.01f, 0.04f, 0.78f);
+            subBg.raycastTarget = false;
+
+            RectTransform subAccent = CreateRect("SubAccent", subRt,
+                new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
+                Vector2.zero, new Vector2(0f, 1.5f));
+            Image subAccentImg = subAccent.gameObject.AddComponent<Image>();
+            subAccentImg.color = new Color(0.85f, 0.75f, 0.50f, 0.40f);
+            subAccentImg.raycastTarget = false;
+
+            _subtitleSpeakerText = CreateSerifText("SubSpeaker", subRt,
+                new Vector2(0f, -12f), new Vector2(940f, 20f), 14, FontStyle.Normal,
+                TextAnchor.MiddleCenter, new Color(0.95f, 0.82f, 0.44f, 1f),
+                anchorMin: new Vector2(0.5f, 1f), anchorMax: new Vector2(0.5f, 1f), pivot: new Vector2(0.5f, 1f));
+
+            _subtitleBodyText = CreateSerifText("SubBody", subRt,
+                new Vector2(0f, -44f), new Vector2(940f, 44f), 18, FontStyle.Normal,
+                TextAnchor.MiddleCenter, new Color(0.95f, 0.93f, 0.88f, 1f),
+                anchorMin: new Vector2(0.5f, 1f), anchorMax: new Vector2(0.5f, 1f), pivot: new Vector2(0.5f, 1f));
+            _subtitleBodyText.font = _bodyFont;
+            _subtitleBodyText.lineSpacing = 1.15f;
+            _subtitleRoot.SetActive(false);
+
+            // --- DEPRECATED MODAL BOX (KEPT INACTIVE SO ZERO MODAL POPUPS APPEAR) ---
             _tutorialBoxRect = CreateRect("GuideDialogueBox", root,
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                 new Vector2(0f, 174f), new Vector2(820f, 196f));
@@ -981,6 +955,24 @@ namespace OrpheusBelow
                 Color wc = _whisperText.color;
                 wc.a = escorting ? Mathf.MoveTowards(wc.a, showWhisper ? 0.78f : 0f, dt * 2.5f) : 0f;
                 _whisperText.color = wc;
+            }
+
+            // Subtitle fade in / fade out
+            if (_subtitleRoot != null && _subtitleGroup != null)
+            {
+                if (_subtitleTimer > 0f)
+                {
+                    _subtitleTimer -= dt;
+                    _subtitleGroup.alpha = Mathf.MoveTowards(_subtitleGroup.alpha, 1f, dt * 6f);
+                }
+                else if (_subtitleGroup.alpha > 0f)
+                {
+                    _subtitleGroup.alpha = Mathf.MoveTowards(_subtitleGroup.alpha, 0f, dt * 3.5f);
+                    if (_subtitleGroup.alpha <= 0.01f)
+                    {
+                        _subtitleRoot.SetActive(false);
+                    }
+                }
             }
 
             if (_lookBackRoot != null)

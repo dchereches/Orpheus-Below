@@ -11,65 +11,70 @@ namespace OrpheusBelow.Tests
         private static readonly BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
 
         [Test]
-        public void ArtemisLessonUsesHerPortraitAndNeverAnimatesEurydiceAsTheSpeaker()
+        public void NarratorReplacesArtemisWithoutPausingGameplay()
         {
             var show = typeof(OrpheusHud).GetMethod("ShowArtemisTutorial");
-            Assert.That(show, Is.Not.Null, "Control lessons must be spoken by Artemis.");
-            var root = new GameObject("ArtemisLessonTest");
+            Assert.That(show, Is.Not.Null, "Tutorial lessons must be accessible.");
+            var root = new GameObject("NarratorLessonTest");
             float timeScale = Time.timeScale;
             try
             {
+                Time.timeScale = 1.0f;
                 var companion = root.AddComponent<BlurredEurydice>();
                 var hud = root.AddComponent<OrpheusHud>();
                 EnsureAwake(hud);
+
                 bool confirmed = false;
-                show.Invoke(hud, new object[] { "Descend alone. I will guide your song.", (Action)(() => confirmed = true) });
-                Assert.That(typeof(OrpheusHud).GetProperty("CurrentTutorialSpeaker")?.GetValue(hud), Is.EqualTo("Artemis"));
-                Assert.That(companion.IsTeachingPose, Is.False);
-                Assert.That(OrpheusHud.IsTutorialModalActive, Is.True);
-                Assert.That(Time.timeScale, Is.Zero);
-                var portrait = root.GetComponentInChildren<RawImage>(true);
-                Assert.That(portrait, Is.Not.Null);
-                Assert.That(portrait.texture, Is.Not.Null);
-                Assert.That(portrait.texture, Is.SameAs(Resources.Load<Texture2D>("Characters/Artemis/GuidePortrait")));
-                hud.DismissTutorialModal();
-                Assert.That(confirmed, Is.True);
-                Assert.That(OrpheusHud.IsTutorialModalActive, Is.False);
-                Assert.That(companion.IsTeachingPose, Is.False);
+                show.Invoke(hud, new object[] { "Clear chambers to move further into the underworld! Move with W, A, S, D.", (Action)(() => confirmed = true) });
+
+                // Narrator replaces Artemis
+                Assert.That(typeof(OrpheusHud).GetProperty("CurrentTutorialSpeaker")?.GetValue(hud), Is.EqualTo("Narrator"));
+
+                // Game no longer pauses on dialogue!
+                Assert.That(Time.timeScale, Is.EqualTo(1.0f));
+                Assert.That(OrpheusHud.IsTutorialModalActive, Is.False, "Dialogue boxes must be removed.");
+
+                // Subtitle root exists and is updated
+                var subRoot = typeof(OrpheusHud).GetField("_subtitleRoot", PrivateInstance)?.GetValue(hud) as GameObject;
+                Assert.That(subRoot, Is.Not.Null, "Subtitle root must be instantiated.");
             }
-            finally { UnityEngine.Object.DestroyImmediate(root); Time.timeScale = timeScale; }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+                Time.timeScale = timeScale;
+            }
         }
 
         [Test]
-        public void CompanionSpeechRetainsEurydiceAndReleasesHerPoseWhenArtemisSpeaks()
+        public void CompanionSpeechAndHadesDialogueDisplaySubtitlesInRealTime()
         {
-            var show = typeof(OrpheusHud).GetMethod("ShowArtemisTutorial");
-            Assert.That(show, Is.Not.Null);
-            var root = new GameObject("CompanionLessonTest");
+            var root = new GameObject("VoiceDialogueTest");
             float timeScale = Time.timeScale;
             try
             {
+                Time.timeScale = 1.0f;
                 var companion = root.AddComponent<BlurredEurydice>();
                 var hud = root.AddComponent<OrpheusHud>();
                 EnsureAwake(hud);
-                hud.ShowEurydiceTutorial("I am here. Let us return to the light.");
+
+                hud.ShowEurydiceTutorial("I am here, Orpheus. Right behind you.");
                 Assert.That(typeof(OrpheusHud).GetProperty("CurrentTutorialSpeaker")?.GetValue(hud), Is.EqualTo("Eurydice"));
-                Assert.That(companion.IsTeachingPose, Is.True);
-                var portrait = root.GetComponentInChildren<RawImage>(true);
-                Assert.That(portrait.texture, Is.Not.Null);
-                Assert.That(portrait.texture, Is.Not.SameAs(Resources.Load<Texture2D>("Characters/Artemis/GuidePortrait")));
-                show.Invoke(hud, new object[] { "Guard her on the ascent.", null });
-                Assert.That(companion.IsTeachingPose, Is.False);
-                Assert.That(typeof(OrpheusHud).GetProperty("CurrentTutorialSpeaker")?.GetValue(hud), Is.EqualTo("Artemis"));
-                hud.HideEurydiceTutorial();
-                Assert.That(OrpheusHud.IsTutorialModalActive, Is.False);
+                Assert.That(Time.timeScale, Is.EqualTo(1.0f));
+
+                hud.ShowHadesTutorial("A breath of living air stumbles down my halls.");
+                Assert.That(typeof(OrpheusHud).GetProperty("CurrentTutorialSpeaker")?.GetValue(hud), Is.EqualTo("Hades"));
+                Assert.That(Time.timeScale, Is.EqualTo(1.0f));
             }
-            finally { UnityEngine.Object.DestroyImmediate(root); Time.timeScale = timeScale; }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+                Time.timeScale = timeScale;
+            }
         }
 
         private static void EnsureAwake(OrpheusHud hud)
         {
-            if (typeof(OrpheusHud).GetField("_tutorialBodyText", PrivateInstance).GetValue(hud) == null)
+            if (typeof(OrpheusHud).GetField("_serifFont", PrivateInstance).GetValue(hud) == null)
                 typeof(OrpheusHud).GetMethod("Awake", PrivateInstance).Invoke(hud, null);
         }
     }

@@ -791,6 +791,7 @@ namespace OrpheusBelow
             IsGameOver = true;
             Time.timeScale = 1f;
             ProceduralLyreAudio.Instance?.PlayLookBackTragedy();
+            VoiceDirector.Instance?.Play(VoiceLineId.Hades_AMortals);
             _eurydice?.ShatterIntoAsh();
             GameOverReason = "Hades: \"A mortal's faith is brittle as dried reed. She returns to the dark, Orpheus. And you shall weep upon the earth alone.\"\n\nYou turned back — Eurydice scattered into Stygian ash.";
         }
@@ -812,7 +813,7 @@ namespace OrpheusBelow
             _spriteAnimator?.TriggerVictory();
             _eurydice?.Celebrate(3f);
             Time.timeScale = 1f;
-            OrpheusHud.Instance?.ShowEurydiceTutorial("The dawn... Orpheus, look! The golden sun strikes the marble columns! We made it... we are alive!");
+
         }
 
         public void TriggerChamberClear() => _spriteAnimator?.TriggerChamberClear();

@@ -261,14 +261,17 @@ namespace OrpheusBelow
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.05f, 0f), 3.2f, new Color(0.75f, 1.85f, 2.4f, 0.90f), 0.42f);
             if (_sanctuaryTimer <= 0f)
             {
-                OrpheusHud.Instance?.ShowSubtleCallout(AcousticPingReplies[_pingReplyIndex % AcousticPingReplies.Length], 2.4f);
-                _pingReplyIndex++;
+                VoiceDirector.Instance?.PlayNextPingReply();
             }
         }
 
         public void SetLookBackFocus(float focus01)
         {
             _focus01 = Mathf.Clamp01(focus01);
+            if (_focus01 > 0.25f && !IsVanished)
+            {
+                VoiceDirector.Instance?.PlayLookBackTemptation();
+            }
         }
 
         public void SetTemptationZone(bool active, string whisperText)
@@ -387,7 +390,12 @@ namespace OrpheusBelow
                     AbductionDanger01 = Mathf.MoveTowards(AbductionDanger01, 0f, dt * 0.45f);
 
                     float targetLag = InTemptationZone ? followLagDistance + 1.4f : followLagDistance;
-                    bool nearby = GroundDistance(transform.position, orpheus.position) < followLagDistance * 1.6f;
+                    float curDist = GroundDistance(transform.position, orpheus.position);
+                    bool nearby = curDist < followLagDistance * 1.6f;
+                    if (curDist > 7.5f)
+                    {
+                        VoiceDirector.Instance?.PlaySeparationCallout();
+                    }
                     bool gesture = IsTeachingPose || _reformTimer > 0 || _fearTimer > 0 || (pc != null && pc.IsVictory) ||
                         (nearby && (_joyTimer > 0 || _humPoseTimer > 0 || _shieldIntroTimer > 0));
                     if (gesture) RecordBreadcrumb();
