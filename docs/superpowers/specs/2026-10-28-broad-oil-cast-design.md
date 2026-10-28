@@ -1,0 +1,15 @@
+# Broad oil cast and encounter variety
+
+Replace fine/dithered character rendering with simplified, continuous, thick oil-brush planes and conspicuous directional paint streaks. Preserve every current character's silhouette, costume, palette, equipment and identity, including Eurydice's red-haired likeness. Keep real animation rows, directional movement, readable windups and genuine transparent assets. Refresh Artemis's guide portrait too. The user explicitly deferred Orpheus's redesign; keep his current artwork and only apply the requested size increase.
+
+One artist subagent owns each of the eleven active redesigns (eight enemies, sheep, Eurydice, Artemis); a separate art director independently reviews every delivery for design fidelity and broad strokes. Orpheus's worker was stopped before any artwork was installed. Root owns shared Unity integration and tests. Raster edits use the built-in ImageGen tool. Generated asset pixels are preserved; sprite rectangles may be rebaked.
+
+The user rejected the first Eurydice repaint for a bulky, masculine build. Her correction must use the original redhead photographs directly: petite adult frame, narrow shoulders, slender limbs and waist, softer original facial structure and recognizable likeness. The corrective Idle sheet is reviewed before the remaining four sheets are produced. Broad strokes must not widen her anatomy or erase her femininity.
+
+The user explicitly chose to retain the 20% in-game height increase for Eurydice while making her build petite and slender. Petite refers to her proportions, not a reduction in rendered height.
+
+**Latest user override:** use the exact proportions from the last commit and only simplify/paint the finish. All regenerated Eurydice concepts and both geometry-changing paintovers are rejected. Keep all five e0d1adc PNGs byte-identical and their existing animation geometry. A separate native oil-surface material processes original colours inside the unchanged original alpha outline, without vertex deformation or UV warping; preserve the original face. This avoids generative anatomy drift altogether.
+
+All world character artwork becomes 20% taller without enlarging collision or attack radii. Major boss health doubles from its previous configured value. The former floor mini-bosses recur as regular threats on descent and ascent, without overhead or boss health bars. Skeletons remain an occasional ranged contrast. Use authored deterministic rosters, retain one encounter per visit and the three major duels, and bound the Shepherd's flock.
+
+Implementation choices: recurring Monk/Sentinel/Shepherd attacks retain their dedicated patterns and interruption rules; their existing health is retained. Only the three major guardians use boss HUD. The opening includes one skeleton and one Monk, while deeper floor encounters mix former mini-bosses. Major duels remain immediate and solo; ascent combines riders with varied floor threats. Preserve navigation, escort rescue, camera transitions and all current inputs.

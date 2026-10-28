@@ -2,6 +2,14 @@
 
 ## Latest revision — 28 October 2026
 
+### Broad oil cast and encounter variety (current)
+
+Bootstrap version **15** promotes Masked Monks, Winged Sentinels and Shepherds to recurring floor enemies with their dedicated attacks and no overhead/boss health bars. Skeleton slots across the full journey drop from 27 to 6; former mini-boss appearances rise from 3 to 25. Tripod, Eye Warden and Cerberus remain immediate descent bosses, with doubled health (528, 672 and 1104 HP). Each encounter has at most one Shepherd and three summoned sheep.
+
+Dedicated character agents and an independent art director reviewed ten generated oil repaints: eight enemy designs, Sheep and Artemis. The rebuilt enemy libraries contain **295 body frames and 208 FX entries**, with source-aware boundaries excluding unusable overlapping poses. Artwork is uniformly 20% larger. **Orpheus's redesign is deferred by the user**; only his size changes.
+
+**Eurydice uses the exact five PNGs from commit `e0d1adc`, unchanged byte for byte.** Rejected bulky designs are excluded. An RGB-only surface material simplifies the original sprite colours and adds painted streaks while preserving original alpha, geometry, face proportions and all 148 animation frames. Her confirmed 20% enlargement is uniform. See [current implementation and verification](docs/broad-oil-cast-2026-10-28.md) and [independent character review](Documentation/BroadOilCharacterReview.md). The older version-14 encounter and previous frame counts below are superseded by this section.
+
 ### Normal encounter integration (current)
 
 Bootstrap version **14** replaces the repeated generic waves with explicit encounters. The Tripod (depth 1), Eye Warden (3) and Cerberus (6) start their major boss duels on entry. The Masked Monk (2), Winged Sentinel (4) and Shepherd (5) are distinct mini-boss enemies on the painted chamber floor, retaining its obstacles and showing their own health bar. Each uses its painted attack module, increased health and Artemis counterplay instructions. Ordinary soft notes damage mini-bosses without continuously cancelling their windups; Hard Booms and stun can interrupt them.

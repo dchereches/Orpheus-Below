@@ -84,7 +84,9 @@ namespace OrpheusBelow.Tests
                 animator.Play(EnemyMotion.Attack2,1); Sprite first = animator.Renderer.sprite;
                 animator.Advance(0); Assert.That(animator.Renderer.sprite, Is.SameAs(first));
                 animator.Advance(.8f); Assert.That(animator.Renderer.sprite, Is.Not.SameAs(first));
-                Assert.That(animator.Library.FrameCount(EnemyMotion.Attack2), Is.EqualTo(2));
+                Assert.That(animator.Library.FrameCount(EnemyMotion.Attack2), Is.EqualTo(4));
+                Assert.That(animator.Renderer.sprite, Is.SameAs(animator.Library.Frame(EnemyMotion.Attack2, 3)),
+                    "At 80% of the clip, playback must select the fourth measured grab pose.");
             }
             finally { Object.DestroyImmediate(go); }
         }

@@ -34,16 +34,26 @@ namespace OrpheusBelow
             {
                 roster.Add(ShadeArchetype.MourningAbductor);
                 if(depth >= 4) roster.Add(ShadeArchetype.MourningAbductor);
-                roster.Add(ShadeArchetype.BrimstoneCaster); roster.Add(ShadeArchetype.BrimstoneCaster);
+                roster.Add(depth % 3 == 0 ? ShadeArchetype.MaskedMonk : depth % 3 == 1 ? ShadeArchetype.WingedSentinel : ShadeArchetype.Shepherd);
+                if(depth > 0) roster.Add(depth % 3 == 0 ? ShadeArchetype.Shepherd : depth % 3 == 1 ? ShadeArchetype.MaskedMonk : ShadeArchetype.WingedSentinel);
+                if(depth % 3 == 0) roster.Add(ShadeArchetype.BrimstoneCaster);
             }
             else if(IsMajorBoss(depth)) return result;
             else
             {
-                if(depth == 2) roster.Add(ShadeArchetype.MaskedMonk);
-                else if(depth == 4) roster.Add(ShadeArchetype.WingedSentinel);
-                else if(depth == 5) roster.Add(ShadeArchetype.Shepherd);
-                int skeletons = depth == 0 ? 3 : depth == 7 ? 4 : 2;
-                for(int i=0;i<skeletons;i++) roster.Add(ShadeArchetype.BrimstoneCaster);
+                switch(depth)
+                {
+                    case 0:
+                        roster.Add(ShadeArchetype.BrimstoneCaster); roster.Add(ShadeArchetype.MaskedMonk); break;
+                    case 2:
+                        roster.Add(ShadeArchetype.MaskedMonk); roster.Add(ShadeArchetype.WingedSentinel); roster.Add(ShadeArchetype.BrimstoneCaster); break;
+                    case 4:
+                        roster.Add(ShadeArchetype.WingedSentinel); roster.Add(ShadeArchetype.MaskedMonk); roster.Add(ShadeArchetype.WingedSentinel); break;
+                    case 5:
+                        roster.Add(ShadeArchetype.Shepherd); roster.Add(ShadeArchetype.WingedSentinel); roster.Add(ShadeArchetype.MaskedMonk); break;
+                    case 7:
+                        roster.Add(ShadeArchetype.BrimstoneCaster); roster.Add(ShadeArchetype.MaskedMonk); roster.Add(ShadeArchetype.WingedSentinel); roster.Add(ShadeArchetype.Shepherd); break;
+                }
             }
             for(int i=0;i<roster.Count;i++)
             {
@@ -56,6 +66,7 @@ namespace OrpheusBelow
         {
             switch(depth)
             {
+                case 0: return "The hooded skeleton raises its pistol before firing. The Monk marks a dark circle before stone falls. Step clear of their warnings, use cover against shots, and answer with your lyre.";
                 case 1: return "The Tripod's rings gather a sonic wave. Dash through it as it reaches you. A second pulse may follow; save your other dash.";
                 case 2: return "The Masked Monk calls stone from above. A dark circle locks onto the floor before each boulder falls. Leave the circle, then strike while he recovers.";
                 case 3: return "The Mystic Eye Warden commits his aim before throwing the eye-staff. Dash past the staff, then answer while he recalls it.";

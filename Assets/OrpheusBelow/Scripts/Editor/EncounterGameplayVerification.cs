@@ -105,6 +105,7 @@ namespace OrpheusBelow.EditorTools
                 var map = PaintedChamberMap.Active;
                 var player = OrpheusPlayerController.Instance;
                 player.RestoreTravelHealth(player.maxHealth);
+                Camera.main.aspect = 16f / 9f;
                 if (_phase >= 3 && OrpheusHud.IsTutorialModalActive)
                 { OrpheusHud.Instance.DismissTutorialModal(); _next = EditorApplication.timeSinceStartup + 1; return; }
                 if (_phase != 7 && map.definition.index != Course[_visit]) return;
@@ -147,7 +148,11 @@ namespace OrpheusBelow.EditorTools
                     {
                         Require(chamber.guardianBoss == null && director.ActiveEnemyCount == chamber.wave1.Count && shades.Length > 0,
                             "Normal director did not spawn authored roster");
-                        _actor = director.ActiveMiniBoss != null ? director.ActiveMiniBoss.PaintedActor : shades[0].PaintedActor;
+                        _actor = null;
+                        foreach (var shade in shades)
+                            if(shade.PaintedActor.Kind == (ascending ? PaintedEnemyKind.RoosterRider : DescendingKinds[map.definition.index]))
+                            { _actor = shade.PaintedActor; break; }
+                        Require(_actor != null, "Authored creature missing from normal roster");
                         if (ascending)
                         {
                             foreach (var shade in shades)
@@ -159,6 +164,8 @@ namespace OrpheusBelow.EditorTools
                             Require(!player.IsIn2DBossStage && map.coverRoot.gameObject.activeSelf, "Mini-boss did not retain chamber obstacles");
                             Require(director.ActiveMiniBoss.CurrentHealth >= 200, "Mini-boss used ordinary skeleton health");
                         }
+                        var bossBar = (GameObject)typeof(OrpheusHud).GetField("_bossBarRoot", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(OrpheusHud.Instance);
+                        Require(!bossBar.activeSelf, "Recurring floor enemy incorrectly showed a boss health bar");
                         player.TeleportToChamberSpawn(map.NearestWalkable(_actor.transform.position + UnderworldCamera2D.IsoRightXZ * 3, .55f));
                         var companion = Object.FindFirstObjectByType<BlurredEurydice>();
                         if (companion != null)
@@ -203,6 +210,13 @@ namespace OrpheusBelow.EditorTools
                                 Require(Object.FindFirstObjectByType<BlurredEurydice>().IsBeingAbducted, "Rooster failed to register actual abduction");
                                 _roosterGrabbed = true; Capture(_visit.ToString("D2") + "-rooster-drag");
                                 _actor.OwnerShade.ApplyStun(1);
+                                Require(!rooster.IsDragging, "Stun did not release the struck rooster's grip");
+                                // Deeper return rosters contain two riders: each live grip must be broken.
+                                foreach (var rider in Object.FindObjectsByType<RoosterRiderAttack>(FindObjectsSortMode.None))
+                                {
+                                    var actor = rider.GetComponent<PaintedEnemyActor>();
+                                    if (actor != null && actor.OwnerShade != null) actor.OwnerShade.ApplyStun(1);
+                                }
                                 Require(!Object.FindFirstObjectByType<BlurredEurydice>().IsBeingAbducted, "Stun did not rescue Eurydice");
                             }
                             break;

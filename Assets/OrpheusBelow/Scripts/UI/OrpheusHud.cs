@@ -615,7 +615,7 @@ namespace OrpheusBelow
             UnderworldArtLibrary.StylePanel(boxBg);
 
             RectTransform portraitRect = CreateRect("SpeakerPortrait", _tutorialBoxRect,
-                Vector2.up, Vector2.up, Vector2.up, new Vector2(24f, -34f), new Vector2(126f, 126f));
+                Vector2.up, Vector2.up, Vector2.up, new Vector2(12f, -22f), new Vector2(126f, 126f) * 1.2f);
             _tutorialPortrait = portraitRect.gameObject.AddComponent<RawImage>();
             _tutorialPortrait.raycastTarget = false;
             _tutorialPortrait.color = new Color(.94f, .94f, .90f);
@@ -877,8 +877,7 @@ namespace OrpheusBelow
             // 3. Guardian Rhythm Bar vs Subtle Chamber Banner
             CerberusRhythmBoss boss = CerberusRhythmBoss.ActiveBoss;
             bool bossActive = boss != null && boss.IsBattleActive && !boss.IsDefeated;
-            ShadeEnemy mini = dir != null ? dir.ActiveMiniBoss : null;
-            if (_bossBarRoot != null) _bossBarRoot.SetActive(bossActive || mini != null);
+            if (_bossBarRoot != null) _bossBarRoot.SetActive(bossActive);
 
             if (bossActive)
             {
@@ -887,15 +886,6 @@ namespace OrpheusBelow
                 _bossHpFill.sizeDelta = new Vector2(BossBarWidth * bpct, 4f);
                 _bossJudgementText.text = boss.LastJudgement;
                 if (_bannerGroup != null) _bannerGroup.alpha = 0f;
-            }
-            else if(mini != null)
-            {
-                _bossNameText.text = mini.DisplayName;
-                _bossHpFill.sizeDelta = new Vector2(BossBarWidth * Mathf.Clamp01(mini.CurrentHealth / Mathf.Max(1f,mini.maxHealth)),4f);
-                EnemyMotion motion = mini.PaintedActor.Art.Motion;
-                _bossJudgementText.text = motion == EnemyMotion.Windup ? "Attack incoming — watch the shadow"
-                    : motion == EnemyMotion.Recover || motion == EnemyMotion.Hurt ? "Recovery — play now" : "Clear the encounter to open the passage";
-                if(_bannerGroup != null) _bannerGroup.alpha = 0;
             }
             else if (_bannerGroup != null)
             {

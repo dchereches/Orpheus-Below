@@ -162,7 +162,7 @@ namespace OrpheusBelow
                     _headBaseColor = new Color(.9f, .7f, .3f); break;
             }
 
-            maxHealth *= 1.20f;
+            maxHealth *= 2.40f;
             hitWindowSeconds = 0.23f;
             CurrentHealth = maxHealth;
             _beatInterval = 60f / Mathf.Max(50f, bpm);

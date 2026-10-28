@@ -282,7 +282,7 @@ namespace OrpheusBelow
             var wave = ChamberEncounterPlan.Wave(definition.index,number,UnderworldJourney.IsAscending);
             for (int i = 0; i < wave.Count; i++)
             {
-                Vector2 source = ChamberEncounterPlan.IsMiniBoss(wave[i].archetype) ? definition.encounterCenter
+                Vector2 source = i == 0 && ChamberEncounterPlan.IsMiniBoss(wave[i].archetype) && !UnderworldJourney.IsAscending ? definition.encounterCenter
                     : definition.enemySpawns[(i + (number - 1) * 2) % definition.enemySpawns.Length];
                 Vector3 point = NearestWalkable(ToWorld(source), .8f);
                 wave[i].localOffsetXZ = new Vector2(point.x - center.x, point.z - center.z);

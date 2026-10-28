@@ -1,3 +1,93 @@
+# Winged Sentinel broad-oil overhaul — 2026-10-28
+
+Dedicated character worker: `winged_sentinel_redesign`. Built-in `image_gen.imagegen`, with `transparent_background=true`. The original identity reference and approved Cerberus medium reference were inspected before generation. The former is identity only; the latter is paint-medium only. Existing atlas pixels were inspected for motion semantics but were not used to lock the old fine detail.
+
+## Current selected generated outputs
+
+- Body.png: `C:/Users/asus/.codex/generated_images/01a17fa6-511f-7450-b09e-519862a7efe1/exec-a98076af-bc73-4788-a7d9-38c83caaee92.png`; 887 × 1774 RGBA; SHA-256 `aad449726853aab2782ec9ad63c00ca1d8f8ea830daca8aed48ed043517c613f`.
+- Effects.png: `C:/Users/asus/.codex/generated_images/01a17fa6-511f-7450-b09e-519862a7efe1/exec-c3a6630c-7acc-4cd4-8625-4cff114c034b.png`; 1536 × 1024 RGBA; SHA-256 `13ad1e40e62fd8fd8e761e786f35c48fe442df23c6f7444e42c06434991c3297`.
+- Identity reference: `D:/Serban/TEST/WhatsApp Image 2026-10-27 at 20.18.01 (3).jpeg`.
+- Approved medium reference: `C:/Users/asus/.codex/generated_images/01a17f97-6cdb-7291-b318-3bdb0835e4ca/exec-e2c9561e-9106-4d99-b43e-aeeb01c076ef.png`.
+
+PNG files are copied byte-for-byte without painting, filtering, tinting, resizing, repacking, duplicate-frame synthesis or any raster cleanup.
+
+## Current motion and integration contract
+
+Body: 4 columns × 8 rows, 32 distinct successive poses. Rows top-to-bottom: Idle, Move, Windup, Attack (compact horizontal/diagonal sweep), Attack2 (overhead cleave), Recover, Hurt, Defeated. Four phases read left-to-right. Keep common pixels-per-unit derived from intact idle figures; do not normalize individual poses to full visible height, which would enlarge collapsed poses. Preserve complete wings, sword and feet.
+
+Effects: 6 columns × 4 rows, 24 distinct successive stages. Rows: ivory/purple sword crescent, overhead cleave, impact burst, gold/purple warning ring. The runtime geometric ground warning remains the authoritative damage boundary.
+
+**Source-aware alpha segmentation is required.** New source positions differ from the old atlas. Old manual rectangles have been removed from AtlasLayout.json. Some source silhouettes extend past nominal equal-grid boundaries, so equal-grid cutting can clip them. Main opaque silhouettes now have non-overlapping rectangular bounds after the compact-sweep correction. Rebuild Library.asset through the parent integration workflow. Runtime scale changes are the parent's work; no production image pixels were resized.
+
+## Self-review and independent review
+
+The first body pass (`exec-cc3b0df8-2ae4-4f49-8c58-9029325d6a12.png`) established the approved broad long ivory wing/skirt swipes and simplified purple body but was rejected for a sword-to-neighbor-wing collision. Read-only alpha analysis found only 31 main components because two Attack poses touched. A first shrink-only layout repair (`exec-b2d9e6e5-ee30-4d03-9ad6-917b44bde3c2.png`) did not resolve the wide blade enough. The final targeted compact diagonal slash repair resolved the conflict. Source alpha >100 now yields exactly 32 disconnected components of more than 1000 pixels, one per body pose. In the repaired Attack row, third pose bounds are x460–616 and fourth pose x683–860.
+
+The dedicated worker viewed every candidate and final FX. The art director independently approved the broad oil medium, identity, final separated 32-pose body and the final FX. The final effects use large ivory/purple connected crescents, cleaves, bursts and rings, with reduced small spark clutter. Source and installed PNG SHA-256 hashes were verified identical after copying.
+
+Read-only pixel validation: Body alpha 0–255, 865098 fully transparent pixels, 60.2924% alpha below10; all32 nominal regions nonempty and distinct, minimum12920 pixels alpha>100 in a nominal region. Effects alpha0–253, 710622 fully transparent pixels, 68.2716% alpha below10; all24 nominal regions nonempty and distinct, minimum4023 pixels alpha>100. Region uniqueness is supplementary evidence; no image regions were copied into production assets. Hidden RGB under near-zero alpha may show a colored backdrop in viewers that do not composite transparency correctly.
+
+## Exact initial broad-oil body prompt
+
+```text
+Use case: identity-preserve.
+Asset type: production Unity 2D character animation sprite atlas.
+Input image 1 is IDENTITY ONLY: preserve this Winged Sentinel, a lean muscular dark purple/slate male winged elf with swept-back black hair, long pointed ears, modest gold hoop earrings and gold belt/arm bands, flowing ivory skirt, bare feet, two enormous ivory wings, massive ivory greatsword. Keep the exact reference silhouette and palette. Simplify tiny skin cracks, sword engraving, jewelry and feathers into a few bold marks.
+Input image 2 is MEDIUM ONLY: borrow the approved long connected loaded-brush sweeps across the blue creature's body and tail; do not borrow any creature anatomy.
+Primary request: repaint the sentinel with MUCH LESS DETAIL and unmistakable THICK BROAD OIL BRUSH STREAKS. Long continuous ivory loaded-paint swipes form each wing, only 3 to 5 big connected wing bands rather than individual feathers. Skirt formed by 4 long ivory/ochre brush swathes. Torso and limbs each made of 2 or 3 large continuous purple/slate paint strokes. Visible bristle streaks run along these LONG strokes. Very few confident facial marks. Large clear connected colour masses; clean painterly silhouettes. No tiny polygon facets, chips, fur-like feather detail, speckles, scratching, dithering, pixel art, smooth airbrush, 3D rendering or fine illustration.
+Layout: EXACTLY FOUR COLUMNS by EIGHT ROWS, 32 DISTINCT individually painted full-body animation poses, row-major from top-left, four successive poses per row. Portrait canvas aspect 1:2, square equal cells, ideally 1024x2048. True transparent RGBA backdrop and all empty space. Each entire pose including wings, weapon and feet must fit within the central 68 percent cell width and central 74 percent cell height. Make all characters uniformly smaller to keep generous fully transparent gutters; compact partially folded wings. No sprite crosses any cell boundary, no clipped sword/wing tips. Feet anchored consistently near lower center. Same scale throughout, three-quarter orthographic game camera facing screen RIGHT.
+Rows TOP TO BOTTOM:
+0 Idle: four gentle breathing and slight wing-lift phases, sword lowered.
+1 Move: four visibly different walking stride/contact/pass poses, skirt and wings counterbalance.
+2 Windup: brace, draw greatsword back, wing lift, full sword-back anticipation in four progressive poses.
+3 Attack: four progressive horizontal sword sweep stages, back-to-front-to-follow-through, compact wings; sword remains inside own cell.
+4 Attack2: four overhead cleave stages: raise sword, apex, downward strike, low follow-through. Entire blade stays in cell.
+5 Recover: four progressive reset poses, low blade returning upright.
+6 Hurt: four impact recoil, contraction and recomposing phases.
+7 Defeated: four collapse stages: knees buckle, kneeling, falling, fully fallen with wings folded and sword alongside.
+No scenery, ground, cast shadows, labels, text, row headings, borders, opaque checkerboard or reference-sheet closeups. No extra figures. Preserve all 32 genuinely different poses; never duplicate stills to fill cells. Animation readability, source identity, LONG coarse loaded-brush streaks and wide transparent gaps are essential.
+```
+
+## Exact first layout repair prompt
+
+```text
+Use case: precise-object-edit.
+Asset type: transparent Unity 2D animation sprite atlas.
+Edit input image 1 ONLY for safe sprite separation. Preserve its approved broad continuous ivory wing/skirt paint swipes, purple/slate male winged elf identity, black hair, pointed ears, gold accents, ivory greatsword, all 32 distinct progressive poses and top-to-bottom motion order.
+CRITICAL REPAIR: row 3 (fourth row) third sprite's sword overlaps the fourth sprite's wing. These MUST be fully separated. Make EVERY one of the 32 figures uniformly SIXTY-FIVE PERCENT of its current size and put it centered inside its own fixed equal square cell. Exactly FOUR columns by EIGHT rows on a 1:2 portrait canvas. Subject including ALL sword/wing/feet motion confined to central SIXTY PERCENT of cell width and central SIXTY-FIVE PERCENT of cell height. At least 20 percent cell width genuinely EMPTY TRANSPARENT on both left and right sides, at least 17 percent on top/bottom. Same size across all poses. Foot anchor near local center x, 78 percent down cell. All sword blades including horizontal sweeps must fit inside the same central60percent width; shorten perspective of sword if needed. Wings compact/folded enough to fit.
+Keep long thick loaded oil brush streaks and broad connected paint masses; no added feather detail, fine surface texture, or small facets. Keep all 32 existing poses, no duplicated stills. Preserve rows exactly Idle, Move, Windup, horizontal Sweep, overhead Cleave, Recover, Hurt, Defeated with four distinct phases per row. True alpha transparency, no ground, background, drop shadow, labels, grid, text, additional figures or closeups. Highest priority: 32 separate complete silhouettes with wide full transparent gaps and NEVER touching or overlapping neighboring sprites.
+```
+
+## Exact selected compact-sweep repair prompt
+
+```text
+Use case: precise-object-edit.
+Production transparent animation atlas, exact FOUR columns by EIGHT rows.
+Make ONE TARGETED POSE CORRECTION to this exact image. Preserve all other 31 figures unchanged in design, broad oil medium, scale and pose order. The problematic drawing is FOURTH ROW FROM TOP, THIRD COLUMN FROM LEFT (row3,column2, the sword sweep pose): its extended sword reaches the fourth column. Redraw ONLY this third sweep pose with the sword held CLOSE TO THE BODY, elbow sharply BENT, sword blade pointing DIAGONALLY DOWN-RIGHT at 55 degrees, with sword tip ending directly beside his right foot. The entire modified pose including sword and wings must stay strictly between x=51 percent and x=72 percent of total canvas width. There must be a clearly EMPTY fully TRANSPARENT vertical strip between this modified pose and the fourth figure. No long horizontal sword extension in this pose. It is the strike-through-front phase, compact diagonal slash rather than extended thrust.
+Keep the complete same purple/slate male elf with black hair/pointed ears, gold belt/arm bands, ivory skirt, huge compact folded ivory wings and greatsword. Keep long thick continuous loaded-brush wing/skirt strokes and broad connected masses. Genuine alpha0 transparency in all gutters. NO new fine texture, feathers, decorative marks, labels, grids, ground, shadows, background, extra figures or duplicated frames. Exactly32 distinct poses,4x8, same row order Idle Move Windup Sweep Cleave Recover Hurt Defeated. ONLY fix the third sword sweep's compact in-cell pose.
+```
+
+## Exact current effects prompt
+
+```text
+Use case: stylized-concept.
+Asset type: transparent Unity production combat VFX sprite atlas.
+Input image1 is character palette/MEDIUM reference only. Do not draw any character, sword prop, wings or environment. Borrow the thick broad LONG loaded-brush ivory/gold swipes and slate-purple shadows.
+Create EXACTLY SIX columns by FOUR rows,24 DISTINCT successive painted effect stages, landscape3:2 canvas ideally1536x1024, equal square cells. Each complete effect stays in central70percent cell width/height with broad genuinely transparent gutters and no neighbor overlap.
+Style: MUCH LESS DETAIL, obvious THICK BROAD OIL BRUSH STREAKS. Each effect only3–6 large connected continuous loaded-paint strokes, visible bristle lines along each stroke. Long confident swipes, no tiny chips, sparkles, faceted polygons, thin scratches, dithering, pixel art, gradients or smooth airbrush.
+Rows TOP TO BOTTOM, each SIX progressive stages left-to-right:
+0 Ivory greatsword horizontal crescent sweep: tiny curved starting swipe, wider arc, thick fullest crescent, broad semicircular followthrough, broken fading crescent, small last ivory/gold swipe. Each stage genuinely different.
+1 Overhead cleave: narrow descending vertical ivory streak, thicker cleave, heavy downward stroke meeting groundless impact, broad outward ivory/gold burst, separating coarse remnants, small final fading swipe.
+2 Sword impact: compact crossed ivory/gold strokes, expanding3-stroke burst, largest5-stroke burst with slate-purple center, separated long swipes, smaller fading swipes, last2 small fragments. No dozens of tiny sparks.
+3 Gold/purple warning buildup: SIX TOP-DOWN circular purple shadow disks, same center and outer diameter, transparent interior fill, ring formed by2–3 huge curved gold loadedbrush strokes growing from faint to thick urgent intensity. Genuine circle not perspective ellipse. Broad handpainted purple/gold masses, no thin ornate lines, glyphs or star sparkles.
+True transparent RGBA everywhere outside effects and in empty holes, NO opaque background, paper, ground plane, shadows outside effect, labels, text, titles, grid or borders. Keep all24 isolated in fixed6x4 arrangement.
+```
+
+---
+
+# Archived prior-generation record
+
+
 # Winged Sentinel generation record
 
 Built-in `image_gen` mode; transparent background requested for every generation. No raster edits, repacking, duplicated stills, pixel cleanup or resizing were performed. The selected PNGs are unchanged copies of generated outputs.
@@ -71,3 +161,11 @@ Row 3 BOTTOM: six successive perfectly circular TOP DOWN magical warning shadow 
 Maintain six-by-four regular grid and wide gaps as highest priority; all 24 effects full and contained, no neighbor contamination. Landscape atlas 3:2 aspect ratio. Painterly oil brush marks, no vector slickness.
 ```
 
+
+## Integration source-region correction — 2026-10-28
+
+Body playback now uses measured `AtlasLayout.json` body.frames rather than global grid cuts. PNG bytes remain unchanged. SHA256: `aad449726853aab2782ec9ad63c00ca1d8f8ea830daca8aed48ed043517c613f`; source dimensions 887×1774.
+
+Actual motion counts (Idle, Move, Windup, Attack, Attack2, Recover, Hurt, Defeated): `[4, 4, 4, 4, 4, 4, 4, 4]` (32 distinct poses). Each region retains every alpha>100 pixel of its own connected main silhouette; no meaningful detached component of 20–1999 pixels exists. Up to two source pixels of soft-edge padding are added when no extra foreign main pixels enter. Foot pivots use the median opaque X of the lowest 12% of the main figure and its measured lowest Y.
+
+Omissions and source-column mapping are recorded in `body.omittedSourcePoses` and each retained frame's `sourceColumn`. 0 omission entries; no duplicate poses were created. All retained rectangles contain zero alpha>100 pixels from another main silhouette.

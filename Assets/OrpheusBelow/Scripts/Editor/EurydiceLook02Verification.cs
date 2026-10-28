@@ -55,20 +55,20 @@ namespace OrpheusBelow.EditorTools
             if (_animator.CurrentState != state) throw new Exception("Expected " + state + ", got " + _animator.CurrentState);
         }
 
-        private static void FrameCamera()
+        private static void FrameCamera(float zoom)
         {
             var camera = Camera.main;
             camera.transform.rotation = RenderPipeline2DSetup.IsoCameraRotation;
-            camera.orthographicSize = 4.2f; camera.aspect = 16f / 9f;
+            camera.orthographicSize = zoom; camera.aspect = 16f / 9f;
             camera.transform.position = _companion.transform.position + camera.transform.up * 1.1f - camera.transform.forward * 36;
         }
 
-        private static Color Capture(string name, Vector3? probe = null)
+        private static Color Capture(string name, Vector3? probe = null, int width = 1280, int height = 720, float zoom = 4.2f)
         {
-            FrameCamera();
+            FrameCamera(zoom);
             string temporaryName = "eurydice-" + name;
             Color color = (Color)typeof(PaintedChamberVerification).GetMethod("Capture", BindingFlags.Static | BindingFlags.NonPublic)
-                .Invoke(null, new object[] { temporaryName, 1280, 720, false, probe });
+                .Invoke(null, new object[] { temporaryName, width, height, false, probe });
             string source = Path.GetFullPath(Path.Combine(Application.dataPath, "../Logs/PaintedChambers/" + temporaryName + ".png"));
             string destination = Path.Combine(Output, name + ".png");
             File.Copy(source, destination, true);
@@ -147,7 +147,15 @@ namespace OrpheusBelow.EditorTools
                     if (_animator.Elapsed != elapsed) throw new Exception("Pause advanced animation");
                     var renderer = _animator.GetComponent<SpriteRenderer>();
                     float height = renderer.sprite.bounds.size.y;
-                    if (height < 2.4f || height > 2.7f) throw new Exception("Incorrect visible size: " + height);
+                    if (Mathf.Abs(height - 2.5274f * 1.2f) > .08f) throw new Exception("Incorrect visible size: " + height);
+                    var paint = renderer.sharedMaterial;
+                    if (paint == null || paint.shader.name != "OrpheusBelow/EurydiceOilSurface")
+                        throw new Exception("Original-sprite oil surface is missing");
+                    float strength = paint.GetFloat("_PaintStrength");
+                    paint.SetFloat("_PaintStrength", 0f);
+                    Capture("12-original-committed-sprite", width: 512, height: 768, zoom: 2.25f);
+                    paint.SetFloat("_PaintStrength", strength);
+                    Capture("13-painted-original-sprite", width: 512, height: 768, zoom: 2.25f);
                     for (int i = 0; i < 8; i++)
                     {
                         float angle = i * 45 * Mathf.Deg2Rad;
@@ -202,6 +210,10 @@ namespace OrpheusBelow.EditorTools
                     UnityEngine.Object.Destroy(abductor.gameObject);
                     OrpheusHud.Instance.DismissTutorialModal(); Time.timeScale = 0;
                     ClearReactions();
+                    // This sampler adds the rescued companion after disabling the player's Update;
+                    // provide the cache normally populated there and remove arrival invulnerability.
+                    Set(OrpheusPlayerController.Instance, "_eurydice", _companion);
+                    Set(OrpheusPlayerController.Instance, "_invulnTimer", 0f);
                     OrpheusPlayerController.Instance.TakeDamage(1, _point - Vector3.right);
                     Drive(Vector3.zero); Expect(EurydiceAnimationState.Fear);
                     ClearReactions();

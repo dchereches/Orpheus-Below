@@ -252,6 +252,8 @@ namespace OrpheusBelow
             RenderPipeline2DSetup.AttachSprite(barFill, RenderPipeline2DSetup.SquareSprite,
                 hasBronzeShield ? new Color(2.4f, 1.95f, 0.30f, 1f) : new Color(2.2f, 0.25f, 0.35f, 1f), 15);
             _hpFillBar = barFill.transform;
+            // These designs now recur as ordinary threats, without boss or overhead health displays.
+            barBg.SetActive(!IsMiniBoss); barFill.SetActive(!IsMiniBoss);
             var kind = ChamberEncounterPlan.ArtFor(type);
             _paintedActor = gameObject.AddComponent<PaintedEnemyActor>();
             _paintedActor.Configure(kind, shade: this, createPattern: type != ShadeArchetype.WretchLunger && type != ShadeArchetype.ArmoredWarden);
@@ -677,7 +679,8 @@ namespace OrpheusBelow
             if (_hpFillBar == null) return;
             float pct = Mathf.Clamp01(_hp / Mathf.Max(1f, maxHealth));
             _hpFillBar.localScale = new Vector3(0.90f * pct, 0.06f, 1f);
-            _hpFillBar.localPosition = new Vector3(-0.45f * (1f - pct), 1.70f, -0.03f);
+            float height = _paintedActor != null && _paintedActor.Art.IsReady ? _paintedActor.Art.Library.visibleHeight + .2f : 1.7f;
+            _hpFillBar.localPosition = new Vector3(-0.45f * (1f - pct), height, -0.03f);
         }
 
         /// <summary>

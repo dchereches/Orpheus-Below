@@ -32,6 +32,7 @@ namespace OrpheusBelow.EditorTools
                 library.visibleHeight = kind == PaintedEnemyKind.HoodedSkeleton ? 2.35f : kind == PaintedEnemyKind.RoosterRider ? 2.8f
                     : kind == PaintedEnemyKind.Sheep ? 1.35f : kind == PaintedEnemyKind.Tripod ? 4.4f
                     : kind == PaintedEnemyKind.WingedSentinel ? 4.1f : kind == PaintedEnemyKind.Cerberus ? 3.4f : 3.3f;
+                library.visibleHeight *= 1.2f;
                 library.motionStarts = new int[8]; library.motionCounts = new int[8];
                 library.body = Bake(root + "Body.png", layout.bodyColumns, 8, layout.body?.frames, library, false);
                 library.effects = Bake(root + "Effects.png", layout.effectColumns, 4, layout.effects?.frames, library, true);
@@ -69,15 +70,28 @@ namespace OrpheusBelow.EditorTools
                 var yCoverage = new int[texture.height];
                 for (int y = 0; y < texture.height; y++) for (int x = 0; x < texture.width; x++)
                     if (pixels[y * texture.width + x].a > 100) yCoverage[texture.height - y - 1]++;
-                int[] rowCuts = effects ? RegularCuts(texture.height, rows) : Cuts(yCoverage, rows);
+                int[] rowCuts = effects ? EffectCuts(yCoverage, rows) : Cuts(yCoverage, rows);
                 for (int row = 0; row < rows; row++)
                 {
                     int bottom = texture.height - rowCuts[row + 1], top = texture.height - rowCuts[row];
                     var xCoverage = new int[texture.width];
                     for (int y = bottom; y < top; y++) for (int x = 0; x < texture.width; x++) if (pixels[y * texture.width + x].a > 100) xCoverage[x]++;
-                    int[] colCuts = effects ? RegularCuts(texture.width, columns) : Cuts(xCoverage, columns);
+                    int[] colCuts = effects ? EffectCuts(xCoverage, columns) : Cuts(xCoverage, columns);
                     for (int col = 0; col < columns; col++)
-                        frames.Add(new Frame { row = row, column = col, rectUnity = new float[] { colCuts[col], bottom, colCuts[col + 1] - colCuts[col], top - bottom } });
+                    {
+                        int cellBottom=bottom, cellTop=top;
+                        if(effects)
+                        {
+                            // Tall stones, expanding dust and flat warning disks have different row heights.
+                            // Inspect each column so another frame's plume cannot force this one's crop.
+                            var localY=new int[texture.height];
+                            for(int y=0;y<texture.height;y++) for(int x=colCuts[col];x<colCuts[col+1];x++)
+                                if(pixels[y*texture.width+x].a>100) localY[texture.height-y-1]++;
+                            int[] localRows=EffectCuts(localY,rows);
+                            cellBottom=texture.height-localRows[row+1]; cellTop=texture.height-localRows[row];
+                        }
+                        frames.Add(new Frame { row=row, column=col, rectUnity=new float[] { colCuts[col],cellBottom,colCuts[col+1]-colCuts[col],cellTop-cellBottom } });
+                    }
                 }
             }
             frames.Sort((a,b) => a.row == b.row ? a.column.CompareTo(b.column) : a.row.CompareTo(b.row));
@@ -113,6 +127,28 @@ namespace OrpheusBelow.EditorTools
         }
         private static int[] RegularCuts(int length, int count)
         { var cuts = new int[count+1]; for (int i = 0; i <= count; i++) cuts[i] = Mathf.RoundToInt(length * i / (float)count); return cuts; }
+        private static int[] EffectCuts(int[] coverage,int count)
+        {
+            int first=0,last=coverage.Length-1;
+            while(first<last && coverage[first]<count*2) first++;
+            while(last>first && coverage[last]<count*2) last--;
+            float spacing=(last-first+1f)/count;
+            var cuts=new int[count+1]; cuts[count]=coverage.Length;
+            for(int i=1;i<count;i++)
+            {
+                int target=Mathf.RoundToInt(first+spacing*i),best=target,bestScore=int.MaxValue;
+                int from=Mathf.Max(cuts[i-1]+Mathf.Max(2,Mathf.RoundToInt(spacing*.4f)),Mathf.RoundToInt(target-spacing*.48f));
+                int to=Mathf.Min(coverage.Length-1,Mathf.RoundToInt(target+spacing*.48f));
+                for(int p=from;p<to;p++)
+                {
+                    int score=coverage[p]+coverage[p-1];
+                    if(score<bestScore || (score==bestScore && Mathf.Abs(p-target)<Mathf.Abs(best-target)))
+                    { best=p; bestScore=score; }
+                }
+                cuts[i]=Mathf.Clamp(best,cuts[i-1]+1,coverage.Length-(count-i));
+            }
+            return cuts;
+        }
         private static int[] Cuts(int[] coverage, int count)
         {
             var cuts = RegularCuts(coverage.Length,count); float spacing = coverage.Length / (float)count;

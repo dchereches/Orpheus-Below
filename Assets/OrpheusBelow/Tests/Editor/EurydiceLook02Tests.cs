@@ -214,7 +214,8 @@ namespace OrpheusBelow.Tests
         {
             var library = Resources.Load<EurydiceAnimationLibrary>(EurydiceAnimationLibrary.ResourcePath);
             Assert.That(library, Is.Not.Null); Assert.That(library.IsComplete, Is.True);
-            Assert.That(library.idle[0].bounds.size.y, Is.InRange(2.45f, 2.65f));
+            Assert.That(library.idle[0].bounds.size.y, Is.EqualTo(2.5274f * 1.2f).Within(.03f),
+                "The committed silhouette must retain its proportions at the requested 20% larger world height.");
             foreach (var frames in new[] { library.idle, library.walk, library.reactions, library.stairs, library.effects })
             {
                 Assert.That(System.Array.TrueForAll(frames, s => s != null), Is.True);

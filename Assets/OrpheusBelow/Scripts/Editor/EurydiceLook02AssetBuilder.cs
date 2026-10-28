@@ -17,7 +17,7 @@ namespace OrpheusBelow.EditorTools
             var library = AssetDatabase.LoadAssetAtPath<EurydiceAnimationLibrary>(path);
             if (library == null) { library = ScriptableObject.CreateInstance<EurydiceAnimationLibrary>(); AssetDatabase.CreateAsset(library, path); }
             else foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(path)) if (asset is Sprite) Object.DestroyImmediate(asset, true);
-            library.visibleHeight = 2.5274f;
+            library.visibleHeight = 2.5274f * 1.2f;
             library.idle = Bake("Idle", 4, 8, library);
             library.walk = Bake("Walk", 4, 8, library);
             library.reactions = Bake("Reactions", 6, 6, library);
@@ -26,7 +26,7 @@ namespace OrpheusBelow.EditorTools
             EditorUtility.SetDirty(library);
             PaintedChamberSceneBuilder.UpdateStairZones();
             AssetDatabase.SaveAssets();
-            Debug.Log("[Eurydice Look02] BAKE PASS: 148 transparent frames, stable ground anchors, 2.5274-unit silhouette and authored stair zones.");
+            Debug.Log("[Eurydice Look02] BAKE PASS: 148 transparent frames, stable ground anchors, 20% larger silhouette and authored stair zones.");
         }
 
         private static Sprite[] Bake(string name, int columns, int rows, EurydiceAnimationLibrary owner, bool effects = false)
@@ -75,7 +75,7 @@ namespace OrpheusBelow.EditorTools
                 }
             }
             var heights = new List<int>(); for (int i = 0; i < columns; i++) heights.Add(bounds[i].height); heights.Sort();
-            float ppu = effects ? texture.height / (float)rows / 3.8f : heights[heights.Count / 2] / owner.visibleHeight;
+            float ppu = effects ? texture.height / (float)rows / (3.8f * 1.2f) : heights[heights.Count / 2] / owner.visibleHeight;
             var sprites = new Sprite[cells.Length];
             for (int row = 0; row < rows; row++)
             {

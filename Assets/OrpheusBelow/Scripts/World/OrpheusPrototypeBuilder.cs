@@ -39,7 +39,7 @@ namespace OrpheusBelow
             public List<WaveSpawnSpec> wave2 = new List<WaveSpawnSpec>();
         }
 
-        public const int PrototypeBuildVersion = 14;
+        public const int PrototypeBuildVersion = 15;
         public int initialChamberIndex;
 
         public int buildVersion = PrototypeBuildVersion;
@@ -355,7 +355,7 @@ namespace OrpheusBelow
             _spawningWave = true;
             if (chambers.Count > 0 && ch == chambers[0] && _currentWaveIndex == 0)
             {
-                OrpheusHud.Instance?.ShowArtemisHint("The hooded skeleton raises its pistol before firing. Step aside from its committed aim, use cover, or dash through the shot. Play the lyre to answer.", 4.5f);
+                OrpheusHud.Instance?.ShowArtemisHint(ChamberEncounterPlan.Intro(0), 4.5f);
             }
             yield return new WaitForSeconds(delayBeforeRunes);
 
@@ -401,8 +401,8 @@ namespace OrpheusBelow
             _spawningWave = false;
             if(!UnderworldJourney.IsAscending && ActiveMiniBoss != null)
             {
-                OrpheusHud.Instance?.ShowBanner(ActiveMiniBoss.DisplayName,3f);
-                OrpheusHud.Instance?.ShowArtemisTutorial(ChamberEncounterPlan.Intro(CurrentChamberIndex));
+                string intro = ChamberEncounterPlan.Intro(CurrentChamberIndex);
+                if(!string.IsNullOrEmpty(intro) && CurrentChamberIndex != 0) OrpheusHud.Instance?.ShowArtemisTutorial(intro);
             }
         }
 

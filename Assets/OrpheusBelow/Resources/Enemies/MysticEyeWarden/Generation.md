@@ -1,3 +1,73 @@
+# Mystic Eye Warden — broad oil replacement, 2026-10-28
+
+Generated using the imagegen skill in its default built-in image_gen mode. The user authorized replacement of current character artwork. Selected PNGs are copied unchanged from generated sources: no raster painting, filtering, recoloring, resampling, frame synthesis, repacking or pixel cleanup was used.
+
+Identity reference (inspected): `D:/Serban/TEST/WhatsApp Image 2026-10-27 at 20.18.01 (2).jpeg`.
+Medium reference (inspected): `C:/Users/asus/.codex/generated_images/01a17f9c-34b0-7b02-a22c-ade19a60d33d/exec-df35efbf-1680-47bd-a028-229a84ebb4fe.png` (approved Hooded Skeleton broad continuous cloak strokes, medium only).
+Current Body.png and Effects.png were inspected for identity and animation mappings; their fine-detail rendering was not used as generation reference.
+
+## Final selections and review
+
+- Body: `C:\Users\asus\.codex\generated_images\01a17fa1-9c9c-74d1-9fb6-7dc827e988b3\exec-b54cadbd-e8ae-4956-b62b-a1cfbbf0f18a.png`. 887 × 1774 RGBA. SHA-256 `77597ec7f340a69ef9e16e465122abf812bc75df23ee41c523e03b7fdb76ae7c`.
+- Effects: `C:\Users\asus\.codex\generated_images\01a17fa1-9c9c-74d1-9fb6-7dc827e988b3\exec-cf27380b-f485-4a32-a88b-2c67a4b14038.png`. 1536 × 1024 RGBA. SHA-256 `a3933c802ee0a328a9f8b0b8702745fdb9b57f68b95229acda2d1154face29b2`.
+- Body self-review and independent art-director review approved broad connected charcoal/umber cloak sweeps, stone eye helmet, rust-orange eye-talisman veil and gold eye staff. Throw progression includes two empty-handed follow-through frames; recall reaches and catches.
+- First FX pass was rejected for mostly upright staffs instead of end-over-end motion. One targeted correction produced clearly inverted/diagonal stages and reverse recall. Corrected FX self-review and independent director review approved.
+- Inspection-only charcoal composites: `Logs/ArtReview/MysticEyeWarden-body-composited-inspection.png` and `Logs/ArtReview/MysticEyeWarden-effects-composited-inspection.png`. Production pixels were untouched.
+
+## Motion and alpha contract
+
+Body: 4 columns × 8 rows, 32 distinct painted poses; top-to-bottom Idle, Move, Windup (staff aim), Attack (staff throw), Attack2 (staff recall), Recover, Hurt, Defeated. Frames chronological left-to-right.
+Effects: 6 columns × 4 rows, 24 distinct painted frames; staff outbound rotation, reversed staff recall, gold eye impact, charging gold eye sigil.
+
+Body alpha 0–255, 58.599% alpha below 10; 771686 fully transparent pixels. Effects alpha 0–254, 74.526% alpha below 10; 537441 fully transparent pixels. All nominal body/effects cells nonempty and distinct (32/32 and 24/24), confirmed by read-only source analysis. Visible warm RGB backdrop in some viewers is hidden beneath near-zero alpha; correct compositing clears it.
+
+**Integration:** no old frame rectangles were reused. The new AtlasLayout.json marks `autoSegmentationRequired=true`; generated poses have variable offsets, so use source-aware alpha/gutter segmentation rather than blind regular cuts. Rebuild Library.asset through the main integration agent. Keep consistent pixels per unit across body rows so the defeated cloak remains low. Runtime 20% scale and Unity bake/testing are owned by the main agent; this worker made no C#, Library.asset, Unity, commit or push changes.
+
+## Exact body prompt
+
+```text
+Use case: stylized-concept. Asset: production Unity transparent game animation atlas.
+Image1 is IDENTITY ONLY: preserve Mystic Eye Warden exactly—heavy charcoal hood/cloak, chunky angular dark stone eye helmet with gold eye marks, long rust-orange parchment veil down face/front with several red eye talismans, thin antique gold staff with unmistakable EYE crown. Do not borrow its fine details. Image2 is MEDIUM ONLY: emulate its long continuous broad loaded-brush cloak swipes and simple connected color masses, not skeleton character/palette.
+PRIMARY CHANGE: MUCH LESS DETAIL. Paint robe in just 5–8 long thick charcoal/slate/umber flat-brush SWIPES, each sweeping from shoulder to hem, with obvious bristle streaks along the full swipe. A few broad rust-orange veil strokes and simple eye dashes. No tiny polygon chips, fur tufts, little triangles, speckling, engraving, tiny cloth folds, dithering, pixel art, smooth airbrush, 3D render. Strong clean silhouette and painterly irregular broad edges; brush strokes visibly thicker than fingers.
+EXACTLY FOUR COLUMNS and EIGHT ROWS, 32 DISTINCT progressive full-body poses, equal square cells, canvas portrait 1:2. Four drawings per row, read left to right, rows top to bottom. All face slightly viewer-right in fixed three-quarter game view, consistent body scale, full staff/hood/hem visible. Full figure confined to inner 66% width and 76% height of each cell, huge genuinely transparent gutters, no figure touches any cell edge. Feet/hem baseline near 85% cell height.
+Row0 Idle: four subtle successive breathing and veil sway poses, staff vertical.
+Row1 Move: four walking gait stages with robe swing and clear forward progression of body/feet, staff carried.
+Row2 Windup: four progressively deliberate staff AIMING and compact overhead throwing preparation poses.
+Row3 Attack: four STAFF THROW poses: ready arm overhead, start release, empty-handed forward throw follow-through, finish emptyhanded. Keep entire weapon INSIDE owncell in firsttwo, no flying weapon outside cell.
+Row4 Attack2: four STAFF RECALL poses: empty hand beckon, empty hand reaching, staff caught close to body, staff settling upright.
+Row5 Recover: four distinct robe/veil settling and staff lowering-to-idle poses.
+Row6 Hurt: four clear recoil then bracing and returning upright poses.
+Row7 Defeated: four progressive sink, kneel, slump, final collapsed cloak and helmet with staff beside, low within own cell.
+Every frame genuinely individually painted and different, never repeated/copied/mirrored stills. GENUINE ALPHA TRANSPARENCY in all empty space, no painted backdrop, scenery, ground, shadow, texture outside figure, labels, text, lines, borders, watermark, extra characters or VFX. Stable scale and wide clean separation are essential.
+```
+
+## Exact initial effects prompt
+
+```text
+Use case: stylized-concept. Production Unity transparent VFX sprite atlas for Mystic Eye Warden.
+Image1 is IDENTITY ONLY for physical gold eye-crowned staff: antique gold slim rod, dark grip and unmistakable EYE-shaped crown, eye pupil in center. Image2 is OIL MEDIUM ONLY: LONG CONTINUOUS THICK loaded flat-brush strokes, connected broad color masses with visible directional bristles, drastically reduced detail.
+Create EXACTLY SIX COLUMNS by FOUR ROWS, 24 individually painted progressively different effect frames. 3:2 landscape canvas; equal square cells, generous transparent gutters all sides. Every complete effect confined central70% of cell. TRUE ZERO-ALPHA transparent emptyspace, no background, fog, glow, ground, shadow or paper texture.
+Row0 left-to-right physical complete gold eye-crowned STAFF spinning outbound: six distinct rotations 0,60,120,180,240,300 degrees. One whole slender physical staff per cell, gold eye crown and thin dark-gold shaft readable, no beams. Entireweapon inside owncell.
+Row1 six physical full staffs returning, opposite rotation sequence300,240,180,120,60,0; same design, short 1–2 broad gold swipe wake marks, not tiny sparks.
+Row2 six progressive gold painted impact stages: small single thick gold mark; two widening swipes; broad three-swipe eye burst; spreading broken eye; two separated thick swipes fading; one residual small swipe. Clearchanging growth/fade.
+Row3 six progressive GOLD EYE MAGIC SIGILS madeof just2–4 THICK loaded-brush swipes per frame: opening tiny eye, wider openeye, large pupil eye, thick energetic eye with shortswipes, eye relaxing, eye settled. Holes inside eye truly transparent.
+Style: several long connected gold/ochre/ivory strokes with ridged bristle texture, thick confident edges. NO many polygonchips, engraved ornaments, fine strands, dotted particles, smooth 3Dmetal, little facets, vector gradients, watercolor noise, neon. No characters, labels,text,gridlines,borders,watermark,opaquecheckerboard. Each frame isolated and genuinely different. Keep orange-gold muted antique palette, not neon yellow.
+```
+
+## Exact selected effects correction prompt
+
+```text
+Edit this 6-column 4-row transparent VFX atlas. Keep exact existing eye-crowned gold staff identity, broad long gold swipe impact/eye symbols in lower two rows, 24-cell layout and genuine alpha. TWO specific corrections:
+1 TOP TWO ROWS must be a clear END-OVER-END 2D CLOCKHAND ROTATION of the WHOLE STAFF in the flat image plane, NOT a small tilt or 3D spin. TOP ROW six stages: cell1 upright crown at TOP; cell2 diagonal crown UPPER RIGHT tip LOWER LEFT; cell3 diagonal crown LOWER RIGHT tip UPPER LEFT; cell4 UPSIDE DOWN crown at BOTTOM tip at TOP; cell5 diagonal crown LOWER LEFT tip UPPER RIGHT; cell6 diagonal crown UPPER LEFT tip LOWER RIGHT. BOTTOM/UPSIDEDOWN staff MUST obvious in fourth cell. Second row same six poses in REVERSE chronological rotation with one broad crescent wake swipe. Entire staff always completely inside its own square cell with large blank gutters, constant scale.
+2 Staff surface simplify: dark handle one darkstroke, rod one long ochre/gold stroke, eye crown two huge curved thick ochre/ivory brushswipes and one broad pupil dot. NO engraved nodes, tiny metallic facets or 3D glossy reflections. Match broad continuous loadedbrush rough paint lowerrows.
+Keep lower two rows' effect identities and growth/fade semantics, paint strokes broad and connected. ALL unused pixels genuinely transparent: no gold backdrop, fog, shadow, gradients, scenery, labels, grid, watermark. Preserve blank transparent gutters. Do not add extra sprites or duplicate stills.
+```
+
+---
+
+## Archived prior generation record (superseded artwork)
+
+
 # Mystic Eye Warden painted production assets
 
 Generated 2026-10-27 using the built-in image_gen tool. All image calls requested transparent_background=true. Final PNGs are unmodified copies of selected tool outputs; no alpha reconstruction, slicing, resampling, compositing, or pose duplication was performed.
@@ -69,3 +139,11 @@ No characters, text, labels, borders, grid, numbers, scenery, watercolor washes,
 Use case: background-extraction. Edit the supplied image. REMOVE ALL of the brown/gold backdrop and ambient fog/lighting completely, replacing it by TRUE ZERO-ALPHA TRANSPARENCY. Preserve only the 24 physical gold staff and painted gold magic symbol sprites in exactly their current positions, sizes, grid, colors and shapes. Do not move or redraw or add any sprites. The entire background and space around and BETWEEN every separate painted stroke must be alpha 0, including centers of eye rings. No brown canvas, no black backdrop, no checkerboard illustration, no gold atmosphere, no floor. This is a production game sprite atlas. Output transparent PNG.
 ```
 
+
+## Integration source-region correction — 2026-10-28
+
+Body playback now uses measured `AtlasLayout.json` body.frames rather than global grid cuts. PNG bytes remain unchanged. SHA256: `77597ec7f340a69ef9e16e465122abf812bc75df23ee41c523e03b7fdb76ae7c`; source dimensions 887×1774.
+
+Actual motion counts (Idle, Move, Windup, Attack, Attack2, Recover, Hurt, Defeated): `[4, 4, 4, 2, 4, 4, 4, 4]` (30 distinct poses). Each region retains every alpha>100 pixel of its own connected main silhouette; no meaningful detached component of 20–1999 pixels exists. Up to two source pixels of soft-edge padding are added when no extra foreign main pixels enter. Foot pivots use the median opaque X of the lowest 12% of the main figure and its measured lowest Y.
+
+Omissions and source-column mapping are recorded in `body.omittedSourcePoses` and each retained frame's `sourceColumn`. 2 omission entries; no duplicate poses were created. All retained rectangles contain zero alpha>100 pixels from another main silhouette.

@@ -117,6 +117,8 @@ namespace OrpheusBelow
                 }
             }
             else _renderer.sprite = _legacy[_greekLegacy ? GetFrameIndex(_state, _frame) : Mathf.Min((int)_state, 3) * 4 + Mathf.Clamp(_frame, 0, 3)];
+            EurydiceOilSurface.Apply(_renderer);
+            EurydiceOilSurface.Apply(_effects);
         }
 
         public static int GetFrameIndex(EurydiceAnimationState state, int frame)

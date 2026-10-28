@@ -87,13 +87,13 @@ namespace OrpheusBelow.Tests
                 Assert.That(ChamberEncounterPlan.ArtFor(type),Is.Not.EqualTo(PaintedEnemyKind.HoodedSkeleton));
         }
         [Test]
-        public void ReturnRoostersAreSpawnedAndPacifiedMiniBossesStayAbsent()
+        public void ReturnRoostersShareTheFloorWithRecurringFormerMiniBosses()
         {
             for(int depth=0;depth<7;depth++)
             {
                 var roster=ChamberEncounterPlan.Wave(depth,1,true);
                 Assert.That(roster.Exists(s=>s.archetype==ShadeArchetype.MourningAbductor),Is.True);
-                Assert.That(roster.Exists(s=>ChamberEncounterPlan.IsMiniBoss(s.archetype)),Is.False);
+                Assert.That(roster.Exists(s=>ChamberEncounterPlan.IsMiniBoss(s.archetype)),Is.True);
             }
         }
     }

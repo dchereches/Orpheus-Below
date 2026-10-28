@@ -136,6 +136,7 @@ namespace OrpheusBelow
 
             _spriteFlipRoot = new GameObject("SpriteFlipRoot").transform;
             _spriteFlipRoot.SetParent(_billboardRoot, false);
+            _spriteFlipRoot.localScale = Vector3.one * 1.2f;
 
             GameObject cloakGo = new GameObject("OrpheusCloak");
             cloakGo.transform.SetParent(_spriteFlipRoot, false);
@@ -608,7 +609,7 @@ namespace OrpheusBelow
                 float runBob = (!_isDashing && _velocityXZ.sqrMagnitude > 0.5f)
                     ? Mathf.Abs(Mathf.Sin(Time.time * 17f)) * 0.11f
                     : 0f;
-                _spriteFlipRoot.localScale = new Vector3(sign, 1f, 1f);
+                _spriteFlipRoot.localScale = new Vector3(sign, 1f, 1f) * 1.2f;
                 _spriteFlipRoot.localPosition = new Vector3(0f, runBob, 0f);
             }
 
@@ -630,7 +631,7 @@ namespace OrpheusBelow
         {
             GameObject ghost = new GameObject("HadesDashAfterimage");
             ghost.transform.position = transform.position + new Vector3(0f, 0.68f, 0f);
-            ghost.transform.localScale = new Vector3(0.70f, 1.32f, 1f);
+            ghost.transform.localScale = new Vector3(0.70f, 1.32f, 1f) * 1.2f;
             SpriteRenderer sr = RenderPipeline2DSetup.AttachSprite(
                 ghost, RenderPipeline2DSetup.DiamondSprite, new Color(2.4f, 0.50f, 0.22f, 0.62f), 11);
             ghost.transform.rotation = UnderworldCamera2D.CurrentBillboardRotation;
