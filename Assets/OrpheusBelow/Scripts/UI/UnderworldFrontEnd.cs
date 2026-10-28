@@ -23,11 +23,13 @@ namespace OrpheusBelow
     {
         public static UnderworldFrontEnd Instance { get; private set; }
         public static bool SkipTitleOnce;
-        public static bool BlocksGameplay => _menuBlocksGameplay || HadesChamberDirector.IsDevMenuOpen
+        public static bool BlocksGameplay => BlocksMenusOrTransitions || VoiceDirector.BlocksGameplay;
+        public static bool BlocksMenusOrTransitions => _menuBlocksGameplay || HadesChamberDirector.IsDevMenuOpen
                                              || Time.frameCount <= _blockThroughFrame;
 
         private static bool _menuBlocksGameplay;
         private static int _blockThroughFrame = -1;
+        private static bool _bootIntroStarted;
 
         // Classical Hellenic Palette
         private static readonly Color Ivory = new Color(0.95f, 0.92f, 0.82f);
@@ -87,6 +89,7 @@ namespace OrpheusBelow
         {
             Instance = null;
             SkipTitleOnce = false;
+            _bootIntroStarted = false;
             _menuBlocksGameplay = false;
             _blockThroughFrame = -1;
         }
@@ -119,18 +122,29 @@ namespace OrpheusBelow
             {
                 _canvasObject.SetActive(false);
                 _canvasGroup.alpha = 0f;
-                Time.timeScale = 1f;
+                Time.timeScale = VoiceDirector.BlocksGameplay ? 0f : 1f;
                 AudioListener.pause = false;
             }
             else
             {
-                OpenMenu();
+                if (!_bootIntroStarted)
+                {
+                    _bootIntroStarted = true;
+                    _startingIntro = true;
+                    _canvasGroup.alpha = 0;
+                    _canvasGroup.interactable = false;
+                    _canvasGroup.blocksRaycasts = false;
+                    Time.timeScale = 0;
+                    AudioListener.pause = true;
+                    _menuFadeRoutine = StartCoroutine(BootIntroduction());
+                }
+                else OpenMenu();
             }
         }
 
         private void Start()
         {
-            if (!_inRun && !_open)
+            if (!_inRun && !_open && !_startingIntro)
             {
                 OpenMenu();
             }
@@ -471,6 +485,7 @@ namespace OrpheusBelow
         public void TogglePause()
         {
             if (_intro != null && _intro.IsPlaying) { _intro.TogglePaused(); return; }
+            if (_startingIntro) return;
             if (_reloading) return;
             if (Time.frameCount == _lastToggleFrame) return;
             if (Time.unscaledTime - _lastToggleRealtime < 0.15f) return;
@@ -649,7 +664,7 @@ namespace OrpheusBelow
             _blockThroughFrame = Time.frameCount + 1;
             _events.SetSelectedGameObject(null);
             _canvasObject.SetActive(false);
-            Time.timeScale = OrpheusHud.IsTutorialModalActive ? 0f : 1f;
+            Time.timeScale = OrpheusHud.IsTutorialModalActive || VoiceDirector.BlocksGameplay ? 0f : 1f;
             AudioListener.pause = false;
             _menuFadeRoutine = null;
         }
@@ -662,6 +677,19 @@ namespace OrpheusBelow
             _canvasGroup.blocksRaycasts = false;
             if (_menuFadeRoutine != null) StopCoroutine(_menuFadeRoutine);
             _menuFadeRoutine = StartCoroutine(ReplayIntroduction());
+        }
+
+        private IEnumerator BootIntroduction()
+        {
+            yield return PlayIntroduction();
+            if (!_introSucceeded)
+            {
+                _startingIntro = false; _menuFadeRoutine = null;
+                OpenMenu(); _premise.text = "The introduction could not be loaded.\nPlease try again.";
+                yield break;
+            }
+            _inRun = true; // Continue through the existing resume path without replaying.
+            yield return FadeOutBeforeResume();
         }
 
         private IEnumerator ReplayIntroduction()
@@ -682,6 +710,7 @@ namespace OrpheusBelow
             _intro.Begin();
             while (_intro != null && _intro.IsPlaying) yield return null;
             _introSucceeded = _intro != null && _intro.Succeeded;
+            if (_introSucceeded) yield return _intro.FadeAway(.65f);
             Destroy(go);
             _intro = null;
         }

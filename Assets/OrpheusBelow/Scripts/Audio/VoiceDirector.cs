@@ -56,11 +56,13 @@ namespace OrpheusBelow
 
     /// <summary>
     /// Central manager for voice lines and narrative audio.
-    /// Plays voice clips in real time without pausing gameplay, and renders non-blocking subtitles.
+    /// Serializes full voice lines/sequences, locks gameplay, and renders synchronized subtitles.
     /// </summary>
     public sealed class VoiceDirector : MonoBehaviour
     {
         public static VoiceDirector Instance { get; private set; }
+        public const float VoiceGain = 1f;
+        public static bool BlocksGameplay => Instance != null && Instance._queue.IsBlocking;
 
         private static readonly Color NarratorColor = new Color(0.95f, 0.82f, 0.44f, 1f); // Warm amber
         private static readonly Color HadesColor = new Color(0.96f, 0.32f, 0.32f, 1f);    // Regal crimson
@@ -71,7 +73,9 @@ namespace OrpheusBelow
         private readonly Dictionary<VoiceLineId, AudioClip> _clipCache = new Dictionary<VoiceLineId, AudioClip>();
 
         private Coroutine _activePlaybackRoutine;
-        private Coroutine _activeSequenceRoutine;
+        private readonly VoicePlaybackQueue _queue = new VoicePlaybackQueue();
+        private bool _workerRunning, _ownsWorldPause;
+        private float _previousTimeScale;
         private int _pingCycleIndex;
         private float _lastPingTime = -10f;
         private float _lastLookMeTime = -10f;
@@ -265,7 +269,7 @@ namespace OrpheusBelow
         }
 
         /// <summary>
-        /// Plays a voice line by ID in real-time without pausing gameplay.
+        /// Queues a complete voice line; gameplay remains locked until queued speech finishes.
         /// Displays subtitles at the bottom of the screen.
         /// </summary>
         public void Play(VoiceLineId id, Action onComplete = null)
@@ -276,27 +280,21 @@ namespace OrpheusBelow
                 return;
             }
 
-            if (_activePlaybackRoutine != null)
-            {
-                StopCoroutine(_activePlaybackRoutine);
-                _activePlaybackRoutine = null;
-            }
-
-            _activePlaybackRoutine = StartCoroutine(PlayRoutine(data, onComplete));
+            Enqueue(new[] { id }, onComplete);
         }
 
-        private IEnumerator PlayRoutine(VoiceLineData data, Action onComplete)
+        private IEnumerator PlayRoutine(VoiceLineData data)
         {
             // Startup dialogue waits behind the title and narrated introduction.
             // Keep listener-pause bypass for voiced tutorial modals during a run.
-            while (UnderworldFrontEnd.BlocksGameplay) yield return null;
+            while (UnderworldFrontEnd.BlocksMenusOrTransitions) yield return null;
             AudioClip clip = GetOrLoadClip(data);
             float duration = clip != null ? clip.length : data.duration;
 
             if (clip != null && _voiceSource != null)
             {
-                float vol = UnderworldSoundscape.Instance != null ? UnderworldSoundscape.Instance.Volume : 1f;
-                _voiceSource.volume = Mathf.Clamp01(vol * 1.15f);
+                // Master gain is already applied by AudioListener; don't apply it twice.
+                _voiceSource.volume = VoiceGain;
                 _voiceSource.clip = clip;
                 _voiceSource.Play();
             }
@@ -304,16 +302,23 @@ namespace OrpheusBelow
             // Display literary subtitle at screen bottom
             OrpheusHud.Instance?.ShowSubtitle(data.speaker, data.speakerColor, data.subtitleText, duration + 0.45f);
 
-            // Wait for audio clip duration in unscaled real time (gameplay continues uninterrupted!)
+            // Real audio must finish; world simulation is frozen while this request owns the lock.
             float timer = duration;
-            while (timer > 0f)
+            bool pausedForMenu = false;
+            while (timer > 0f || (_voiceSource != null && _voiceSource.isPlaying))
             {
+                if (UnderworldFrontEnd.BlocksMenusOrTransitions)
+                {
+                    if (!pausedForMenu && _voiceSource != null) _voiceSource.Pause();
+                    pausedForMenu = true;
+                    yield return null;
+                    continue;
+                }
+                if (pausedForMenu && _voiceSource != null) _voiceSource.UnPause();
+                pausedForMenu = false;
                 timer -= Time.unscaledDeltaTime;
                 yield return null;
             }
-
-            _activePlaybackRoutine = null;
-            onComplete?.Invoke();
         }
 
         /// <summary>
@@ -327,38 +332,71 @@ namespace OrpheusBelow
                 return;
             }
 
-            if (_activeSequenceRoutine != null)
-            {
-                StopCoroutine(_activeSequenceRoutine);
-                _activeSequenceRoutine = null;
-            }
-
-            _activeSequenceRoutine = StartCoroutine(PlaySequenceRoutine(ids, onComplete));
+            Enqueue(Array.FindAll(ids, id => id != VoiceLineId.None && _lineRegistry.ContainsKey(id)), onComplete);
         }
 
-        private IEnumerator PlaySequenceRoutine(VoiceLineId[] ids, Action onComplete)
+        private void Enqueue(VoiceLineId[] ids, Action onComplete)
         {
-            for (int i = 0; i < ids.Length; i++)
-            {
-                VoiceLineId id = ids[i];
-                bool lineDone = false;
-                Play(id, () => lineDone = true);
-
-                while (!lineDone) yield return null;
-
-                // Brief natural pause between speakers
-                yield return new WaitForSecondsRealtime(0.40f);
-            }
-
-            _activeSequenceRoutine = null;
-            onComplete?.Invoke();
+            _queue.Enqueue(ids, onComplete);
+            if (_workerRunning || !_queue.IsBlocking) return;
+            _workerRunning = true;
+            _activePlaybackRoutine = StartCoroutine(DrainQueue());
         }
+
+        private IEnumerator DrainQueue()
+        {
+            try
+            {
+                while (_queue.TryBegin(out var request))
+                {
+                    while (UnderworldFrontEnd.BlocksMenusOrTransitions) yield return null;
+                    if (!_ownsWorldPause)
+                    {
+                        _previousTimeScale = Time.timeScale;
+                        _ownsWorldPause = true;
+                        Time.timeScale = 0;
+                    }
+                    for (int i=0; i<request.lines.Length; i++)
+                    {
+                        yield return PlayRoutine(_lineRegistry[request.lines[i]]);
+                        if (i+1<request.lines.Length)
+                            for (float gap=0; gap<.4f;)
+                            { if (!UnderworldFrontEnd.BlocksMenusOrTransitions) gap+=Time.unscaledDeltaTime; yield return null; }
+                    }
+                    try { _queue.Complete(); }
+                    catch (Exception error) { Debug.LogException(error); }
+                }
+            }
+            finally
+            {
+                _queue.Clear(); _workerRunning = false; _activePlaybackRoutine = null;
+                ReleaseWorldPause();
+            }
+        }
+
+        private void Update() { if (_ownsWorldPause) Time.timeScale=0; }
+        private void ReleaseWorldPause()
+        {
+            if (!_ownsWorldPause) return;
+            _ownsWorldPause = false;
+            if (!UnderworldFrontEnd.BlocksMenusOrTransitions && !OrpheusHud.IsTutorialModalActive)
+                Time.timeScale = _previousTimeScale > 0 ? _previousTimeScale : 1;
+        }
+        private void OnDisable()
+        {
+            if (_activePlaybackRoutine != null) StopCoroutine(_activePlaybackRoutine);
+            _activePlaybackRoutine = null; _workerRunning = false; _queue.Clear();
+            if (_voiceSource != null) _voiceSource.Stop();
+            ReleaseWorldPause();
+        }
+        private void OnDestroy() { if (Instance == this) Instance = null; }
 
         /// <summary>
         /// Cycles through Eurydice's acoustic ping replies on lyre plucks.
         /// </summary>
         public void PlayNextPingReply()
         {
+            if (UnderworldFrontEnd.BlocksGameplay) return;
             if (Time.unscaledTime - _lastPingTime < 2.0f) return;
             _lastPingTime = Time.unscaledTime;
 
@@ -379,6 +417,7 @@ namespace OrpheusBelow
         /// </summary>
         public void PlayLookBackTemptation()
         {
+            if (UnderworldFrontEnd.BlocksGameplay) return;
             if (Time.unscaledTime - _lastLookMeTime < 6.0f) return;
             _lastLookMeTime = Time.unscaledTime;
             Play(VoiceLineId.Eurydice_LookAtMe);
@@ -389,6 +428,7 @@ namespace OrpheusBelow
         /// </summary>
         public void PlaySeparationCallout()
         {
+            if (UnderworldFrontEnd.BlocksGameplay) return;
             if (Time.unscaledTime - _lastFarTime < 12.0f) return;
             _lastFarTime = Time.unscaledTime;
             Play(VoiceLineId.Eurydice_AreYouStillThere);

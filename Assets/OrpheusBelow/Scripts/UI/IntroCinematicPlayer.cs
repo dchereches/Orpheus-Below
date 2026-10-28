@@ -164,7 +164,14 @@ namespace OrpheusBelow
             if (!IsPlaying || _skipping) return;
             _paused=paused;
             if (_audio!=null && _audio.clip!=null)
-            { if (paused) _audio.Pause(); else if (!_waiting) _audio.UnPause(); }
+            {
+                if (paused)
+                {
+                    _audio.Pause();
+                    _clock=_audio.timeSamples/(float)_audio.clip.frequency;
+                }
+                else if (!_waiting) _audio.UnPause();
+            }
             if (_pauseLabel!=null) _pauseLabel.text=paused ? "Resume" : "Pause";
             if (_status!=null) _status.text=paused ? "Paused" : "";
         }
@@ -226,6 +233,15 @@ namespace OrpheusBelow
             _requests.Clear();
         }
         private void OnDestroy() { Finish(false); }
+
+        public IEnumerator FadeAway(float duration)
+        {
+            var group=gameObject.AddComponent<CanvasGroup>();
+            group.interactable=false; group.blocksRaycasts=true;
+            for (float elapsed=0; elapsed<duration; elapsed+=Time.unscaledDeltaTime)
+            { group.alpha=1-Mathf.Clamp01(elapsed/duration); yield return null; }
+            group.alpha=0;
+        }
 
         private static RectTransform Rect(string name,Transform parent)
         {

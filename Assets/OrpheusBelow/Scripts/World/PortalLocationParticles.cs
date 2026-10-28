@@ -19,6 +19,7 @@ namespace OrpheusBelow
             if (_particles != null) return;
             _particles = GetComponent<ParticleSystem>();
             if (_particles == null) _particles = gameObject.AddComponent<ParticleSystem>();
+            _particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
             var main = _particles.main;
             main.loop = true;

@@ -15,7 +15,7 @@ namespace OrpheusBelow
         private GameObject _waitingSoul;
         public ChamberExitDoor ActivePassage => UnderworldJourney.IsAscending ? returnDoor : exitDoor;
         public MeshRenderer background;
-        public bool showNavigationGizmos = true;
+        public bool showNavigationGizmos = false;
         public static PaintedChamberMap Active { get; private set; }
 
         private readonly List<Mesh> _ownedMeshes = new List<Mesh>();
@@ -29,7 +29,12 @@ namespace OrpheusBelow
         public Vector3 NearestWalkable(Vector3 world, float radius = .6f) => transform.position + definition.NearestWalkable(world - transform.position, radius);
         public static int DepthOrder(float imageY) => Mathf.RoundToInt(imageY * 8f);
 
-        private void OnEnable() { Active = this; }
+        private void OnEnable()
+        {
+            Active = this;
+            showNavigationGizmos = false;
+            if (overlayRoot != null) overlayRoot.gameObject.SetActive(false);
+        }
         private void OnDisable() { if (Active == this) Active = null; }
         public void MakeActive() { Active = this; }
 
@@ -310,8 +315,10 @@ namespace OrpheusBelow
 
         private void Update()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (Keyboard.current != null && Keyboard.current.f3Key.wasPressedThisFrame && overlayRoot != null)
                 overlayRoot.gameObject.SetActive(!overlayRoot.gameObject.activeSelf);
+#endif
         }
 
         private void LateUpdate()
