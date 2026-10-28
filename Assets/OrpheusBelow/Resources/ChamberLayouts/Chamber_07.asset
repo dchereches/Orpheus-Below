@@ -3820,7 +3820,7 @@ MonoBehaviour:
     uphill: {x: -85, y: -50}
   entrance: {x: 502, y: 733}
   exit: {x: 1171, y: 351}
-  returnExit: {x: 327, y: 802}
+  returnExit: {x: 365, y: 790}
   returnSpawn: {x: 1100, y: 388}
   reunionPoint: {x: 1171, y: 351}
   well: {x: 710, y: 605}

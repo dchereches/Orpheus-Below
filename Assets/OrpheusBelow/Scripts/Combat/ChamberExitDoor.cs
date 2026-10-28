@@ -64,6 +64,23 @@ namespace OrpheusBelow
             }
         }
 
+        private void Update()
+        {
+            if (!IsUnlocked || _used) return;
+            var player = OrpheusPlayerController.Instance;
+            if (player == null || player.IsGameOver) return;
+            if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive) return;
+
+            // Proximity failsafe: walking anywhere within 3.5m of the gate threshold activates it seamlessly
+            float dx = transform.position.x - player.transform.position.x;
+            float dz = transform.position.z - player.transform.position.z;
+            float distSq = dx * dx + dz * dz;
+            if (distSq <= 12.25f && Mathf.Abs(transform.position.y - player.transform.position.y) < 3.5f)
+            {
+                TryEnter(player.GetComponent<Collider>());
+            }
+        }
+
         private void OnTriggerEnter(Collider other)
             => TryEnter(other);
         private void OnTriggerStay(Collider other)
@@ -72,7 +89,7 @@ namespace OrpheusBelow
         private void TryEnter(Collider other)
         {
             if (!IsUnlocked || _used) return;
-            var player = other.GetComponent<OrpheusPlayerController>();
+            var player = other != null ? other.GetComponent<OrpheusPlayerController>() : OrpheusPlayerController.Instance;
             if (player == null || player.IsGameOver) return;
             if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive) return;
             if (journeyRole != JourneyDoorRole.Legacy)

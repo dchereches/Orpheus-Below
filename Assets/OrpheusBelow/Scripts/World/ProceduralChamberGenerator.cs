@@ -326,7 +326,7 @@ namespace OrpheusBelow
 
             BoxCollider trig = doorGo.AddComponent<BoxCollider>();
             trig.isTrigger = true;
-            trig.size = new Vector3(4.5f, 2.5f, 2.5f);
+            trig.size = new Vector3(5.5f, 3.5f, 4.5f);
             trig.center = new Vector3(0f, 1.0f, 0f);
 
             GameObject portalVis = new GameObject("ArchwayPortalGlow");
@@ -472,7 +472,7 @@ namespace OrpheusBelow
 
             BoxCollider trig = doorGo.AddComponent<BoxCollider>();
             trig.isTrigger = true;
-            trig.size = new Vector3(3.2f, 2.5f, 3.2f);
+            trig.size = new Vector3(5.5f, 3.5f, 4.5f);
             trig.center = new Vector3(-0.4f, 1.0f, -0.4f);
 
             GameObject portalVis = new GameObject("ArchwayPortalGlow");

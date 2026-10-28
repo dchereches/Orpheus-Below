@@ -142,10 +142,11 @@ namespace OrpheusBelow
             var go = new GameObject(name); go.transform.SetParent(transform, false);
             go.transform.position = ToWorld(point); go.transform.rotation = Quaternion.LookRotation(UnderworldCamera2D.IsoUpXZ);
             var trigger = go.AddComponent<BoxCollider>(); trigger.isTrigger = true;
-            trigger.center = Vector3.up; trigger.size = new Vector3(2.6f, 2.5f, 2.2f);
+            trigger.center = new Vector3(0f, 1.5f, 0f);
+            trigger.size = new Vector3(5.5f, 3.5f, 5.0f);
             var door = go.AddComponent<ChamberExitDoor>(); door.targetChamberIndex = target; door.journeyRole = role;
             var marker = new GameObject("ExitThreshold"); marker.transform.SetParent(go.transform, false);
-            marker.transform.localPosition = Vector3.up * .035f; marker.transform.localScale = new Vector3(1.7f, 1.7f, 1f);
+            marker.transform.localPosition = Vector3.up * .035f; marker.transform.localScale = new Vector3(2.8f, 2.8f, 1f);
             door.SetupVisuals(null, RenderPipeline2DSetup.AttachGroundDecal(marker, RenderPipeline2DSetup.RingSprite, Color.white, 20));
             return door;
         }
