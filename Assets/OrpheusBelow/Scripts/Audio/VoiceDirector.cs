@@ -287,6 +287,9 @@ namespace OrpheusBelow
 
         private IEnumerator PlayRoutine(VoiceLineData data, Action onComplete)
         {
+            // Startup dialogue waits behind the title and narrated introduction.
+            // Keep listener-pause bypass for voiced tutorial modals during a run.
+            while (UnderworldFrontEnd.BlocksGameplay) yield return null;
             AudioClip clip = GetOrLoadClip(data);
             float duration = clip != null ? clip.length : data.duration;
 

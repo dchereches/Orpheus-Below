@@ -1,0 +1,257 @@
+{
+  "duration": 223.553,
+  "shots": [
+    {
+      "resource": "Cinematic/Intro/01",
+      "start": 0,
+      "fade": 0.6,
+      "camera": "Slow push from 1.02 to 1.06 toward the gathering"
+    },
+    {
+      "resource": "Cinematic/Intro/02",
+      "start": 6.28,
+      "fade": 0.8,
+      "camera": "Gentle push toward their shared eyeline"
+    },
+    {
+      "resource": "Cinematic/Intro/03",
+      "start": 12.78,
+      "fade": 0.7,
+      "camera": "Slow lateral move from flowers toward the musicians"
+    },
+    {
+      "resource": "Cinematic/Intro/04",
+      "start": 17.04,
+      "fade": 0.7,
+      "camera": "Slow horizontal pan across the group"
+    },
+    {
+      "resource": "Cinematic/Intro/05",
+      "start": 22.1,
+      "fade": 0.7,
+      "camera": "Slow pull back to reveal the full circle"
+    },
+    {
+      "resource": "Cinematic/Intro/06",
+      "start": 25.76,
+      "fade": 0.8,
+      "camera": "Slow inward drift toward the joined hands and faces"
+    },
+    {
+      "resource": "Cinematic/Intro/07",
+      "start": 30.94,
+      "fade": 0.6,
+      "camera": "Subtle push into the shadowed side of the gathering"
+    },
+    {
+      "resource": "Cinematic/Intro/08",
+      "start": 36.76,
+      "fade": 0.8,
+      "camera": "Slow push from full figure toward the torch-bearing arm"
+    },
+    {
+      "resource": "Cinematic/Intro/09",
+      "start": 43.98,
+      "fade": 0.8,
+      "camera": "Very slow tilt from the raised hand toward the torch"
+    },
+    {
+      "resource": "Cinematic/Intro/10",
+      "start": 51.6,
+      "fade": 0.6,
+      "camera": "Slow push toward his eyes"
+    },
+    {
+      "resource": "Cinematic/Intro/11",
+      "start": 57.78,
+      "fade": 0.7,
+      "camera": "Gentle lateral drift toward his face and hand"
+    },
+    {
+      "resource": "Cinematic/Intro/12",
+      "start": 62.3,
+      "fade": 0.5,
+      "camera": "Slow close push to the embers"
+    },
+    {
+      "resource": "Cinematic/Intro/13",
+      "start": 68.62,
+      "fade": 0.8,
+      "camera": "Slow rise following the smoke away from the group"
+    },
+    {
+      "resource": "Cinematic/Intro/14",
+      "start": 75.52,
+      "fade": 0.6,
+      "camera": "Slow vertical drift from his face to the torch"
+    },
+    {
+      "resource": "Cinematic/Intro/15",
+      "start": 81.94,
+      "fade": 0.6,
+      "camera": "Slow push toward the negative space between smoke and couple"
+    },
+    {
+      "resource": "Cinematic/Intro/16",
+      "start": 87.1,
+      "fade": 0.8,
+      "camera": "Slow pull back into the landscape"
+    },
+    {
+      "resource": "Cinematic/Intro/17",
+      "start": 91.44,
+      "fade": 0.8,
+      "camera": "Slow track along the path through the grass"
+    },
+    {
+      "resource": "Cinematic/Intro/18",
+      "start": 98.54,
+      "fade": 0.7,
+      "camera": "Gentle downward drift from face toward the grass"
+    },
+    {
+      "resource": "Cinematic/Intro/19",
+      "start": 105.34,
+      "fade": 0.5,
+      "camera": "Slow ground-level push toward the concealed head"
+    },
+    {
+      "resource": "Cinematic/Intro/20",
+      "start": 110.36,
+      "fade": 0.2,
+      "camera": "Nearly locked frame with a minimal push"
+    },
+    {
+      "resource": "Cinematic/Intro/21",
+      "start": 112.58,
+      "fade": 0.04,
+      "camera": "Locked composition"
+    },
+    {
+      "resource": "Cinematic/Intro/22",
+      "start": 116.1,
+      "fade": 0.12,
+      "camera": "Short gentle downward move following the composition"
+    },
+    {
+      "resource": "Cinematic/Intro/23",
+      "start": 118.6,
+      "fade": 0.3,
+      "camera": "Slow inward drift toward the central group"
+    },
+    {
+      "resource": "Cinematic/Intro/24",
+      "start": 122.78,
+      "fade": 0.6,
+      "camera": "Very slow push, settling into stillness"
+    },
+    {
+      "resource": "Cinematic/Intro/25",
+      "start": 129.35,
+      "fade": 0.9,
+      "camera": "Slow pull away from the abandoned flowers"
+    },
+    {
+      "resource": "Cinematic/Intro/26",
+      "start": 133.2,
+      "fade": 0.8,
+      "camera": "Slow push from his whole posture toward his lowered face"
+    },
+    {
+      "resource": "Cinematic/Intro/27",
+      "start": 140.52,
+      "fade": 0.6,
+      "camera": "Restrained push toward his eyes"
+    },
+    {
+      "resource": "Cinematic/Intro/28",
+      "start": 144.18,
+      "fade": 0.7,
+      "camera": "Slow pan along the strings toward his resting fingertips"
+    },
+    {
+      "resource": "Cinematic/Intro/29",
+      "start": 149.7,
+      "fade": 0.7,
+      "camera": "Slow settle from the lyre to his lowered face"
+    },
+    {
+      "resource": "Cinematic/Intro/30",
+      "start": 152.94,
+      "fade": 0.8,
+      "camera": "Slow push following his new eyeline"
+    },
+    {
+      "resource": "Cinematic/Intro/31",
+      "start": 158.22,
+      "fade": 0.9,
+      "camera": "Slow downward move into the darkness"
+    },
+    {
+      "resource": "Cinematic/Intro/32",
+      "start": 164,
+      "fade": 0.9,
+      "camera": "Slow pull back revealing scale"
+    },
+    {
+      "resource": "Cinematic/Intro/33",
+      "start": 169.92,
+      "fade": 0.8,
+      "camera": "Slow push toward the ruler's shadowed gaze"
+    },
+    {
+      "resource": "Cinematic/Intro/34",
+      "start": 177.04,
+      "fade": 0.7,
+      "camera": "Slow rise from river reflections to distant halls"
+    },
+    {
+      "resource": "Cinematic/Intro/35",
+      "start": 180.54,
+      "fade": 0.5,
+      "camera": "Slow approach toward the seam of the gates"
+    },
+    {
+      "resource": "Cinematic/Intro/36",
+      "start": 184.86,
+      "fade": 0.8,
+      "camera": "Slow pull back emphasizing the gulf between light and darkness"
+    },
+    {
+      "resource": "Cinematic/Intro/37",
+      "start": 192.32,
+      "fade": 0.6,
+      "camera": "Slow push toward his fixed gaze"
+    },
+    {
+      "resource": "Cinematic/Intro/38",
+      "start": 197,
+      "fade": 0.6,
+      "camera": "Slow tilt from the lyre to his face"
+    },
+    {
+      "resource": "Cinematic/Intro/39",
+      "start": 200.72,
+      "fade": 0.7,
+      "camera": "Slow downward drift revealing the staircase"
+    },
+    {
+      "resource": "Cinematic/Intro/40",
+      "start": 205.4,
+      "fade": 0.7,
+      "camera": "Slow push past his shoulder toward the dark passage"
+    },
+    {
+      "resource": "Cinematic/Intro/41",
+      "start": 212.72,
+      "fade": 0.6,
+      "camera": "Slow rising push toward his face and instrument"
+    },
+    {
+      "resource": "Cinematic/Intro/42",
+      "start": 218.5,
+      "fade": 0.9,
+      "camera": "Slow downward follow, then hold through the quiet tail"
+    }
+  ]
+}

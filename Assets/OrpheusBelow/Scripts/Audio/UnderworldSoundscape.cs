@@ -9,6 +9,7 @@ namespace OrpheusBelow
         public static UnderworldSoundscape Instance { get; private set; }
         public float Volume { get; private set; }
         public bool IsMuted { get; private set; }
+        public bool CinematicActive { get; set; }
 
         private const int SampleRate = 22050;
         private const float Tau = Mathf.PI * 2f;
@@ -74,6 +75,7 @@ namespace OrpheusBelow
             float depth = director == null ? 0f : Mathf.Clamp01(director.CurrentChamberIndex / (float)(ProceduralChamberGenerator.TotalChambers - 1));
             _wind.volume = Mathf.Lerp(0.23f, 0.34f, depth) + _tension * 0.06f;
             _drone.volume = (menu ? 0.29f : 0.21f) + _tension * 0.17f;
+            if (CinematicActive) { _wind.volume = 0f; _drone.volume = 0f; }
         }
 
         public void SetVolume(float volume)

@@ -44,6 +44,9 @@ namespace OrpheusBelow
         private CanvasGroup _canvasGroup;
         private Coroutine _menuFadeRoutine;
         private bool _open, _inRun, _reloading, _ownsSerif, _ownsSans;
+        private bool _startingIntro, _introSucceeded;
+        private IntroCinematicPlayer _intro;
+        private Button _replay;
         private int _lastWidth, _lastHeight;
 
         // Main Menu controls (The 3 Greek Buttons)
@@ -233,6 +236,7 @@ namespace OrpheusBelow
             _primary = MakeGreekButton(main, "NewGameBtn", "Begin descent", 92, 400, 352, 52, BeginOrResume, out _primaryLabel, true);
             _settingsBtn = MakeGreekButton(main, "SettingsBtn", "Settings", 92, 468, 352, 48, ShowSettings, out _settingsLabel);
             _leave = MakeGreekButton(main, "LeaveBtn", "Quit", 92, 530, 352, 48, Leave, out _leaveLabel);
+            _replay = MakeGreekButton(main, "ReplayIntroBtn", "Replay introduction", 92, 590, 352, 30, ReplayIntro, out var replayLabel);
 
             Label(main, "Arrow keys / D-pad to navigate     Enter / A to select", 73, 669, 670, 23, 13, Muted, false);
             Label(main, "A song can cross what a blade cannot.", 760, 630, 445, 30, 18, Ivory).alignment = TextAnchor.MiddleRight;
@@ -466,6 +470,7 @@ namespace OrpheusBelow
 
         public void TogglePause()
         {
+            if (_intro != null && _intro.IsPlaying) { _intro.TogglePaused(); return; }
             if (_reloading) return;
             if (Time.frameCount == _lastToggleFrame) return;
             if (Time.unscaledTime - _lastToggleRealtime < 0.15f) return;
@@ -488,6 +493,7 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            if (_startingIntro) return;
             var keyboard = Keyboard.current;
             var pad = Gamepad.current;
             bool pause = (keyboard != null && (keyboard.escapeKey.wasPressedThisFrame || keyboard.pKey.wasPressedThisFrame))
@@ -598,6 +604,9 @@ namespace OrpheusBelow
             _eyebrow.text = _inRun ? UnderworldJourney.ProgressLabel : "The descent";
             _primaryLabel.text = _inRun ? "Resume journey" : "Begin descent";
             _leaveLabel.text = _inRun ? "Return to title" : "Quit";
+            _replay.gameObject.SetActive(!_inRun);
+            if (_inRun) LinkVertical(_primary, _settingsBtn, _leave);
+            else LinkVertical(_primary, _settingsBtn, _leave, _replay);
             _premise.text = _inRun
                 ? UnderworldJourney.Objective
                 : "Descend alone to the deepest throne.\nRescue Eurydice, then bring her home.";
@@ -609,6 +618,10 @@ namespace OrpheusBelow
 
         private void BeginOrResume()
         {
+            if (_startingIntro) return;
+            _startingIntro = true;
+            _canvasGroup.interactable = false;
+            _canvasGroup.blocksRaycasts = false;
             UnderworldSoundscape.Instance?.PlayMenuConfirm();
             if (_menuFadeRoutine != null) StopCoroutine(_menuFadeRoutine);
             _menuFadeRoutine = StartCoroutine(FadeOutBeforeResume());
@@ -617,6 +630,19 @@ namespace OrpheusBelow
         private IEnumerator FadeOutBeforeResume()
         {
             yield return FadeCanvas(0f, 0.22f);
+            if (IntroCinematicTimeline.ShouldPlay(_inRun, false))
+            {
+                yield return PlayIntroduction();
+                if (!_introSucceeded)
+                {
+                    _startingIntro = false;
+                    _menuFadeRoutine = null;
+                    OpenMenu();
+                    _premise.text = "The introduction could not be loaded.\nPlease try again.";
+                    yield break;
+                }
+            }
+            _startingIntro = false;
             _inRun = true;
             _open = false;
             _menuBlocksGameplay = false;
@@ -626,6 +652,38 @@ namespace OrpheusBelow
             Time.timeScale = OrpheusHud.IsTutorialModalActive ? 0f : 1f;
             AudioListener.pause = false;
             _menuFadeRoutine = null;
+        }
+
+        private void ReplayIntro()
+        {
+            if (_startingIntro || _inRun) return;
+            _startingIntro = true;
+            _canvasGroup.interactable = false;
+            _canvasGroup.blocksRaycasts = false;
+            if (_menuFadeRoutine != null) StopCoroutine(_menuFadeRoutine);
+            _menuFadeRoutine = StartCoroutine(ReplayIntroduction());
+        }
+
+        private IEnumerator ReplayIntroduction()
+        {
+            yield return FadeCanvas(0f, .22f);
+            yield return PlayIntroduction();
+            _startingIntro = false;
+            _menuFadeRoutine = null;
+            OpenMenu();
+            if (!_introSucceeded) _premise.text = "The introduction could not be loaded.\nPlease try again.";
+        }
+
+        private IEnumerator PlayIntroduction()
+        {
+            var go = new GameObject("NarratedIntroduction", typeof(RectTransform));
+            go.transform.SetParent(transform, false);
+            _intro = go.AddComponent<IntroCinematicPlayer>();
+            _intro.Begin();
+            while (_intro != null && _intro.IsPlaying) yield return null;
+            _introSucceeded = _intro != null && _intro.Succeeded;
+            Destroy(go);
+            _intro = null;
         }
 
         private void StartMenuFade(float target, bool enableInputAtEnd)
