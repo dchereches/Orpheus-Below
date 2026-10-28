@@ -98,6 +98,14 @@ namespace OrpheusBelow.EditorTools
                     player.TeleportToChamberSpawn(player.transform.position + UnderworldCamera2D.IsoRightXZ * 2); Call(director, "Update");
                     if (OrpheusHud.Instance.CurrentTutorialSpeaker != "Artemis") throw new Exception("Movement lesson did not advance with Artemis");
                     OrpheusHud.Instance.DismissTutorialModal(); Call(OrpheusLyreCombat.Instance, "HandleAttackPulse", .3f, false); Call(director, "Update");
+                    if (OrpheusHud.IsTutorialModalActive) OrpheusHud.Instance.DismissTutorialModal();
+                    Call(OrpheusLyreCombat.Instance, "HandleAttackPulse", .8f, true); Call(director, "Update");
+                    if (OrpheusHud.IsTutorialModalActive) OrpheusHud.Instance.DismissTutorialModal();
+                    OrpheusFluteChannel.Instance?.EnterFluteStance(); Call(director, "Update");
+                    if (OrpheusHud.IsTutorialModalActive) OrpheusHud.Instance.DismissTutorialModal();
+                    Call(player, "BeginDashCommon"); Call(director, "Update");
+                    if (OrpheusHud.IsTutorialModalActive) OrpheusHud.Instance.DismissTutorialModal();
+                    Call(OrpheusLyreCombat.Instance, "HandleAttackPulse", .3f, false); Call(director, "Update");
                     if (!UnderworldJourney.Progress.TutorialComplete) throw new Exception("Opening tutorial did not complete");
                     StepAfter(.1, 2); return;
                 }

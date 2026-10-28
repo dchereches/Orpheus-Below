@@ -12,12 +12,35 @@ namespace OrpheusBelow
         public bool IsUnlocked { get; private set; }
         [SerializeField] private SpriteRenderer _portalSr;
         [SerializeField] private SpriteRenderer _floorBeaconSr;
+        [SerializeField] private PortalLocationParticles _exitParticles;
         private bool _used;
+
+        private void Awake()
+        {
+            EnsureParticles();
+        }
 
         public void SetupVisuals(SpriteRenderer portalSr, SpriteRenderer floorBeaconSr)
         {
-            _portalSr = portalSr; _floorBeaconSr = floorBeaconSr;
+            _portalSr = portalSr;
+            _floorBeaconSr = floorBeaconSr;
+            EnsureParticles();
             SetUnlocked(false);
+        }
+
+        public void EnsureParticles()
+        {
+            if (_exitParticles != null) return;
+            _exitParticles = GetComponent<PortalLocationParticles>();
+            if (_exitParticles == null) _exitParticles = GetComponentInChildren<PortalLocationParticles>();
+            if (_exitParticles == null && _portalSr != null) _exitParticles = _portalSr.GetComponent<PortalLocationParticles>();
+            if (_exitParticles == null)
+            {
+                var pGo = new GameObject("ExitDoorParticles");
+                pGo.transform.SetParent(transform, false);
+                pGo.transform.localPosition = new Vector3(0f, 0.08f, 0f);
+                _exitParticles = pGo.AddComponent<PortalLocationParticles>();
+            }
         }
 
         public void SetUnlocked(bool unlocked)
@@ -29,6 +52,16 @@ namespace OrpheusBelow
                     : new Color(1.5f, .15f, .25f, .45f);
             if (_floorBeaconSr != null)
                 _floorBeaconSr.color = unlocked ? new Color(.6f, 2.4f, 1.5f, .85f) : new Color(.9f, .15f, .22f, .30f);
+
+            EnsureParticles();
+            if (_exitParticles != null)
+            {
+                Color accent = isFinalSunlightExit
+                    ? new Color(1.0f, 0.85f, 0.42f)
+                    : new Color(0.35f, 0.95f, 0.72f);
+                _exitParticles.SetAccent(accent);
+                _exitParticles.SetUnlocked(unlocked);
+            }
         }
 
         private void OnTriggerEnter(Collider other)

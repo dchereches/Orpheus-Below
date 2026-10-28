@@ -5,10 +5,10 @@ namespace OrpheusBelow
     public enum AsphodelTutorialStep
     {
         Move,
-        Dash,
         SoftNote,
         HardBoom,
         Flute,
+        Dash,
         Cadence,
         Complete
     }
@@ -32,10 +32,13 @@ namespace OrpheusBelow
     }
 
     /// <summary>
-    /// Spread-out progressive learning model for Orpheus Below:
-    ///   - Chamber 0 Entrance introduces Movement and the primary Soft Note strike.
-    ///   - Further mechanics (Dash, Hard Boom, Flute Stance, and Cadences) unlock organically
-    ///     as encounters and chambers progress ("learn features as you go").
+    /// Progressive learning model for Orpheus Below:
+    ///   - Move / Clear chambers objective
+    ///   - Defend with Soft Note [♪] (J / LMB / mic gentle sound)
+    ///   - Cause big repelling move with Hard Boom [Fermata] (K / RMB / mic loud sound)
+    ///   - Aulos flute combos force enemies to flee (F / LT)
+    ///   - Dash to evade attacks (Space / Shift)
+    ///   - Pluck cadences (Hymn of Dawn) to restore breath, crack shields, and open exits
     /// </summary>
     public sealed class AsphodelCombatTutorial
     {
@@ -66,6 +69,18 @@ namespace OrpheusBelow
                 case AsphodelTutorialStep.SoftNote:
                     satisfied = snapshot.SoftNoteCount > _baseline.SoftNoteCount;
                     break;
+                case AsphodelTutorialStep.HardBoom:
+                    satisfied = snapshot.HardBoomCount > _baseline.HardBoomCount;
+                    break;
+                case AsphodelTutorialStep.Flute:
+                    satisfied = snapshot.StanceEntryCount > _baseline.StanceEntryCount;
+                    break;
+                case AsphodelTutorialStep.Dash:
+                    satisfied = snapshot.DashUseCount > _baseline.DashUseCount;
+                    break;
+                case AsphodelTutorialStep.Cadence:
+                    satisfied = snapshot.CadenceCount > _baseline.CadenceCount || snapshot.SoftNoteCount > _baseline.SoftNoteCount;
+                    break;
                 default:
                     satisfied = true;
                     break;
@@ -73,17 +88,33 @@ namespace OrpheusBelow
 
             if (!satisfied) return false;
 
-            if (CurrentStep == AsphodelTutorialStep.Move)
+            switch (CurrentStep)
             {
-                CurrentStep = AsphodelTutorialStep.SoftNote;
-                _baseline = snapshot;
-                return true;
+                case AsphodelTutorialStep.Move:
+                    CurrentStep = AsphodelTutorialStep.SoftNote;
+                    break;
+                case AsphodelTutorialStep.SoftNote:
+                    CurrentStep = AsphodelTutorialStep.HardBoom;
+                    break;
+                case AsphodelTutorialStep.HardBoom:
+                    CurrentStep = AsphodelTutorialStep.Flute;
+                    break;
+                case AsphodelTutorialStep.Flute:
+                    CurrentStep = AsphodelTutorialStep.Dash;
+                    break;
+                case AsphodelTutorialStep.Dash:
+                    CurrentStep = AsphodelTutorialStep.Cadence;
+                    break;
+                case AsphodelTutorialStep.Cadence:
+                    CurrentStep = AsphodelTutorialStep.Complete;
+                    break;
+                default:
+                    CurrentStep = AsphodelTutorialStep.Complete;
+                    break;
             }
-            else
-            {
-                CurrentStep = AsphodelTutorialStep.Complete;
-                return true;
-            }
+
+            _baseline = snapshot;
+            return true;
         }
 
         public static string GetStepId(AsphodelTutorialStep step)
@@ -91,10 +122,10 @@ namespace OrpheusBelow
             switch (step)
             {
                 case AsphodelTutorialStep.Move: return "move";
-                case AsphodelTutorialStep.Dash: return "dash";
                 case AsphodelTutorialStep.SoftNote: return "soft-note";
                 case AsphodelTutorialStep.HardBoom: return "hard-boom";
                 case AsphodelTutorialStep.Flute: return "flute";
+                case AsphodelTutorialStep.Dash: return "dash";
                 case AsphodelTutorialStep.Cadence: return "cadence";
                 default: return "complete";
             }

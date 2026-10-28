@@ -123,6 +123,14 @@ namespace OrpheusBelow.EditorTools
                     player.TeleportToChamberSpawn(player.transform.position + UnderworldCamera2D.IsoRightXZ * 2);
                     Call(director, "Update"); OrpheusHud.Instance.DismissTutorialModal();
                     Call(OrpheusLyreCombat.Instance, "HandleAttackPulse", .3f, false); Call(director, "Update");
+                    if (OrpheusHud.IsTutorialModalActive) OrpheusHud.Instance.DismissTutorialModal();
+                    Call(OrpheusLyreCombat.Instance, "HandleAttackPulse", .8f, true); Call(director, "Update");
+                    if (OrpheusHud.IsTutorialModalActive) OrpheusHud.Instance.DismissTutorialModal();
+                    OrpheusFluteChannel.Instance?.EnterFluteStance(); Call(director, "Update");
+                    if (OrpheusHud.IsTutorialModalActive) OrpheusHud.Instance.DismissTutorialModal();
+                    Call(player, "BeginDashCommon"); Call(director, "Update");
+                    if (OrpheusHud.IsTutorialModalActive) OrpheusHud.Instance.DismissTutorialModal();
+                    Call(OrpheusLyreCombat.Instance, "HandleAttackPulse", .3f, false); Call(director, "Update");
                     Require(UnderworldJourney.Progress.TutorialComplete, "Opening actions did not spawn encounter");
                     Step(3, 2); return;
                 }

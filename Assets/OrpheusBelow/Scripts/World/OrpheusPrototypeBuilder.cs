@@ -508,22 +508,22 @@ namespace OrpheusBelow
             switch (step)
             {
                 case AsphodelTutorialStep.Move:
-                    text = "Orpheus, I am Artemis. I will guide your descent. Move with W A S D or the left stick.";
-                    break;
-                case AsphodelTutorialStep.Dash:
-                    text = "Space or Shift gives two invulnerable dashes. Cross danger cleanly.";
+                    text = "Orpheus, I am Artemis. Clear chambers to move further into the underworld! Move with W, A, S, D or the left stick.";
                     break;
                 case AsphodelTutorialStep.SoftNote:
-                    text = "Tap LMB or J — a light pluck plays a Small Quaver (♪) to keep the tempo.";
+                    text = "To defend yourself with a Quaver [♪], press J or Left Click (or make a gentle sound if using the mic) to strike shades and hold the tempo.";
                     break;
                 case AsphodelTutorialStep.HardBoom:
-                    text = "RMB, K, hold LMB, or a strong pulse plays a Boom Fermata. It shatters bronze armor, but costs breath.";
+                    text = "To cause a big repelling move, press K or Right Click (or make a loud sound if using the mic) to unleash a Boom Fermata—blasting enemies away and shattering armor!";
                     break;
                 case AsphodelTutorialStep.Flute:
-                    text = "Press F or the left trigger for the Aulos. Weaken Shades, then follow its four-note score of Quavers (♪) and Fermatas.";
+                    text = "Combos can force enemies to flee! Press F (or Left Trigger) to draw your Aulos and see the combo needed for the Cataclysmic Requiem.";
+                    break;
+                case AsphodelTutorialStep.Dash:
+                    text = "Press F to holster your Aulos when ready. Space or Shift grants two invulnerable dashes to evade strikes and reposition safely.";
                     break;
                 case AsphodelTutorialStep.Cadence:
-                    text = "Put the flute away (F). Aim and play [ ♪ — ♪ — Fermata ] (Hymn of Dawn): Quaver · Quaver · Fermata. Cadences break wards and restore breath.";
+                    text = "Pluck cadences like [ ♪ — ♪ — Fermata ] (Hymn of Dawn) to restore breath and crack grief-armor. Clear the chamber to unseal the exit!";
                     break;
                 default:
                     OrpheusHud.Instance?.HideEurydiceTutorial();
