@@ -3,7 +3,8 @@
   "rootNamespace": "OrpheusBelow",
   "references": [
     "OrpheusBelow.Runtime",
-    "Unity.RenderPipelines.Core.Runtime"
+    "Unity.RenderPipelines.Core.Runtime",
+    "Unity.Collections"
   ],
   "includePlatforms": [
     "Editor"

@@ -18,6 +18,9 @@ namespace OrpheusBelow
         private float _elapsed;
         private int _frame;
         private int _stateVersion;
+        private float _gaitPhase;
+        private bool _singing;
+        private bool _aulos;
         private readonly Queue<QueuedAnimation> _queued = new Queue<QueuedAnimation>();
 
         private struct QueuedAnimation
@@ -58,9 +61,31 @@ namespace OrpheusBelow
 
         public void Drive(OrpheusAnimationInput input)
         {
+            if (input.paused || input.deltaTime <= 0f) return;
+            float distance = new Vector2(input.groundDelta.x, input.groundDelta.z).magnitude;
+            bool moving = distance / input.deltaTime > .28f;
+            bool movementRequested = input.movementRequested ?? moving;
+            if ((input.dashing && _overridePriority < 60 && _overrideState != OrpheusAnimationState.DashStart) ||
+                (movementRequested && (_overridePriority <= 45 || _overrideState == OrpheusAnimationState.SingSustain)
+                    && _overrideState != OrpheusAnimationState.DashStart))
+            {
+                _overrideState = OrpheusAnimationState.None;
+                _overridePriority = 0; _overrideRemaining = 0f; _overrideIndefinite = false;
+                CancelQueuedBelow(46);
+                if (_queued.Count > 0) StartQueued();
+            }
+            if (!movementRequested && !input.dashing && !input.defeated && _overrideState == OrpheusAnimationState.None && _singing)
+                BeginOneShot(OrpheusAnimationState.SingSustain, 50, true);
             if (_overrideState != OrpheusAnimationState.None) input.action = _overrideState;
             _brain.Step(input);
             SetState(_brain.State);
+            if (IsGait(_state))
+            {
+                _gaitPhase = Mathf.Repeat(_gaitPhase + distance / (_brain.GroundSpeed >= 4.5f ? 3.8f : 2.5f), 1f);
+                OrpheusAnimationClip clip = _library?.FindClip(_state);
+                if (clip != null) _frame = Mathf.Min((int)(_gaitPhase * clip.framesPerDirection), clip.framesPerDirection - 1);
+            }
+            else if (!moving && _overrideState == OrpheusAnimationState.None) _gaitPhase = 0f;
             ApplyFrame();
         }
 
@@ -69,7 +94,7 @@ namespace OrpheusBelow
             if (paused || deltaTime <= 0f) return;
             _elapsed += deltaTime;
             OrpheusAnimationClip clip = _library?.FindClip(_state);
-            if (clip != null && clip.IsComplete)
+            if (clip != null && clip.IsComplete && !IsGait(_state))
             {
                 int raw = Mathf.FloorToInt(_elapsed * clip.fps);
                 _frame = clip.loop ? raw % clip.framesPerDirection : Mathf.Min(raw, clip.framesPerDirection - 1);
@@ -86,8 +111,9 @@ namespace OrpheusBelow
                     if (_queued.Count > 0) StartQueued();
                     else
                     {
-                        _brain.ResetMotion();
-                        SetState(OrpheusAnimationState.Idle);
+                        if (_aulos) BeginOneShot(OrpheusAnimationState.AulosLoop, 55, true);
+                        else if (_singing) BeginOneShot(OrpheusAnimationState.SingSustain, 50, true);
+                        else SetState(OrpheusAnimationState.Idle);
                     }
                 }
             }
@@ -101,6 +127,8 @@ namespace OrpheusBelow
             _overridePriority = 0;
             _overrideIndefinite = false;
             _queued.Clear();
+            _singing = _aulos = false;
+            _gaitPhase = 0f;
             _brain.ResetMotion();
             SetState(OrpheusAnimationState.Idle);
             _elapsed = 0f;
@@ -120,14 +148,25 @@ namespace OrpheusBelow
             CancelQueuedBelow(61);
             OrpheusAnimationState strike = comboIndex <= 1 ? OrpheusAnimationState.SoftStrike1
                 : comboIndex == 2 ? OrpheusAnimationState.SoftStrike2 : OrpheusAnimationState.SoftStrike3;
-            // Immediate strike execution for snappy, responsive action-combat
-            BeginOneShot(strike, 60);
+            // A two-frame draw on the opening chord; subsequent combo attacks cancel straight into their strike.
+            if (comboIndex <= 1 && _overrideState == OrpheusAnimationState.None)
+            {
+                BeginOneShot(OrpheusAnimationState.LyreDraw, 60, false, .025f);
+                QueueOneShot(strike, 60);
+            }
+            else BeginOneShot(strike, 60);
+            QueueOneShot(OrpheusAnimationState.SoftPluck, 40, false, .07f);
             if (comboIndex >= 3) QueueOneShot(OrpheusAnimationState.SoftBolt, 60);
         }
 
         public void TriggerDashStrike() => BeginOneShot(OrpheusAnimationState.DashStrike, 65);
-        public void TriggerDashStart() => BeginOneShot(OrpheusAnimationState.DashStart, 45, false, .045f);
-        public void TriggerDashSettle() => BeginOneShot(OrpheusAnimationState.DashSettle, 45);
+        public void TriggerDashStart()
+        {
+            _singing = false;
+            if (_overridePriority < 90) ClearOverride();
+            BeginOneShot(OrpheusAnimationState.DashStart, 45, false, .035f);
+        }
+        public void TriggerDashSettle() => BeginOneShot(OrpheusAnimationState.DashSettle, 45, false, .06f);
         public void TriggerChamberEntrance()
         {
             BeginOneShot(OrpheusAnimationState.ChamberEntrance, 20);
@@ -149,21 +188,33 @@ namespace OrpheusBelow
         public void TriggerCadence(OrpheusAnimationState state) => BeginOneShot(state, 75);
         public void TriggerCadencePerformance(OrpheusAnimationState state)
         {
+            _singing = false;
             BeginOneShot(OrpheusAnimationState.FullVoiceRelease, 75, false, .06f);
             QueueOneShot(state, 75);
         }
-        public void EnterFlute() => BeginOneShot(OrpheusAnimationState.AulosDraw, 55);
+        public void EnterFlute()
+        {
+            _singing = false;
+            _aulos = true;
+            BeginOneShot(OrpheusAnimationState.AulosDraw, 55);
+        }
         public void TriggerFluteNote(bool hard) => BeginOneShot(hard ? OrpheusAnimationState.AulosNoteHard : OrpheusAnimationState.AulosNoteSoft, 65);
         public void TriggerDiscord() => BeginOneShot(OrpheusAnimationState.Discord, 80);
         public void TriggerRequiem() => BeginOneShot(OrpheusAnimationState.Requiem, 85);
         public void TriggerHit(bool heavy)
         {
+            _singing = _aulos = false;
             BeginOneShot(heavy ? OrpheusAnimationState.HeavyHit : OrpheusAnimationState.LightHit, 90);
             if (!heavy) return;
             BeginOneShot(OrpheusAnimationState.GroundedHurt, 89);
             BeginOneShot(OrpheusAnimationState.Rise, 89);
         }
-        public void TriggerVictory() => BeginOneShot(OrpheusAnimationState.Victory, 20);
+        public void TriggerVictory()
+        {
+            _singing = _aulos = false;
+            ClearOverride();
+            BeginOneShot(OrpheusAnimationState.Victory, 100, true);
+        }
         public void TriggerChamberClear() => BeginOneShot(OrpheusAnimationState.ChamberClear, 20);
         public void TriggerGrief() => BeginOneShot(OrpheusAnimationState.EurydiceGrief, 100, true);
         public void TriggerBreath(bool exhausted)
@@ -176,15 +227,27 @@ namespace OrpheusBelow
 
         public void SetSinging(bool active)
         {
-            if (active) BeginOneShot(OrpheusAnimationState.SingSustain, 50, false, float.PositiveInfinity);
+            _singing = active;
+            if (active)
+            {
+                if (_overrideState == OrpheusAnimationState.None) BeginOneShot(OrpheusAnimationState.SingSustain, 50, true);
+            }
             else if (_overrideState == OrpheusAnimationState.SingSustain) BeginOneShot(OrpheusAnimationState.PhraseResolve, 50);
-            else ReplaceQueued(OrpheusAnimationState.SingSustain, OrpheusAnimationState.PhraseResolve, 50);
+            if (!active) ReplaceQueued(OrpheusAnimationState.SingSustain, OrpheusAnimationState.PhraseResolve, 50);
         }
 
         public void SetAulosLoop(bool active)
         {
-            if (active) BeginOneShot(OrpheusAnimationState.AulosLoop, 55, false, float.PositiveInfinity);
-            else if (_overrideState == OrpheusAnimationState.AulosLoop) ClearOverride();
+            _aulos = active;
+            if (active)
+            {
+                if (_overrideState == OrpheusAnimationState.None) BeginOneShot(OrpheusAnimationState.AulosLoop, 55, true);
+            }
+            else if (_overrideState == OrpheusAnimationState.AulosLoop || _overrideState == OrpheusAnimationState.AulosDraw)
+            {
+                ClearOverride(); SetState(OrpheusAnimationState.Idle);
+            }
+            if (!active) RemoveQueued(OrpheusAnimationState.AulosLoop, OrpheusAnimationState.AulosDraw);
         }
 
         private void BeginOneShot(OrpheusAnimationState state, int priority, bool indefinite = false, float duration = -1f)
@@ -206,6 +269,8 @@ namespace OrpheusBelow
             }
             _overrideRemaining = duration;
             SetState(state);
+            // A repeated attack is a new action, even when the state name is unchanged.
+            _elapsed = 0f; _frame = 0;
             ApplyFrame();
         }
 
@@ -252,9 +317,23 @@ namespace OrpheusBelow
             _overrideRemaining = 0f;
             _overrideIndefinite = false;
             _queued.Clear();
-            _brain.ResetMotion();
-            SetState(OrpheusAnimationState.Idle);
         }
+
+        private void RemoveQueued(OrpheusAnimationState a, OrpheusAnimationState b)
+        {
+            var kept = new Queue<QueuedAnimation>();
+            while (_queued.Count > 0)
+            {
+                QueuedAnimation item = _queued.Dequeue();
+                if (item.state != a && item.state != b) kept.Enqueue(item);
+            }
+            while (kept.Count > 0) _queued.Enqueue(kept.Dequeue());
+        }
+
+        private static bool IsGait(OrpheusAnimationState state)
+            => state == OrpheusAnimationState.Walk || state == OrpheusAnimationState.Run ||
+               state == OrpheusAnimationState.Start || state == OrpheusAnimationState.Turn ||
+               state == OrpheusAnimationState.StairAscent || state == OrpheusAnimationState.StairDescent;
 
         private void SetState(OrpheusAnimationState state)
         {
@@ -270,6 +349,7 @@ namespace OrpheusBelow
             if (!UsesProductionArt || _body == null) return;
             Sprite frame = _library.Frame(_state, _brain.Facing, _frame);
             if (frame != null) _body.sprite = frame;
+            _body.flipX = _library.FindClip(_state).mirrorWest && (int)_brain.Facing >= (int)EurydiceFacing.NorthWest;
             ApplyEffectFrame();
             OrpheusOilSurface.Apply(_body, PaintedChamberMap.Active?.definition);
         }
@@ -278,7 +358,7 @@ namespace OrpheusBelow
         {
             if (_effects == null) return;
             int row = EffectRow(_state);
-            if (row < 0 || _library.effects == null || _library.effects.Length < (row + 1) * 8)
+            if (row < 0 || _library.FindClip(_state).embeddedEffects || _library.effects == null || _library.effects.Length < (row + 1) * 8)
             {
                 _effects.sprite = null;
                 _effects.enabled = false;
@@ -289,8 +369,9 @@ namespace OrpheusBelow
             _effects.enabled = _effects.sprite != null;
             if (_effects.enabled)
             {
-                // Soft semi-transparent tint for dash effects (row 1)
-                _effects.color = row == 1 ? new Color(1f, 0.55f, 0.40f, 0.42f) : Color.white;
+                _effects.color = row == 6 ? new Color(1f, .9f, .72f, .32f) : Color.white;
+                _effects.transform.localPosition = Vector3.up * 1.6f;
+                _effects.transform.localScale = Vector3.one * .55f;
             }
         }
 
@@ -303,10 +384,6 @@ namespace OrpheusBelow
                 case OrpheusAnimationState.SoftStrike3:
                 case OrpheusAnimationState.SoftBolt:
                 case OrpheusAnimationState.SoftPluck: return 0;
-                case OrpheusAnimationState.DashStart:
-                case OrpheusAnimationState.DashTravel:
-                case OrpheusAnimationState.DashSettle:
-                case OrpheusAnimationState.DashStrike: return 1;
                 case OrpheusAnimationState.HardBoomWindup:
                 case OrpheusAnimationState.HardBoomRelease: return 2;
                 case OrpheusAnimationState.HymnBeam: return 3;

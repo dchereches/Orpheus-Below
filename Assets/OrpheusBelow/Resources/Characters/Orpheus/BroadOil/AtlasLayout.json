@@ -1,5 +1,10 @@
 {
   "grid": { "columns": 8, "rows": 8 },
+  "gridExceptions": {
+    "LyreSinging": { "columns": 8, "rows": 7, "runtimeDirectionalRows": [0, 1, 2, 3, 4, 3, 2, 1], "mirrorWest": true },
+    "WalkCycle": { "columns": 4, "rows": 5, "runtimeDirectionalRows": [0, 1, 2, 3, 4, 3, 2, 1], "mirrorWest": true },
+    "RunCycle": { "columns": 4, "rows": 5, "runtimeDirectionalRows": [0, 1, 2, 3, 4, 3, 2, 1], "mirrorWest": true }
+  },
   "bodyRows": ["South", "SouthEast", "East", "NorthEast", "North", "NorthWest", "West", "SouthWest"],
   "atlases": {
     "IdleTransitions": ["Idle", "CloakSettle", "RestlessIdle", "Glance", "StartAnticipation", "FirstStep", "Stop", "Turn"],
@@ -15,5 +20,5 @@
     "Effects": ["SoftChord", "Dash", "HardBoom", "HymnBeam", "Sanctuary", "Convergence", "MusicalPulse", "DiscordRequiem"]
   },
   "effectColumns": ["anticipation", "begin", "expandA", "expandB", "crest", "release", "fadeA", "fadeB"],
-  "runtime": { "visibleHeight": 3.9, "controlledDirections": 8, "passiveDirections": 4, "installedBodySlots": 1360, "distinctBodySourceFrames": 640, "distinctReferencedSpritesIncludingEffects": 704, "effectFrames": 64 }
+  "runtime": { "visibleHeight": 3.9, "controlledDirections": 8, "passiveDirections": 4, "installedBodySlots": 1296, "distinctBodySourceFrames": 672, "distinctReferencedSpritesIncludingEffects": 736, "effectFrames": 64 }
 }
