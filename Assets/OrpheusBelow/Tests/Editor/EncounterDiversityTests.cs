@@ -43,12 +43,12 @@ namespace OrpheusBelow.Tests
             finally { Object.DestroyImmediate(go); }
         }
 
-        [TestCase(BossIdentity.Tripod, 792f)]
-        [TestCase(BossIdentity.MysticEyeWarden, 1008f)]
-        [TestCase(BossIdentity.CerberusHoundOfHades, 1656f)]
-        [TestCase(BossIdentity.WingedSentinel, 1188f)]
-        [TestCase(BossIdentity.MaskedMonk, 864f)]
-        [TestCase(BossIdentity.Shepherd, 1116f)]
+        [TestCase(BossIdentity.Tripod, 1584f)]
+        [TestCase(BossIdentity.MysticEyeWarden, 2016f)]
+        [TestCase(BossIdentity.CerberusHoundOfHades, 3312f)]
+        [TestCase(BossIdentity.WingedSentinel, 2376f)]
+        [TestCase(BossIdentity.MaskedMonk, 1728f)]
+        [TestCase(BossIdentity.Shepherd, 2232f)]
         public void MajorBossHealthIsTwiceThePreviousConfiguredHealth(BossIdentity kind, float health)
         {
             var go = new GameObject("HealthierBoss");

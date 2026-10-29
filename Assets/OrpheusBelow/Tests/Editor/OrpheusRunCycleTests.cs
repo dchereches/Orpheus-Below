@@ -11,10 +11,125 @@ namespace OrpheusBelow.Tests
     public class OrpheusRunCycleTests
     {
         [Serializable] private sealed class Layout { public Rig[] rigs; }
-        [Serializable] private sealed class Rig { public Vector2 hip, knee, ankle, shoulder, elbow, wrist; public int sourceWidth, sourceHeight; }
+        [Serializable] private sealed class Rig { public Vector2 hip, knee, ankle, shoulder, elbow, wrist; public int sourceWidth, sourceHeight, sourceX, sourceY; public Garment[] garments; }
+        [Serializable] private sealed class Garment { public Vector2 min, max, sourceMin, sourceMax; }
         private static OrpheusAnimationLibrary Library => Resources.Load<OrpheusAnimationLibrary>(OrpheusAnimationLibrary.ResourcePath);
         private static Rig Source(int row) => JsonUtility.FromJson<Layout>(Resources.Load<TextAsset>("Characters/Orpheus/BroadOil/AthleticRunLayout").text).rigs[row];
         private static Vector2 Uv(Rig r, Vector2 pixel) => new Vector2(pixel.x / r.sourceWidth, 1f - pixel.y / r.sourceHeight);
+
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)]
+        public void RunningPaintIsAnExactExtractOfTheEstablishedWalkingCharacter(int row)
+        {
+            Rig r = Source(row);
+            Texture2D established = Resources.Load<Texture2D>("Characters/Orpheus/BroadOil/WalkCycle");
+            Sprite canonical = Library.sourceFrames.Single(x => x.name == "AthleticSource_" + row.ToString("D2"));
+            Assert.That(canonical.texture.width, Is.EqualTo(r.sourceWidth));
+            Assert.That(canonical.texture.height, Is.EqualTo(r.sourceHeight));
+            var nativePaint = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            try
+            {
+                string path = System.IO.Path.Combine(Application.dataPath,
+                    "OrpheusBelow/Resources/Characters/Orpheus/BroadOil/" + canonical.texture.name + ".png");
+                Assert.That(ImageConversion.LoadImage(nativePaint, System.IO.File.ReadAllBytes(path)), Is.True);
+                Assert.That(nativePaint.width, Is.EqualTo(r.sourceWidth));
+                Assert.That(nativePaint.height, Is.EqualTo(r.sourceHeight));
+                Color32[] expected = established.GetPixels32(), extracted = nativePaint.GetPixels32(), installed = canonical.texture.GetPixels32();
+                int bottom = established.height - r.sourceY - r.sourceHeight;
+                for (int y = 0; y < r.sourceHeight; y++) for (int x = 0; x < r.sourceWidth; x++)
+                {
+                    int index = y * r.sourceWidth + x;
+                    Color32 paint = expected[(bottom + y) * established.width + r.sourceX + x];
+                    // The saved PNG must copy every source RGBA byte, including hidden RGB.
+                    Assert.That(extracted[index], Is.EqualTo(paint), "Canonical PNG extraction changed established character paint.");
+                    Assert.That(installed[index].a, Is.EqualTo(paint.a), "Import changed the character silhouette alpha.");
+                    // alphaIsTransparency bleeds edge colors into fully transparent texels on
+                    // reimport. Those RGB values cannot contribute to rendered character paint.
+                    if (paint.a > 0)
+                        Assert.That(installed[index], Is.EqualTo(paint),
+                            "The run must keep the existing face, hair, coat, palette and brushwork pixel for pixel.");
+                }
+            }
+            finally { Object.DestroyImmediate(nativePaint); }
+        }
+
+        [Test]
+        public void EveryRunningFrameUsesOnlyTheMatchingEstablishedCharacterPaint()
+        {
+            int[] rows = { 0, 1, 2, 3, 4, 3, 2, 1 };
+            OrpheusAnimationClip run = Library.FindClip(OrpheusAnimationState.Run);
+            for (int direction = 0; direction < 8; direction++)
+            {
+                Texture2D expected = Library.sourceFrames.Single(x => x.name == "AthleticSource_" + rows[direction].ToString("D2")).texture;
+                for (int phase = 0; phase < run.framesPerDirection; phase++)
+                    Assert.That(run.frames[direction * run.framesPerDirection + phase].texture, Is.SameAs(expected),
+                        "No phase may bind a former red-cape generated source or the crouching RunCycle paint.");
+            }
+        }
+
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)]
+        public void RetainedCoatBackingUsesOpaqueEstablishedGarmentPaint(int row)
+        {
+            Rig rig = Source(row);
+            Sprite canonical = Library.sourceFrames.Single(x => x.name == "AthleticSource_" + row.ToString("D2"));
+            Color32[] paint = canonical.texture.GetPixels32();
+            Assert.That(rig.garments, Has.Length.EqualTo(2));
+            foreach (Garment panel in rig.garments)
+            {
+                // The complete coat overlap gets backing, including old wrists that covered
+                // cloth. Backing samples garment UVs, so it cannot retain a frozen skin hand.
+                for (int y = (int)panel.sourceMin.y; y <= (int)panel.sourceMax.y; y++)
+                    for (int x = (int)panel.sourceMin.x; x <= (int)panel.sourceMax.x; x++)
+                        Assert.That(paint[(rig.sourceHeight - 1 - y) * rig.sourceWidth + x].a, Is.GreaterThan(150),
+                            "A transparent donor would reopen the coat when an arm swings away.");
+                // Only excised arm regions need backing; an arbitrary panel midpoint may be
+                // intact torso or a deliberately excluded leg. The rendered gap locations are
+                // tested throughout the full cycle in OldArmCutsInsideTheCoatStayCoveredThroughoutTheRun.
+            }
+        }
+
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)]
+        public void OldArmCutsInsideTheCoatStayCoveredThroughoutTheRun(int row)
+        {
+            // Native pixels where rendered review found stair/background holes below the old
+            // wrists or behind the old elbows. These locations must have retained cloth.
+            Vector2[][] holes = {
+                new[] { new Vector2(91, 175), new Vector2(194, 173) },
+                new[] { new Vector2(112, 175), new Vector2(199, 145) },
+                new[] { new Vector2(128, 181), new Vector2(181, 134) },
+                new[] { new Vector2(205, 126), new Vector2(136, 147) },
+                new[] { new Vector2(72, 145), new Vector2(214, 173) }
+            };
+            Rig rig = Source(row);
+            for (int index = 0; index < 2; index++)
+            {
+                Garment panel = rig.garments[index]; Vector2 hole = holes[row][index];
+                Assert.That(hole.x, Is.InRange(panel.min.x, panel.max.x));
+                Assert.That(hole.y, Is.InRange(panel.min.y, panel.max.y));
+                Vector2 t = new Vector2((hole.x - panel.min.x) / (panel.max.x - panel.min.x),
+                    (hole.y - panel.min.y) / (panel.max.y - panel.min.y));
+                Vector2 donor = Uv(rig, panel.sourceMin + Vector2.Scale(panel.sourceMax - panel.sourceMin, t));
+                for (int phase = 0; phase < 16; phase++)
+                    Assert.That(PaintedPoints(Library.Frame(OrpheusAnimationState.Run, (EurydiceFacing)row, phase), donor).Count,
+                        Is.GreaterThanOrEqualTo(2), "Missing cloth beneath old arm cut at " + hole + " in phase " + phase);
+            }
+        }
+
+        [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)]
+        public void UnownedOriginalHandTipsNeverReturnAsStationaryTorsoPaint(int row)
+        {
+            Vector2[][] tips = {
+                Array.Empty<Vector2>(),
+                new[] { new Vector2(203, 155), new Vector2(201, 155), new Vector2(197, 151) },
+                new[] { new Vector2(195, 157), new Vector2(213, 157), new Vector2(195, 159) },
+                new[] { new Vector2(215, 152), new Vector2(217, 162), new Vector2(217, 164) },
+                new[] { new Vector2(75, 174), new Vector2(73, 172), new Vector2(73, 174) }
+            };
+            Rig rig = Source(row);
+            foreach (Vector2 originalTip in tips[row])
+                for (int phase = 0; phase < 16; phase++)
+                    Assert.That(PaintedPoints(Library.Frame(OrpheusAnimationState.Run, (EurydiceFacing)row, phase), Uv(rig, originalTip)),
+                        Is.Empty, "Original terminal paint outside the moving limb must not reconnect to the torso at " + originalTip);
+        }
 
         [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)]
         public void FullBodyRunAlternatesPaintedBootsAndCounterSwingsBothFists(int row)
@@ -60,7 +175,7 @@ namespace OrpheusBelow.Tests
         [Test]
         public void PaintedTorsoRisesDuringFlightInsteadOfRemainingFrozenInACrouch()
         {
-            Rig r = Source(2); Vector2 hair = Uv(r, new Vector2(r.hip.x, 200));
+            Rig r = Source(2); Vector2 hair = Uv(r, new Vector2(r.hip.x, r.sourceHeight * .09f));
             var contact = PaintedPoints(Library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East, 0), hair);
             var flight = PaintedPoints(Library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East, 6), hair);
             Assert.That(contact.Count, Is.EqualTo(1)); Assert.That(flight.Count, Is.EqualTo(1));

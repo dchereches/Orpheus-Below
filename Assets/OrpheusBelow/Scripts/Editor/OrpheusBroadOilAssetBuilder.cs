@@ -16,6 +16,7 @@ namespace OrpheusBelow.EditorTools
         public static void Build()
         {
             AssetDatabase.Refresh();
+            ExtractAthleticPaint();
             string libraryPath = Folder + "Library.asset";
             var library = AssetDatabase.LoadAssetAtPath<OrpheusAnimationLibrary>(libraryPath);
             if (library == null)
@@ -178,7 +179,36 @@ namespace OrpheusBelow.EditorTools
         }
 
         [Serializable] private sealed class AthleticSources { public AthleticSource[] rigs; }
-        [Serializable] private sealed class AthleticSource { public Vector2 hip, ankle; public int sourceWidth, sourceHeight; }
+        [Serializable] private sealed class AthleticSource { public Vector2 hip, ankle; public int sourceWidth, sourceHeight, sourceX, sourceY; }
+
+        // These are lossless atlas extracts, not separately generated character designs. Keeping
+        // the canonical paints derived from WalkCycle makes future costume changes reproducible.
+        private static void ExtractAthleticPaint()
+        {
+            var layout = JsonUtility.FromJson<AthleticSources>(System.IO.File.ReadAllText(Folder + "AthleticRunLayout.json"));
+            string[] directions = { "South", "SouthEast", "East", "NorthEast", "North" };
+            string sourcePath = Folder + "WalkCycle.png";
+            var importer = (TextureImporter)AssetImporter.GetAtPath(sourcePath);
+            importer.isReadable = true; importer.npotScale = TextureImporterNPOTScale.None;
+            importer.textureCompression = TextureImporterCompression.Uncompressed; importer.maxTextureSize = 4096;
+            importer.SaveAndReimport();
+            Texture2D atlas = AssetDatabase.LoadAssetAtPath<Texture2D>(sourcePath);
+            for (int row = 0; row < directions.Length; row++)
+            {
+                AthleticSource rig = layout.rigs[row];
+                var crop = new Texture2D(rig.sourceWidth, rig.sourceHeight, TextureFormat.RGBA32, false);
+                crop.SetPixels(atlas.GetPixels(rig.sourceX, atlas.height - rig.sourceY - rig.sourceHeight,
+                    rig.sourceWidth, rig.sourceHeight));
+                crop.Apply();
+                string target = Folder + "Athletic" + directions[row] + ".png";
+                byte[] png = crop.EncodeToPNG();
+                // Avoid needless source churn and reimports on an unchanged bake.
+                if (!System.IO.File.Exists(target) || !System.Linq.Enumerable.SequenceEqual(System.IO.File.ReadAllBytes(target), png))
+                    System.IO.File.WriteAllBytes(target, png);
+                Object.DestroyImmediate(crop);
+                AssetDatabase.ImportAsset(target, ImportAssetOptions.ForceUpdate);
+            }
+        }
         private static Sprite[] BakeAthleticSources(OrpheusAnimationLibrary owner)
         {
             var layout = JsonUtility.FromJson<AthleticSources>(System.IO.File.ReadAllText(Folder + "AthleticRunLayout.json"));

@@ -15,7 +15,6 @@ namespace OrpheusBelow
         {
             public ShadeEnemy enemy;
             public RectTransform root, fill;
-            public Text label;
             public float width;
         }
         private sealed class Number
@@ -45,16 +44,13 @@ namespace OrpheusBelow
             float width = enemy.IsMiniBoss ? 134f : 96f;
             RectTransform root = Rect("EnemyHealth", owner._canvas, new Vector2(width + 4, 34));
             Image frame = root.gameObject.AddComponent<Image>(); frame.color = new Color(.5f, .39f, .23f, .95f); frame.raycastTarget = false;
-            // A small plate, with the bar separated from its numerical readout.
+            // A compact plate keeps the painted silhouette clear.
             root.sizeDelta = new Vector2(width + 4, 10);
             var bg = Rect("HealthTrack", root, new Vector2(width, 6)); bg.gameObject.AddComponent<Image>().color = new Color(.12f, .06f, .05f, 1);
             var fill = Rect("HealthFill", root, new Vector2(width, 6));
             fill.anchorMin = fill.anchorMax = fill.pivot = new Vector2(0, .5f); fill.anchoredPosition = new Vector2(2, 0);
             fill.gameObject.AddComponent<Image>().color = enemy.hasBronzeShield ? GameTypography.Gold : new Color(.75f, .21f, .18f, 1);
-            Text label = Text("EnemyHealthValue", root, 18, new Vector2(width + 40, 24));
-            label.rectTransform.anchoredPosition = new Vector2(0, -20);
-            label.text = Mathf.CeilToInt(enemy.CurrentHealth) + " / " + Mathf.CeilToInt(enemy.maxHealth);
-            owner._vitals.Add(new Vitals { enemy = enemy, root = root, fill = fill, label = label, width = width });
+            owner._vitals.Add(new Vitals { enemy = enemy, root = root, fill = fill, width = width });
         }
         public static void Damage(Transform target, float applied, bool heavy = false, bool shielded = false)
         {
@@ -107,7 +103,6 @@ namespace OrpheusBelow
                 float fraction = Mathf.Clamp01(value.enemy.CurrentHealth / Mathf.Max(1, value.enemy.maxHealth));
                 value.fill.sizeDelta = new Vector2(value.width * fraction, 6);
                 value.fill.GetComponent<Image>().color = value.enemy.hasBronzeShield ? GameTypography.Gold : new Color(.75f, .21f, .18f, 1);
-                value.label.text = Mathf.CeilToInt(value.enemy.CurrentHealth) + " / " + Mathf.CeilToInt(value.enemy.maxHealth);
             }
             float dt = UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive ? 0f : Time.deltaTime;
             for (int i = _numbers.Count - 1; i >= 0; i--)

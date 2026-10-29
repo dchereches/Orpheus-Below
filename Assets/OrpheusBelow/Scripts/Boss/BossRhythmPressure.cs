@@ -48,7 +48,9 @@ namespace OrpheusBelow
                     Vector3 source = _center + UnderworldCamera2D.IsoRightXZ * 8f + Vector3.up * .65f;
                     var shot = PaintedEnemyProjectile.Spawn(_actor.Kind, 0, source,
                         -UnderworldCamera2D.IsoRightXZ, 10.5f, 16f, .58f, 1.8f);
-                    shot.Owner = _actor; _shots.Add(shot);
+                    shot.Owner = _actor;
+                    if (_actor.OwnerBoss != null) shot.UseBossArt(_actor.OwnerBoss.identity);
+                    _shots.Add(shot);
                 }
                 AttacksReleased++; _pattern++; _wait = .58f;
                 return;

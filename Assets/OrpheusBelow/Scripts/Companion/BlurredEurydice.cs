@@ -60,6 +60,9 @@ namespace OrpheusBelow
             var depth = gameObject.AddComponent<PaintedActorDepth>();
             depth.Exclude(_paintedEffects);
             depth.Exclude(_sanctuaryRingSr);
+            var groundShadow = GetComponent<EurydiceGroundShadow>();
+            if (groundShadow == null) groundShadow = gameObject.AddComponent<EurydiceGroundShadow>();
+            groundShadow.Initialize(this);
             if (orpheus != null)
             {
                 SnapBehindOrpheus(orpheus.position - UnderworldCamera2D.IsoUpXZ * followLagDistance);
@@ -285,6 +288,7 @@ namespace OrpheusBelow
         {
             if (IsVanished) return;
             IsVanished = true;
+            GetComponent<EurydiceGroundShadow>()?.Hide();
             IsTeachingPose = false;
             _spriteAnimator?.SetState(EurydiceAnimationState.Shatter);
             _focus01 = 1f;

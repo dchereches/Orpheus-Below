@@ -1,26 +1,35 @@
-# Athletic run source art and posing
+# Athletic run: established paint and full-body posing
 
-Generated with the built-in `image_gen` tool on2026-10-29. The five `Athletic*.png` files are new canonical upright paintings. They replace the crouched RunCycle torso for the Run state; the earlier sheets remain available for unrelated motions. `AthleticRunLayout.json` records native-pixel joint positions and anatomical masks.
+Updated 2026-10-29. The five `Athletic*.png` files are now **lossless extracts of the existing `WalkCycle.png` atlas**, not newly generated illustrations. This keeps Orpheus's existing face, short tousled hair, long charcoal tattered coat, muted red lining, linen sleeves, simple gold lyre and broad brushwork unchanged between walking and running.
 
-The final animation is authored as full-body skeletal poses from these paintings, not a claim that a generated contact sheet provided consecutive motion. Eight-figure generation trials repeated poses and were discarded. Sixteen deterministic phases animate both arms/legs and the torso/cape, with opposite anatomy and flight explicitly controlled.
+No image-generation prompt was used for this revision. The former generated short burgundy cape and dense curly hair paintings have been replaced. Their generation prompts are no longer instructions for the current assets.
 
-## Selected East source prompt
+## Reproducible extraction
 
-ONE complete full-body transparent game sprite, Orpheus running SCREEN RIGHT, strict side profile, painted in large simple oil brush marks. FIRST image supplies EXACT skeleton pose and framing, the SECOND image supplies ONLY character/clothing design. Paint the FIRST skeleton as Orpheus: short curly dark hair, young Greek face, white rolled-sleeve shirt, dark charcoal trousers, brown boots, short tattered burgundy/dark cape, golden lyre strapped on upper back. Match body proportions from the skeleton, standing tall hips, chest leaned just10 degrees, head up. Keep the whole character inside image with blank margin. The NEAR white sleeve and fist must be swung BACKWARDS, to the LEFT of his ribcage, with elbow bent90degrees. The FAR white sleeve reaches forwards to the RIGHT. NEAR leg is mostly straight landing below hip with boot touching ground; FAR heel is folded high BACK toward buttock. Exactly this opposing arms/legs pose. Brown skeleton limb is nearest to viewer, blue limb is behind, so preserve their overlap; final clothing uses normal reference colors. No running crouch, no stiff arms, no scenery, no floor, no shadow, no text, no skeleton or blueprint lines. Transparent background. Anatomically convincing athletic run pose, handsome simple readable silhouette.
+`OrpheusBroadOilAssetBuilder.Build` first extracts the canonical paints directly from `WalkCycle.png`, using `sourceX`, `sourceY`, `sourceWidth` and `sourceHeight` in `AthleticRunLayout.json`. Coordinates use a top-left origin in the original 1024 x 1536 atlas. The alpha and RGB channels are copied without recoloring, repainting, keying or rescaling.
 
-References: a code-authored contact-pose skeleton and `IdleTransitions.png` for identity/style. Final selected built-in output: `exec-1ff4f883-de3f-4a5b-ad20-8161a0494c40.png`.
-
-## Other four views: final prompt template
-
-Create ONE complete isolated Orpheus game sprite, same exact character proportions, clothes, face and hand-painted oil look as the FIRST reference. Camera [VIEW]. Slightly elevated isometric game camera looking down36degrees, orthographic, whole body visible with generous empty margin. This is the UPRIGHT RUN CONTACT POSE, tall hips, nearly vertical spine only10degreeforwardlean, head up. One long trouser leg extended down landing under/slightly ahead of hip; other knee back with heel folded high toward buttock. Both boots visible. Arms clearly counter-swing: one bent white-sleeved arm swung backwards past ribcage, other arm drives forwards with flexed elbow. The white sleeves/forearms/hands must be anatomically intact and visible, not hidden entirely under cloak. Same short curly brown/dark hair, young Greek musician, white rolled linen sleeves, charcoal dark trousers, brown leather boots, burgundy and dark short tattered trailing cape, small gold lyre strapped high on back as first ref. SECOND ref only contextual character style. NO crouching, sneaking, hunched back, squatting, frozen arms; athletic runner. Strong simple broad oil paint shapes, readable silhouette at game size, no extra decorative props. Truly transparent background. No floor, scenery, shadows, text or extra characters. Only this [NAME] view.
-
-References: selected East source and `IdleTransitions.png`.
-
-| Name | VIEW |
+| Canonical paint | Atlas rectangle x, y, width, height |
 |---|---|
-| South | directly FROM THE FRONT, running toward viewer, face facing viewer, both eyes visible, shoulders square to viewer, not three-quarter or side |
-| SouthEast | FROM THE FRONT THREE-QUARTER, running toward bottom-right, both front chest and right-facing profile visible |
-| NorthEast | FROM REAR THREE-QUARTER, running toward upper-right away from viewer, back and right side visible, only sliver of cheek |
-| North | directly FROM BEHIND, running away from viewer toward top, back of curly head and lyre centered, face completely hidden, shoulders square |
+| South | 0, 0, 256, 294 |
+| SouthEast | 0, 294, 256, 288 |
+| East | 0, 582, 256, 298 |
+| NorthEast | 0, 880, 256, 293 |
+| North | 0, 1173, 256, 363 |
 
-Western views mirror the corresponding eastern painting. Sources retain their original alpha; no keying or manual recoloring was used.
+The unequal row cuts follow the empty gutters between the actual figures. All five extracts were compared with the corresponding original atlas pixels: zero differing RGBA pixels. Native joint samples were also checked to land on opaque character paint.
+
+## Athletic posing
+
+The canonical paintings supply painted anatomy and costume; their walking pose does not supply the running motion. The existing sixteen-phase full-body run skeleton still drives both legs, both bent counter-swinging arms, an upright pelvis, torso pitch, flight and cape sway. Native anatomical landmarks and extraction masks have been reauthored for the established art in `AthleticRunLayout.json`. Hip-to-ankle height is fitted by `OrpheusRunMotion.FitLegLengths` before posing, preserving an upright runner even when the source leg is bent.
+
+Western views mirror the matching eastern paint. The long coat is retained as the torso/cape layer while the two isolated leg and arm layers follow the athletic gait.
+
+Retained cloth backing closes the coat where the original sleeves or hanging wrists covered it. The backing samples opaque coat paint from the same unchanged canonical PNG; it never retains original skin or hand paint. Explicit source-hand terminal cuts and a body-only island pass remove original fingertip remnants before the coat silhouette is measured. Backing replaces only actual arm/hand cuts, never unrelated leg cuts inside the panel bounds. Below the upper sleeves, it is clipped to cuts with retained coat paint on both sides. A final connectivity pass removes disconnected backing.
+
+## Regression checks
+
+`OrpheusRunCycleTests.RunningPaintIsAnExactExtractOfTheEstablishedWalkingCharacter` compares every canonical RGBA pixel against the established atlas. `EveryRunningFrameUsesOnlyTheMatchingEstablishedCharacterPaint` verifies every direction and phase binds its corresponding canonical texture. Existing rendered-boot, counter-arm, torso-flight, support, start/turn, stair and runtime-culling tests continue to exercise the posed result.
+
+The backing tests check opaque donor paint and retained geometry in every phase, including ten specific native locations where rendered review exposed gaps behind elbows and beneath old wrists.
+
+Twelve additional native terminal locations must have no original UV binding in any phase, preventing old fingertip paint from reconnecting as stationary appendages. A standalone native-alpha audit also checked all five views for retained source-hand body cells and unrelated leg cells used as backing; both counts were zero in every view.

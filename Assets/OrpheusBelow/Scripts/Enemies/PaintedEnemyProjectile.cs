@@ -8,6 +8,9 @@ namespace OrpheusBelow
         public bool Removed { get; private set; }
         public PaintedEnemyKind Kind { get; private set; }
         private Vector3 _direction;
+        private SpriteRenderer _bossArt;
+        private BossIdentity _bossIdentity;
+        private float _artElapsed;
         private float _speed, _damage, _radius, _life;
         public static PaintedEnemyProjectile Spawn(PaintedEnemyKind kind, int fxRow, Vector3 position, Vector3 direction, float speed, float damage, float radius = .25f, float lifetime = 4f)
         {
@@ -24,7 +27,21 @@ namespace OrpheusBelow
                 art.transform.SetParent(go.transform, true);
                 art.GetComponent<EnemyPaintedEffects>().Loop = true;
             }
+            if (projectile.Owner != null && projectile.Owner.OwnerBoss != null)
+                projectile.UseBossArt(projectile.Owner.OwnerBoss.identity);
             return projectile;
+        }
+        public void UseBossArt(BossIdentity identity)
+        {
+            if (_bossArt != null) return;
+            foreach (var effect in GetComponentsInChildren<EnemyPaintedEffects>())
+            {
+                effect.gameObject.SetActive(false);
+                if (Application.isPlaying) Destroy(effect.gameObject); else DestroyImmediate(effect.gameObject);
+            }
+            _bossIdentity = identity;
+            _bossArt = BossAttackArt.Attach(transform, identity, 2.4f, 19);
+            _bossArt.transform.rotation = UnderworldCamera2D.CurrentBillboardRotation;
         }
         private void Update()
         {
@@ -37,6 +54,16 @@ namespace OrpheusBelow
         {
             if (Removed || dt <= 0) return;
             var player = OrpheusPlayerController.Instance;
+            if (_bossArt != null)
+            {
+                _artElapsed += dt;
+                Vector2 motion = BossAttackArt.Motion(_bossIdentity, _artElapsed);
+                _bossArt.transform.rotation = UnderworldCamera2D.CurrentBillboardRotation * Quaternion.Euler(0, 0, motion.y);
+                _bossArt.transform.localPosition = Vector3.up * motion.x;
+                // Canonical paint travels left; reflect the brush wake when a guardian fires right.
+                bool rightward = Vector3.Dot(_direction, UnderworldCamera2D.IsoRightXZ) > 0;
+                _bossArt.flipX = (_bossIdentity == BossIdentity.Tripod) != rightward;
+            }
             Vector3 delta = _direction * (_speed * dt);
             float first = float.PositiveInfinity; Collider collider = null;
             foreach (var initial in Physics.OverlapSphere(transform.position, _radius, ~0, QueryTriggerInteraction.Ignore))
