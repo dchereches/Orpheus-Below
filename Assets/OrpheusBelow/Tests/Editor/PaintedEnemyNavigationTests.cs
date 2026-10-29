@@ -19,10 +19,54 @@ namespace OrpheusBelow.Tests
             try
             {
                 Vector3 start = map.ToWorld(layout.entrance);
-                Vector3 goal = map.ToWorld(chamber == 4 && detour ? new Vector2(1000, 450) : layout.exit);
+                Vector3 goal = map.ToWorld(chamber == 4 && detour ? new Vector2(971, 767) : layout.exit);
                 if (detour) Assert.That(SegmentIsWalkable(map, start, goal, .45f), Is.False, "Fixture must require a detour.");
                 int legs = FollowRoute(map, NewNavigation(), start, goal, .45f);
                 if (detour) Assert.That(legs, Is.GreaterThan(1), "A blocked straight line needs intermediate waypoints.");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(map.gameObject); }
+        }
+
+        [TestCase("ArrivalArchThreshold")]
+        [TestCase("ArrivalArchTopCap")]
+        public void ReviewedAshGardenArrivalArchRemainsReachableByActualEnemyPursuit(string sourceProbe)
+        {
+            var layout = Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_05");
+            var trace = PaintedChamberNavigationTrace.Load(5);
+            var probe = Array.Find(trace.walkableProbes, p => p.name == sourceProbe);
+            Assert.That(probe, Is.Not.Null, "The independently reviewed arch witness must remain in the fixture.");
+            var map = MakeMap(layout);
+            try
+            {
+                Vector3 start = map.ToWorld(layout.entrance), goal = map.ToWorld(probe.Point);
+                Assert.That(map.IsWalkable(start, .4f) && map.IsWalkable(goal, .4f), Is.True);
+                FollowRoute(map, NewNavigation(), start, goal, .4f);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(map.gameObject); }
+        }
+
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)]
+        [TestCase(4)] [TestCase(5)] [TestCase(6)] [TestCase(7)]
+        public void ReviewedJourneyAndAuthoredEnemySpawnsStayConnectedAtActualPursuitClearance(int chamber)
+        {
+            const float clearance = .4f; // PaintedEnemyActor.MoveToward uses this production clearance.
+            var layout = Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_" + chamber.ToString("D2"));
+            var map = MakeMap(layout);
+            try
+            {
+                Vector3 entrance = map.ToWorld(layout.entrance), encounter = map.ToWorld(layout.encounterCenter);
+                FollowRoute(map, NewNavigation(), entrance, encounter, clearance);
+                FollowRoute(map, NewNavigation(), encounter, map.ToWorld(layout.exit), clearance);
+                FollowRoute(map, NewNavigation(), map.ToWorld(layout.returnSpawn), map.ToWorld(layout.returnExit), clearance);
+                // Authored enemy sources need one connectivity check each; journey legs above already
+                // exercise the actual per-frame waypoint driver and swept-clear route assertions.
+                foreach (var source in layout.enemySpawns)
+                {
+                    Vector3 spawn = map.ToWorld(source);
+                    Assert.That(map.IsWalkable(spawn, clearance), Is.True, "Reviewed enemy source is blocked: " + source);
+                    Assert.That(PaintedEnemyNavigation.CanReach(map, spawn, encounter, clearance), Is.True,
+                        "Reviewed enemy source cannot pursue the encounter in chamber " + chamber + ": " + source);
+                }
             }
             finally { UnityEngine.Object.DestroyImmediate(map.gameObject); }
         }
@@ -123,8 +167,8 @@ namespace OrpheusBelow.Tests
             var map = MakeMap(layout);
             try
             {
-                Vector3 start = map.ToWorld(new Vector2(368, 485));
-                Vector3 goal = map.ToWorld(new Vector2(460, 500));
+                Vector3 start = map.ToWorld(new Vector2(414, 450));
+                Vector3 goal = map.ToWorld(new Vector2(414, 510));
                 Assert.That(SegmentIsWalkable(map, start, goal, .45f), Is.True, "The former well approach is clear floor.");
                 Assert.That(Next(NewNavigation(), map, start, goal, .45f), Is.EqualTo(goal),
                     "Removing the basin must also remove its invisible navigation reservation.");
@@ -158,13 +202,18 @@ namespace OrpheusBelow.Tests
 
         private static bool SegmentIsWalkable(PaintedChamberMap map, Vector3 start, Vector3 end, float clearance, Collider solid = null)
         {
+            if (!map.IsWalkable(start, clearance) || !map.IsWalkable(end, clearance)) return false;
+            // Cross-check the navigator's segment-distance test against the independent gameplay
+            // swept-circle implementation. This catches a corner between samples continuously.
+            if (map.SweepMovement(start, end - start, clearance, out float fraction, out _) && fraction < .99999f) return false;
+            if (solid == null) return true;
+            // Preserve the optional physical fixture check without resampling painted geometry
+            // for every .15m frame in FollowRoute.
             int steps = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(start, end) / .04f));
             for (int i = 0; i <= steps; i++)
             {
-                Vector3 point = Vector3.Lerp(start, end, i / (float)steps);
-                if (!map.IsWalkable(point, clearance)) return false;
-                point.y += .75f;
-                if (solid != null && Vector3.Distance(point, solid.ClosestPoint(point)) < clearance) return false;
+                Vector3 point = Vector3.Lerp(start, end, i / (float)steps) + Vector3.up * .75f;
+                if (Vector3.Distance(point, solid.ClosestPoint(point)) < clearance) return false;
             }
             return true;
         }

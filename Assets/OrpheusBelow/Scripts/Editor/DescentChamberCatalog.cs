@@ -281,6 +281,7 @@ namespace OrpheusBelow.EditorTools
             }
             d.reunionPoint = d.exit;
             AuthorStairs(d, i);
+            PaintedNavigationAuthoring.ApplyReviewedTrace(d);
         }
 
         private static void AuthorDominantLight(PaintedChamberDefinition d, int i)

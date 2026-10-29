@@ -1,0 +1,372 @@
+{
+  "version": 1,
+  "framesPerDirection": 4,
+  "cycleDistance": 3.2,
+  "mirrorWest": true,
+  "nativeAcceptanceRequired": true,
+  "coordinateSpace": "Ankle positions are approximate manually observed native source-cell pixels, X right/Y down; no source art is edited.",
+  "sourceProcessing": "Original generated PNG bytes preserved. Standard Unity texture import resampling only, shared original idle shader/material/tint/alpha policy.",
+  "sources": [
+    {
+      "file": "SouthFour.png",
+      "width": 1254,
+      "height": 1254,
+      "columns": 2,
+      "rows": 2,
+      "maxTextureSize": 256,
+      "sha256": "5c1a28335cdd652ebadce188f52a1ff434dcd3d65b5a5746fe1273df1727c60a"
+    },
+    {
+      "file": "SouthPassBFinal.png",
+      "width": 1254,
+      "height": 1254,
+      "columns": 1,
+      "rows": 1,
+      "maxTextureSize": 128,
+      "sha256": "3d5c9c4edd093de4a5347f588b2b56bd434e691cb3f7afc6f666f9feebc83647"
+    },
+    {
+      "file": "SouthEastFour.png",
+      "width": 1254,
+      "height": 1254,
+      "columns": 2,
+      "rows": 2,
+      "maxTextureSize": 256,
+      "sha256": "93ac779bf0597954b4229bc0a1ca55a0ed71a3728557a1ec8b50df3f1de7a1a8"
+    },
+    {
+      "file": "SouthEastPassB.png",
+      "width": 1097,
+      "height": 1434,
+      "columns": 1,
+      "rows": 1,
+      "maxTextureSize": 128,
+      "sha256": "6f9d422b13fef8804ffb20e2d4a4ee67822d2ad7a5eaafc7381f8ff7e97d519d"
+    },
+    {
+      "file": "East.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 4,
+      "rows": 2,
+      "maxTextureSize": 512,
+      "sha256": "2ddfdd07979b6da97dda479844bedd8cb8a4b41c031c615e5894b1a9a31d6054"
+    },
+    {
+      "file": "NorthEastFour.png",
+      "width": 1254,
+      "height": 1254,
+      "columns": 2,
+      "rows": 2,
+      "maxTextureSize": 256,
+      "sha256": "382752c8da92654e788d40f0ae37cb646edecd5cee440348b333c56c97231ec8"
+    },
+    {
+      "file": "NorthEastPassB.png",
+      "width": 1254,
+      "height": 1254,
+      "columns": 1,
+      "rows": 1,
+      "maxTextureSize": 128,
+      "sha256": "3a29f8a8fdffb1894526649021207847384b15c2541a554f821e5f7ceec56030"
+    },
+    {
+      "file": "NorthFour.png",
+      "width": 1254,
+      "height": 1254,
+      "columns": 2,
+      "rows": 2,
+      "maxTextureSize": 256,
+      "sha256": "d84b4e10767831e9ddd871b779bf17c0830e1cbb88634290ffb652e4162daead"
+    },
+    {
+      "file": "NorthPassB.png",
+      "width": 1254,
+      "height": 1254,
+      "columns": 1,
+      "rows": 1,
+      "maxTextureSize": 128,
+      "sha256": "efd059a543fae113e4881a16b248f5dd4f8ee8b2c0f70303b472a5c3acfa4f00"
+    }
+  ],
+  "views": [
+    {
+      "facing": "South",
+      "frames": [
+        {
+          "source": "SouthFour.png",
+          "cell": 0,
+          "role": "contactA"
+        },
+        {
+          "source": "SouthFour.png",
+          "cell": 1,
+          "role": "passingA"
+        },
+        {
+          "source": "SouthFour.png",
+          "cell": 2,
+          "role": "contactB"
+        },
+        {
+          "source": "SouthPassBFinal.png",
+          "cell": 0,
+          "role": "passingB"
+        }
+      ]
+    },
+    {
+      "facing": "SouthEast",
+      "frames": [
+        {
+          "source": "SouthEastFour.png",
+          "cell": 0,
+          "role": "contactA"
+        },
+        {
+          "source": "SouthEastFour.png",
+          "cell": 1,
+          "role": "passingA"
+        },
+        {
+          "source": "SouthEastFour.png",
+          "cell": 2,
+          "role": "contactB"
+        },
+        {
+          "source": "SouthEastPassB.png",
+          "cell": 0,
+          "role": "passingB"
+        }
+      ]
+    },
+    {
+      "facing": "East",
+      "frames": [
+        {
+          "source": "East.png",
+          "cell": 0,
+          "role": "contactA"
+        },
+        {
+          "source": "East.png",
+          "cell": 2,
+          "role": "passingA"
+        },
+        {
+          "source": "East.png",
+          "cell": 4,
+          "role": "contactB"
+        },
+        {
+          "source": "East.png",
+          "cell": 6,
+          "role": "passingB"
+        }
+      ]
+    },
+    {
+      "facing": "NorthEast",
+      "frames": [
+        {
+          "source": "NorthEastFour.png",
+          "cell": 0,
+          "role": "contactA"
+        },
+        {
+          "source": "NorthEastFour.png",
+          "cell": 1,
+          "role": "passingA"
+        },
+        {
+          "source": "NorthEastFour.png",
+          "cell": 2,
+          "role": "contactB"
+        },
+        {
+          "source": "NorthEastPassB.png",
+          "cell": 0,
+          "role": "passingB"
+        }
+      ]
+    },
+    {
+      "facing": "North",
+      "frames": [
+        {
+          "source": "NorthFour.png",
+          "cell": 0,
+          "role": "contactA"
+        },
+        {
+          "source": "NorthFour.png",
+          "cell": 1,
+          "role": "passingA"
+        },
+        {
+          "source": "NorthFour.png",
+          "cell": 2,
+          "role": "contactB"
+        },
+        {
+          "source": "NorthPassB.png",
+          "cell": 0,
+          "role": "passingB"
+        }
+      ]
+    }
+  ],
+  "observations": [
+    {
+      "view": "South",
+      "phase": 0,
+      "legA": "viewerLeft",
+      "legB": "viewerRight",
+      "ankleA": {
+        "x": 290,
+        "y": 521
+      },
+      "ankleB": {
+        "x": 356,
+        "y": 438
+      },
+      "axis": "y",
+      "expectedSign": 1,
+      "confidence": "high",
+      "note": "Visible viewer-left contact below viewer-right boot."
+    },
+    {
+      "view": "South",
+      "phase": 2,
+      "legA": "viewerLeft",
+      "legB": "viewerRight",
+      "ankleA": {
+        "x": 289,
+        "y": 428
+      },
+      "ankleB": {
+        "x": 346,
+        "y": 509
+      },
+      "axis": "y",
+      "expectedSign": -1,
+      "confidence": "high",
+      "note": "Visible viewer-right opposite contact below viewer-left boot."
+    },
+    {
+      "view": "East",
+      "phase": 1,
+      "legA": "near",
+      "legB": "far",
+      "ankleA": {
+        "x": 160,
+        "y": 432
+      },
+      "ankleB": {
+        "x": 224,
+        "y": 399
+      },
+      "axis": "x",
+      "expectedSign": -1,
+      "confidence": "high",
+      "note": "Foreground support overlaps far passing leg in original source cell2."
+    },
+    {
+      "view": "East",
+      "phase": 3,
+      "legA": "near",
+      "legB": "far",
+      "ankleA": {
+        "x": 206,
+        "y": 419
+      },
+      "ankleB": {
+        "x": 143,
+        "y": 436
+      },
+      "axis": "x",
+      "expectedSign": 1,
+      "confidence": "high",
+      "note": "Near passing leg crosses foreground, opposite original cell2; source cell6."
+    },
+    {
+      "view": "North",
+      "phase": 0,
+      "legA": "viewerLeft",
+      "legB": "viewerRight",
+      "ankleA": {
+        "x": 294,
+        "y": 548
+      },
+      "ankleB": {
+        "x": 363,
+        "y": 479
+      },
+      "axis": "y",
+      "expectedSign": 1,
+      "confidence": "high",
+      "note": "Visible viewer-left support lower than viewer-right recovery."
+    },
+    {
+      "view": "North",
+      "phase": 2,
+      "legA": "viewerLeft",
+      "legB": "viewerRight",
+      "ankleA": {
+        "x": 286,
+        "y": 467
+      },
+      "ankleB": {
+        "x": 342,
+        "y": 540
+      },
+      "axis": "y",
+      "expectedSign": -1,
+      "confidence": "high",
+      "note": "Visible viewer-right opposite support lower than viewer-left recovery."
+    },
+    {
+      "view": "North",
+      "phase": 3,
+      "legA": "viewerLeft",
+      "legB": "viewerRight",
+      "ankleA": {
+        "x": 592,
+        "y": 985
+      },
+      "ankleB": {
+        "x": 706,
+        "y": 1102
+      },
+      "axis": "y",
+      "expectedSign": -1,
+      "confidence": "high",
+      "note": "Single PassB reverses visible screen support side relative to Four passingA."
+    },
+    {
+      "view": "South",
+      "phase": 3,
+      "legA": "viewerLeft",
+      "legB": "viewerRight",
+      "ankleA": {
+        "x": 595,
+        "y": 945
+      },
+      "ankleB": {
+        "x": 695,
+        "y": 1070
+      },
+      "axis": "y",
+      "expectedSign": -1,
+      "confidence": "high",
+      "note": "Targeted PassB edit preserves Four head/torso proportions; visible screen-right support is below screen-left low recovery."
+    }
+  ],
+  "limitations": [
+    "SouthEast and NorthEast contact-leg hip attachment remains occluded or ambiguous under coat. No automated anatomical correctness claim for those contacts.",
+    "High-confidence landmark assertions validate painted boot positions and observed screen-side reversal; they do not infer anatomy from unique file names.",
+    "Passing B singles repaint the upper body and proportions. Native playback must assess frame continuity and identity against original idle.",
+    "East retains about143 painted pixels after512import, versus original idle120-124. Other views target about110 after256Four/128single import.",
+    "South passingB was retargeted to Four appearance after native review found a proportion mismatch; corrected source requires a fresh native bake and playback review."
+  ]
+}

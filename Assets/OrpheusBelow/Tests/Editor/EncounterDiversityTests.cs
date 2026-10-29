@@ -99,13 +99,14 @@ namespace OrpheusBelow.Tests
             System.Array.Sort(heights); return heights[heights.Length/2];
         }
 
-        [Test]
-        public void RecurringEnemiesUseDistinctAuthoredSpawnPositions()
+        [TestCase(4)]
+        [TestCase(5)]
+        public void RecurringEnemiesUseDistinctAuthoredSpawnPositions(int chamber)
         {
             var go = new GameObject("VariedSpawnPositions");
             try
             {
-                var wave = ProceduralChamberGenerator.GenerateChamber(go.transform,4,8,Vector3.zero).wave1;
+                var wave = ProceduralChamberGenerator.GenerateChamber(go.transform,chamber,8,Vector3.zero).wave1;
                 Assert.That(wave.Count, Is.GreaterThanOrEqualTo(3));
                 for(int i=0;i<wave.Count;i++) for(int j=i+1;j<wave.Count;j++)
                     Assert.That(Vector2.Distance(wave[i].localOffsetXZ,wave[j].localOffsetXZ), Is.GreaterThan(1), "Recurring enemies must not stack at the old single mini-boss anchor.");

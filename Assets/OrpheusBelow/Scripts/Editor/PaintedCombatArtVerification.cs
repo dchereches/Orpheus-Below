@@ -35,6 +35,11 @@ namespace OrpheusBelow.EditorTools
         private static Renderer[] _runHiddenRenderers;
         private static Vector3 _stage, _movementStart;
         private static EurydiceFacing _facing;
+        private static Material _idleSurface;
+        private static Color _idleTint;
+        private static OrpheusAnimationClip RunClip => Resources.Load<OrpheusAnimationLibrary>(OrpheusAnimationLibrary.ResourcePath)
+            .FindClip(OrpheusAnimationState.Run);
+        private static int RunFrameCount => RunClip.framesPerDirection;
         private static readonly HashSet<int> RunFrames = new HashSet<int>();
         private static readonly HashSet<int> DirectionRunFrames = new HashSet<int>();
         private static readonly HashSet<string> AttackPaths = new HashSet<string>();
@@ -52,7 +57,8 @@ namespace OrpheusBelow.EditorTools
         }
         [Serializable] private sealed class Evidence
         {
-            public string result, error, facing;
+            public string result, error, facing, runSource;
+            public int authoredRunFrames;
             public int runtimeErrors, uniqueRunFrames, shadowChangedPixels;
             public int orpheusShadowPixels, eurydiceShadowPixels, enemyShadowPixels;
             public int waitingEurydiceShadowPixels;
@@ -91,6 +97,7 @@ namespace OrpheusBelow.EditorTools
             Directory.CreateDirectory(Output);
             Directory.CreateDirectory(Path.GetFullPath(Path.Combine(Application.dataPath, "../Logs/PaintedChambers")));
             File.Delete(Path.Combine(Output, "result.json")); File.Delete(Path.Combine(Output, "failure.txt"));
+            foreach (string priorRun in Directory.GetFiles(Output, "orpheus-run-*.png")) File.Delete(priorRun);
             SessionState.SetInt(Key + "Viewed", PlayerPrefs.GetInt(IntroCinematicPlayer.ViewedKey, -1));
             SessionState.SetInt(Key + "Mode", PlayerPrefs.GetInt("OrpheusBelow.SensorSourceMode", -1));
             SessionState.SetInt(Key + "InputBackground", (int)InputSystem.settings.backgroundBehavior);
@@ -144,6 +151,10 @@ namespace OrpheusBelow.EditorTools
                     _facing = _animator.Facing;
                     for (int i = 0; i < 4; i++) Drive(Vector2.zero);
                     Require(_animator.CurrentState == OrpheusAnimationState.Idle, "Orpheus did not settle into idle.");
+                    Require(RunFrameCount == 4 && RunClip.mirrorWest && RunClip.frames.All(s => s.name.StartsWith("NaturalRun_")),
+                        "Natural running must use four reviewed contact/passing keys in each facing.");
+                    _idleSurface = _animator.BodyRenderer.sharedMaterial; _idleTint = _animator.BodyRenderer.color;
+                    Proof.runSource = "NaturalRunV2/ManualSourceMapping"; Proof.authoredRunFrames = RunFrameCount;
                     Capture("orpheus-idle-same-facing");
                     _movementStart = _player.transform.position; _step = 0; Proof.actualRunDistance = 0;
                     Step(5); return;
@@ -162,11 +173,12 @@ namespace OrpheusBelow.EditorTools
                     if (_animator.CurrentState == OrpheusAnimationState.Run)
                     {
                         Require(_animator.Facing == _facing, "Running changed the selected comparison facing.");
+                        VerifyRunPaint();
                         if (RunFrames.Add(_animator.CurrentFrame)) Capture("orpheus-run-frame-" + _animator.CurrentFrame.ToString("D2"));
                     }
-                    if (RunFrames.Count < 16 && _step < 128) return;
-                    Require(Proof.actualRunDistance > .75f && RunFrames.Count == 16,
-                        "Actual controller movement did not show all sixteen running poses; seen=" + RunFrames.Count);
+                    if (RunFrames.Count < RunFrameCount && _step < 128) return;
+                    Require(Proof.actualRunDistance > .75f && RunFrames.Count == RunFrameCount,
+                        "Actual controller movement did not show every authored running pose; seen=" + RunFrames.Count);
                     Proof.facing = _facing.ToString(); Proof.uniqueRunFrames = RunFrames.Count;
                     _directionIndex = 0; BeginDirection(); Step(51); return;
                 }
@@ -186,14 +198,16 @@ namespace OrpheusBelow.EditorTools
                     if (_animator.CurrentState == OrpheusAnimationState.Run)
                     {
                         Require(_animator.Facing == RunFacings[_directionIndex], "Actual running direction differs from input: " + _currentDirection.facing);
-                        if (DirectionRunFrames.Add(_animator.CurrentFrame) && (_animator.CurrentFrame == 4 || _animator.CurrentFrame == 12))
+                        VerifyRunPaint();
+                        if (DirectionRunFrames.Add(_animator.CurrentFrame))
                             Capture("orpheus-run-" + _currentDirection.facing + "-frame-" + _animator.CurrentFrame.ToString("D2"));
                     }
-                    if (DirectionRunFrames.Count < 16 && _directionStep < 128) return;
-                    Require(DirectionRunFrames.Count == 16 && _currentDirection.actualRunDistance > .75f,
-                        "Direction did not traverse all sixteen running poses: " + _currentDirection.facing + ", frames=" + DirectionRunFrames.Count);
+                    if (DirectionRunFrames.Count < RunFrameCount && _directionStep < 128) return;
+                    Require(DirectionRunFrames.Count == RunFrameCount && _currentDirection.actualRunDistance > .75f,
+                        "Direction did not traverse every authored running pose: " + _currentDirection.facing + ", frames=" + DirectionRunFrames.Count);
                     _currentDirection.uniqueRunFrames = DirectionRunFrames.Count;
-                    _currentDirection.captures = new[] { "orpheus-run-" + _currentDirection.facing + "-frame-04.png", "orpheus-run-" + _currentDirection.facing + "-frame-12.png" };
+                    _currentDirection.captures = Enumerable.Range(0, RunFrameCount)
+                        .Select(frame => "orpheus-run-" + _currentDirection.facing + "-frame-" + frame.ToString("D2") + ".png").ToArray();
                     DirectionProof.Add(_currentDirection); _directionIndex++;
                     if (_directionIndex < RunDirections.Length) { BeginDirection(); return; }
                     foreach (var renderer in _runHiddenRenderers) if (renderer != null) renderer.forceRenderingOff = false;
@@ -262,6 +276,12 @@ namespace OrpheusBelow.EditorTools
         {
             InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
             InputSystem.settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+            var inputSelection = Object.FindFirstObjectByType<InputSelectionModal>();
+            if (inputSelection != null)
+            {
+                if (!inputSelection.IsConfirmed) inputSelection.Confirm();
+                return;
+            }
             var intro = Object.FindFirstObjectByType<IntroCinematicPlayer>();
             if (_phase == 0)
             {
@@ -335,6 +355,16 @@ namespace OrpheusBelow.EditorTools
             _currentDirection = new DirectionEvidence { facing = RunFacings[_directionIndex].ToString() };
             _player.transform.position = _movementStart;
             Physics.SyncTransforms();
+        }
+
+        private static void VerifyRunPaint()
+        {
+            SpriteRenderer body = _animator.BodyRenderer;
+            Require(body.sprite == RunClip.frames[(int)_animator.Facing * RunFrameCount + _animator.CurrentFrame] &&
+                AssetDatabase.GetAssetPath(body.sprite.texture).Replace('\\', '/').Contains("/NaturalRunV2/") &&
+                body.flipX == ((int)_animator.Facing >= (int)EurydiceFacing.NorthWest), "Runtime changed an intact authored run key.");
+            Require(body.sharedMaterial == _idleSurface && body.color == _idleTint && !body.sharedMaterial.HasProperty("_RunSoftness"),
+                "Running changed the idle's material, tint or opacity policy.");
         }
 
         private static void SetView(bool side)

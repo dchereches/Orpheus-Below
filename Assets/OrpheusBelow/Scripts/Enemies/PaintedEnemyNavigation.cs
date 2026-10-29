@@ -136,20 +136,30 @@ namespace OrpheusBelow
 
         private sealed class NavigationGrid
         {
-            private const int Width = 96, Height = 64;
-            private static readonly int[] DeltaX = { 1, -1, 0, 0 };
-            private static readonly int[] DeltaY = { 0, 0, 1, -1 };
+            private const int MinimumStepPixels = 4;
+            private readonly int _stepPixels, Width, Height;
+            private NavigationGrid _finer;
+            private static readonly int[] DeltaX = { 1, -1, 0, 0, -1, 1, -1, 1 };
+            private static readonly int[] DeltaY = { 0, 0, 1, -1, -1, -1, 1, 1 };
             public readonly PaintedChamberDefinition Layout;
             public readonly float Clearance;
             private readonly List<Vector2> _edgeStarts = new List<Vector2>();
             private readonly List<Vector2> _edgeEnds = new List<Vector2>();
             private Vector3[] _nodes;
             private bool[] _walkable;
-            private byte[] _connections;
+            private int[] _connections;
             private int[] _parents;
             private int[] _queue;
 
             public bool TryFindSpawn(Vector3 anchor, Vector3 desired, IList<Vector3> occupied, Vector3 offset, out Vector3 point)
+            {
+                if (_finer != null) return _finer.TryFindSpawn(anchor, desired, occupied, offset, out point);
+                if (TryFindSpawnAtThisResolution(anchor, desired, occupied, offset, out point)) return true;
+                if (_stepPixels <= MinimumStepPixels) return false;
+                return FinerGrid().TryFindSpawn(anchor, desired, occupied, offset, out point);
+            }
+
+            private bool TryFindSpawnAtThisResolution(Vector3 anchor, Vector3 desired, IList<Vector3> occupied, Vector3 offset, out Vector3 point)
             {
                 point = anchor;
                 EnsureNodes();
@@ -173,8 +183,8 @@ namespace OrpheusBelow
                         float candidateScore = (candidate - desired).sqrMagnitude + Mathf.Abs(distances[at] - 6f) * .15f;
                         if (candidateScore < score) { best = at; score = candidateScore; }
                     }
-                    byte connections = Connections(at);
-                    for (int direction = 0; direction < 4; direction++)
+                    int connections = Connections(at);
+                    for (int direction = 0; direction < DeltaX.Length; direction++)
                     {
                         if ((connections & (1 << direction)) == 0) continue;
                         int next = at + DeltaX[direction] + DeltaY[direction] * Width;
@@ -188,10 +198,12 @@ namespace OrpheusBelow
                 point = _nodes[best]; return true;
             }
 
-            public NavigationGrid(PaintedChamberDefinition layout, float clearance)
+            public NavigationGrid(PaintedChamberDefinition layout, float clearance, int stepPixels = 16)
             {
                 Layout = layout;
                 Clearance = clearance;
+                _stepPixels = stepPixels;
+                Width = 1536 / stepPixels; Height = 1024 / stepPixels;
                 AddEdges(layout.walkableBoundary);
                 if (layout.cover != null)
                     foreach (var cover in layout.cover) AddEdges(cover.footprint);
@@ -218,23 +230,40 @@ namespace OrpheusBelow
             }
 
             private bool IsWalkable(Vector3 point)
-                => Layout.walkableBoundary != null && Layout.walkableBoundary.Length >= 3 && Layout.IsWalkable(point, Clearance);
+            {
+                if (Layout.walkableBoundary == null || Layout.walkableBoundary.Length < 3) return false;
+                point.y = 0f;
+                Vector2 pixel = Layout.GroundToImage(point);
+                if (!PaintedPolygon.Contains(Layout.walkableBoundary, pixel)) return false;
+                foreach (var cover in Layout.cover)
+                    if (PaintedPolygon.Contains(cover.footprint, pixel)) return false;
+                if (Clearance <= 0f) return true;
+                Vector2 at = XZ(point); float radiusSquared = Clearance * Clearance;
+                for (int i = 0; i < _edgeStarts.Count; i++)
+                {
+                    Vector2 a = _edgeStarts[i], edge = _edgeEnds[i] - a;
+                    float t = Mathf.Clamp01(Vector2.Dot(at - a, edge) / Mathf.Max(.0001f, edge.sqrMagnitude));
+                    if ((at - (a + edge * t)).sqrMagnitude < radiusSquared) return false;
+                }
+                return true;
+            }
 
             private void EnsureNodes()
             {
                 if (_nodes != null) return;
                 _nodes = new Vector3[Width * Height];
                 _walkable = new bool[_nodes.Length];
-                _connections = new byte[_nodes.Length];
+                _connections = new int[_nodes.Length];
                 _parents = new int[_nodes.Length];
                 _queue = new int[_nodes.Length];
                 for (int y = 0; y < Height; y++)
                     for (int x = 0; x < Width; x++)
                     {
                         int index = y * Width + x;
-                        _nodes[index] = Layout.ImageToGround(new Vector2(x * 16 + 8, y * 16 + 8));
+                        _nodes[index] = Layout.ImageToGround(new Vector2((x + .5f) * _stepPixels, (y + .5f) * _stepPixels));
                         _walkable[index] = IsWalkable(_nodes[index]);
-                        _connections[index] = byte.MaxValue;
+                        // All eight clear neighbors legitimately produce mask255.
+                        _connections[index] = -1;
                     }
             }
 
@@ -253,22 +282,37 @@ namespace OrpheusBelow
                 return best;
             }
 
-            private byte Connections(int index)
+            private int Connections(int index)
             {
-                if (_connections[index] != byte.MaxValue) return _connections[index];
-                byte mask = 0;
-                for (int direction = 0; direction < 4; direction++)
+                if (_connections[index] >= 0) return _connections[index];
+                int mask = 0;
+                for (int direction = 0; direction < DeltaX.Length; direction++)
                 {
                     int x = index % Width + DeltaX[direction], y = index / Width + DeltaY[direction];
                     if (x < 0 || y < 0 || x >= Width || y >= Height) continue;
                     int next = y * Width + x;
-                    if (_walkable[next] && ClearSegment(_nodes[index], _nodes[next])) mask |= (byte)(1 << direction);
+                    if (_walkable[next] && ClearSegment(_nodes[index], _nodes[next])) mask |= 1 << direction;
                 }
                 _connections[index] = mask;
                 return mask;
             }
 
+            private NavigationGrid FinerGrid()
+            {
+                if (_finer == null) _finer = new NavigationGrid(Layout, Clearance, Mathf.Max(MinimumStepPixels, _stepPixels / 2));
+                return _finer;
+            }
+
             public void FindPath(Vector3 start, Vector3 goal, List<Vector3> result)
+            {
+                // Keep refinement on the stable cached root so subsequent moving-target replans
+                // do not repeat a known-inadequate coarse search every frame.
+                if (_finer != null) { _finer.FindPath(start, goal, result); return; }
+                FindPathAtThisResolution(start, goal, result);
+                if (result.Count == 0 && _stepPixels > MinimumStepPixels) FinerGrid().FindPath(start, goal, result);
+            }
+
+            private void FindPathAtThisResolution(Vector3 start, Vector3 goal, List<Vector3> result)
             {
                 EnsureNodes();
                 int first = NearestNode(start, true);
@@ -282,8 +326,8 @@ namespace OrpheusBelow
                 while (head < tail && _parents[last] < 0)
                 {
                     int at = _queue[head++];
-                    byte connections = Connections(at);
-                    for (int direction = 0; direction < 4; direction++)
+                    int connections = Connections(at);
+                    for (int direction = 0; direction < DeltaX.Length; direction++)
                     {
                         if ((connections & (1 << direction)) == 0) continue;
                         int next = at + DeltaX[direction] + DeltaY[direction] * Width;

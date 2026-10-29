@@ -1,7 +1,6 @@
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.Collections.Generic;
 using System.Reflection;
 
 namespace OrpheusBelow.Tests
@@ -95,38 +94,37 @@ namespace OrpheusBelow.Tests
                 var soul = new GameObject("ReturnPathEscort");
                 try
                 {
-                    const int width = 96, height = 64;
-                    int start = (int)(d.returnSpawn.y / 16) * width + (int)(d.returnSpawn.x / 16);
-                    int end = (int)(d.returnExit.y / 16) * width + (int)(d.returnExit.x / 16);
-                    var previous = new Dictionary<int, int> { [start] = -1 };
-                    var queue = new Queue<int>(); queue.Enqueue(start);
-                    while (queue.Count > 0 && !previous.ContainsKey(end))
-                    {
-                        int at = queue.Dequeue();
-                        foreach (var delta in new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down })
-                        {
-                            int x = at % width + delta.x, y = at / width + delta.y, next = y * width + x;
-                            if (x < 0 || x >= width || y < 0 || y >= height || previous.ContainsKey(next)) continue;
-                            if (!d.IsWalkable(d.ImageToGround(new Vector2(x * 16 + 8, y * 16 + 8)), .65f)) continue;
-                            previous.Add(next, at); queue.Enqueue(next);
-                        }
-                    }
-                    Assert.That(previous.ContainsKey(end), Is.True, "Return path: " + d.title);
-                    var path = new List<Vector3> { map.ToWorld(d.returnExit) };
-                    for (int at = end; at >= 0; at = previous[at])
-                        path.Add(map.ToWorld(new Vector2(at % width * 16 + 8, at / width * 16 + 8)));
-                    path.Add(map.ToWorld(d.returnSpawn)); path.Reverse();
-                    player.transform.position = path[0];
+                    const float leaderClearance = .42f; // Actual .38 player radius plus .04 margin.
+                    const int maximumLeaderSteps = 4096;
+                    Vector3 start = map.ToWorld(d.returnSpawn), goal = map.ToWorld(d.returnExit);
+                    Assert.That(map.IsWalkable(start, leaderClearance), Is.True, "Return arrival: " + d.title);
+                    Assert.That(map.IsWalkable(goal, leaderClearance), Is.True, "Return passage: " + d.title);
+                    player.transform.position = start;
                     var companion = soul.AddComponent<BlurredEurydice>(); companion.orpheus = player.transform;
-                    companion.SnapBehindOrpheus(path[0]); Physics.SyncTransforms();
-                    foreach (var waypoint in path)
-                        while (Vector3.Distance(player.transform.position, waypoint) > .001f)
-                        {
-                            player.transform.position = Vector3.MoveTowards(player.transform.position, waypoint, .25f);
-                            follow.Invoke(companion, new object[] { .06f, companion.followLagDistance });
-                            Assert.That(map.IsWalkable(companion.transform.position, .3f), Is.True, "Escort entered solid cover in " + d.title);
-                        }
-                    for (int i = 0; i < 100; i++) follow.Invoke(companion, new object[] { .06f, companion.followLagDistance });
+                    companion.SnapBehindOrpheus(start); Physics.SyncTransforms();
+                    var navigation = new PaintedEnemyNavigation();
+                    // Drive real pursuit from the exact authored arrival to the exact passage;
+                    // retain the actual escort rather than inventing another test-only pathfinder.
+                    for (int step = 0; step < maximumLeaderSteps && Vector3.Distance(player.transform.position, goal) > .001f; step++)
+                    {
+                        Vector3 before = player.transform.position;
+                        Vector3 waypoint = navigation.NextWaypoint(map, before, goal, leaderClearance);
+                        Vector3 next = Vector3.MoveTowards(before, waypoint, .25f);
+                        Assert.That(Vector3.Distance(before, next), Is.GreaterThan(.0001f), "Return leader stalled in " + d.title);
+                        Assert.That(map.IsWalkable(next, leaderClearance), Is.True, "Return leader left clear floor in " + d.title);
+                        // Cross-check each actual leader step with the independent gameplay sweep.
+                        bool blocked = map.SweepMovement(before, next - before, leaderClearance, out float fraction, out _);
+                        Assert.That(!blocked || fraction >= .99999f, Is.True, "Return leader crossed cover in " + d.title);
+                        player.transform.position = next;
+                        follow.Invoke(companion, new object[] { .06f, companion.followLagDistance });
+                        Assert.That(map.IsWalkable(companion.transform.position, .3f), Is.True, "Escort entered solid cover in " + d.title);
+                    }
+                    Assert.That(Vector3.Distance(player.transform.position, goal), Is.LessThan(.001f), "Return leader did not reach the passage in " + d.title);
+                    for (int i = 0; i < 100; i++)
+                    {
+                        follow.Invoke(companion, new object[] { .06f, companion.followLagDistance });
+                        Assert.That(map.IsWalkable(companion.transform.position, .3f), Is.True, "Escort entered solid cover in " + d.title);
+                    }
                     Vector3 gap = companion.transform.position - map.ToWorld(d.returnExit); gap.y = 0;
                     Assert.That(gap.magnitude, Is.LessThan(6f), "Escort could not reach the upward passage in " + d.title);
                 }

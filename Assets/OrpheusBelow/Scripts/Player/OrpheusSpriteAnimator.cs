@@ -5,7 +5,9 @@ namespace OrpheusBelow
 {
     public sealed class OrpheusSpriteAnimator : MonoBehaviour
     {
-        public const float RunCycleDistance = OrpheusRunMotion.CycleDistance;
+        // Four intact contact/passing keys at 7.5 fps at six units/second.
+        // Travel drives cadence, so stopping or changing billboard scale cannot skate it.
+        public const float RunCycleDistance = 3.2f;
         private readonly OrpheusAnimationBrain _brain = new OrpheusAnimationBrain();
         private SpriteRenderer _body;
         private SpriteRenderer _effects;
@@ -22,7 +24,6 @@ namespace OrpheusBelow
         private float _gaitPhase;
         private bool _singing;
         private bool _aulos;
-        private readonly Dictionary<Sprite, Bounds> _runningBounds = new Dictionary<Sprite, Bounds>();
         private readonly Queue<QueuedAnimation> _queued = new Queue<QueuedAnimation>();
 
         private struct QueuedAnimation
@@ -358,23 +359,9 @@ namespace OrpheusBelow
             Sprite frame = _library.Frame(visual, _brain.Facing, _frame);
             if (frame != null) _body.sprite = frame;
             _body.flipX = _library.FindClip(visual).mirrorWest && (int)_brain.Facing >= (int)EurydiceFacing.NorthWest;
-            if (visual == OrpheusAnimationState.Run && frame != null)
-            {
-                // The projected reach can exceed the source rectangle. Sprite's low-level vertex
-                // API retains its source bounds, so cull against the actual posed geometry.
-                if (!_runningBounds.TryGetValue(frame, out Bounds bounds))
-                {
-                    Vector2[] vertices = frame.vertices;
-                    bounds = new Bounds(vertices[0], Vector3.zero);
-                    foreach (Vector2 vertex in vertices) bounds.Encapsulate(vertex);
-                    bounds.Expand(.06f); _runningBounds.Add(frame, bounds);
-                }
-                if (_body.flipX) { Vector3 centre = bounds.center; centre.x = -centre.x; bounds.center = centre; }
-                _body.localBounds = bounds;
-            }
-            else _body.ResetLocalBounds();
+            _body.ResetLocalBounds();
             ApplyEffectFrame();
-            OrpheusOilSurface.Apply(_body, PaintedChamberMap.Active?.definition, visual == OrpheusAnimationState.Run);
+            OrpheusOilSurface.Apply(_body, PaintedChamberMap.Active?.definition);
         }
 
         private void ApplyEffectFrame()
