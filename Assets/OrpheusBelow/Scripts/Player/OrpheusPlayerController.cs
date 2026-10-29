@@ -14,9 +14,9 @@ namespace OrpheusBelow
         public static OrpheusPlayerController Instance { get; private set; }
 
         [Header("Hades Run")]
-        public float moveSpeed = 9.6f;
-        public float acceleration = 155f;
-        public float deceleration = 185f;
+        public float moveSpeed = 8.2f;
+        public float acceleration = 220f;
+        public float deceleration = 320f;
         public float bodyRadius = 0.38f;
 
         [Header("Hades Double-Dash ([Space] or [Left Shift])")]
@@ -70,7 +70,7 @@ namespace OrpheusBelow
         private float _dashRechargeTimer;
         private float _dashBufferTimer;
         private float _postDashStrikeTimer;
-        private float _ghostSpawnTimer;
+        private float _dashStreakTimer;
 
         // Micro-lunge & damage state
         private Vector3 _lungeVelXZ;
@@ -218,7 +218,7 @@ namespace OrpheusBelow
                 return;
             }
 
-            if (IsGameOver || IsVictory) return;
+            if (IsGameOver || IsVictory) { UpdateVisualPose(); return; }
 
             float dt = Time.deltaTime;
             if (_invulnTimer > 0f) _invulnTimer -= dt;
@@ -310,11 +310,11 @@ namespace OrpheusBelow
                 float sign = Vector3.Dot(_dashDirXZ, UnderworldCamera2D.IsoRightXZ) >= 0f ? 1f : -1f;
                 _stageHorizPos = Mathf.Clamp(_stageHorizPos + sign * curDashSpeed * dt, _bossStageMinX, _bossStageMaxX);
 
-                _ghostSpawnTimer -= dt;
-                if (_ghostSpawnTimer <= 0f)
+                _dashStreakTimer -= dt;
+                if (_dashStreakTimer <= 0f)
                 {
-                    _ghostSpawnTimer = 0.068f;
-                    SpawnDashAfterimage();
+                    _dashStreakTimer = .07f;
+                    SpawnDashStreak();
                 }
 
                 if (_dashTimer <= 0f)
@@ -329,14 +329,19 @@ namespace OrpheusBelow
                 float curVx = Vector3.Dot(_velocityXZ, UnderworldCamera2D.IsoRightXZ);
                 float desiredVx = Mathf.Clamp(inputX, -1f, 1f) * moveSpeed;
                 float rate = Mathf.Abs(desiredVx) > 0.01f ? acceleration : deceleration;
-                curVx = Mathf.MoveTowards(curVx, desiredVx, rate * dt);
+                if (Mathf.Abs(inputX) < .05f) curVx = 0f;
+                else
+                {
+                    if (curVx * desiredVx < 0f) curVx = 0f;
+                    curVx = Mathf.MoveTowards(curVx, desiredVx, rate * dt);
+                }
                 _velocityXZ = UnderworldCamera2D.IsoRightXZ * curVx;
                 _stageHorizPos = Mathf.Clamp(_stageHorizPos + curVx * dt, _bossStageMinX, _bossStageMaxX);
             }
 
             Vector3 desiredWorld = _bossStageCenter + UnderworldCamera2D.IsoRightXZ * _stageHorizPos;
             desiredWorld.y = 0f;
-            transform.position = Vector3.Lerp(transform.position, desiredWorld, Mathf.Min(1f, dt * 28f));
+            transform.position = desiredWorld;
         }
 
         private void Update25DIsometricMovement(float dt, Vector2 rawMove, Keyboard kb, Mouse mouse)
@@ -388,11 +393,11 @@ namespace OrpheusBelow
                 float curDashSpeed = Mathf.Lerp(dashStartSpeed, dashEndSpeed, u * u);
                 MoveSweepXZ(_dashDirXZ * (curDashSpeed * dt), ignoreChasms: true);
 
-                _ghostSpawnTimer -= dt;
-                if (_ghostSpawnTimer <= 0f)
+                _dashStreakTimer -= dt;
+                if (_dashStreakTimer <= 0f)
                 {
-                    _ghostSpawnTimer = 0.068f;
-                    SpawnDashAfterimage();
+                    _dashStreakTimer = .07f;
+                    SpawnDashStreak();
                 }
 
                 if (_dashTimer <= 0f)
@@ -415,7 +420,13 @@ namespace OrpheusBelow
                 Vector3 desiredVel = MoveInputXZ * moveSpeed;
                 if (isFluting) desiredVel *= 0.35f; // Slow movement while channeling the Flute (A1)
                 float rate = desiredVel.sqrMagnitude > 0.01f ? acceleration : deceleration;
-                _velocityXZ = Vector3.MoveTowards(_velocityXZ, desiredVel, rate * dt);
+                if (MoveInputXZ.sqrMagnitude < .0025f) _velocityXZ = Vector3.zero;
+                else
+                {
+                    // Releasing or reversing input plants the feet instead of spending frames coasting.
+                    if (Vector3.Dot(_velocityXZ, desiredVel) < 0f) _velocityXZ = Vector3.zero;
+                    _velocityXZ = Vector3.MoveTowards(_velocityXZ, desiredVel, rate * dt);
+                }
 
                 if (_velocityXZ.sqrMagnitude > 0.0005f)
                 {
@@ -447,13 +458,14 @@ namespace OrpheusBelow
             _lungeVelXZ = Vector3.zero;
             _isDashing = true;
             _dashTimer = dashDuration;
-            _ghostSpawnTimer = 0.068f;
+            _dashStreakTimer = .07f;
+            _velocityXZ = Vector3.zero;
             _invulnTimer = Mathf.Max(_invulnTimer, dashDuration + 0.05f);
             _spriteAnimator?.TriggerDashStart();
 
             ProceduralLyreAudio.Instance?.PlayDash();
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.04f, 0f), 1.55f, new Color(2.4f, 0.65f, 0.25f, 0.85f), 0.18f);
-            SpawnDashAfterimage();
+            SpawnDashStreak();
         }
 
         public void TriggerAttackLunge(Vector3 dirXZ, float speed, float duration)
@@ -647,13 +659,14 @@ namespace OrpheusBelow
                 _spriteAnimator.Drive(new OrpheusAnimationInput
                 {
                     groundDelta = groundDelta,
-                    aimDirection = _lookedBackFatally ? -AimDirectionXZ : AimDirectionXZ,
+                    aimDirection = _isDashing ? _dashDirXZ : _lookedBackFatally ? -AimDirectionXZ : AimDirectionXZ,
                     deltaTime = Mathf.Max(Time.deltaTime, .0001f),
                     dashing = _isDashing,
                     onStairs = onStairs,
                     ascending = ascending,
                     defeated = IsGameOver,
-                    bossStage = IsIn2DBossStage
+                    bossStage = IsIn2DBossStage,
+                    movementRequested = MoveInputXZ.sqrMagnitude > .0025f && !IsGameOver && !IsVictory
                 });
                 _lastAnimationPosition = transform.position;
                 _groundShadow?.ApplyState(_isDashing, OrpheusGroundShadow.IsAttackState(_spriteAnimator.CurrentState),
@@ -685,36 +698,16 @@ namespace OrpheusBelow
             }
         }
 
-        private void SpawnDashAfterimage()
+        private void SpawnDashStreak()
         {
-            GameObject ghost = new GameObject("HadesDashAfterimage");
-            Vector3 pos = _billboardRoot != null ? _billboardRoot.position : transform.position;
-            ghost.transform.position = pos;
-            ghost.transform.rotation = UnderworldCamera2D.CurrentBillboardRotation;
-
-            Sprite currentSprite = _spriteAnimator != null && _spriteAnimator.BodyRenderer != null
-                ? _spriteAnimator.BodyRenderer.sprite
-                : null;
-
-            SpriteRenderer sr = ghost.AddComponent<SpriteRenderer>();
-            sr.sharedMaterial = RenderPipeline2DSetup.Get2DSpriteMaterial();
-            sr.sortingOrder = 14;
-
-            if (currentSprite != null)
-            {
-                sr.sprite = currentSprite;
-                ghost.transform.localScale = _billboardRoot != null ? _billboardRoot.lossyScale : Vector3.one;
-                sr.color = new Color(0.95f, 0.45f, 0.22f, 0.32f);
-            }
-            else
-            {
-                ghost.transform.position = transform.position + new Vector3(0f, 0.68f, 0f);
-                ghost.transform.localScale = new Vector3(0.70f, 1.32f, 1f) * 1.2f;
-                sr.sprite = RenderPipeline2DSetup.DiamondSprite;
-                sr.color = new Color(1.0f, 0.45f, 0.22f, 0.32f);
-            }
-
-            ghost.AddComponent<RisingAshParticle>().Init(sr, driftUpSpeed: 0.18f, duration: 0.22f);
+            var streak = new GameObject("OrpheusDashBrushStreak");
+            streak.transform.position = transform.position - _dashDirXZ * .35f + Vector3.up * .045f;
+            streak.transform.localScale = new Vector3(.35f, 1.5f, 1f);
+            SpriteRenderer sr = RenderPipeline2DSetup.AttachGroundDecal(streak, RenderPipeline2DSetup.SoftGlowSprite,
+                new Color(.85f, .30f, .12f, .24f), 3);
+            streak.transform.rotation = Quaternion.LookRotation(_dashDirXZ.sqrMagnitude > .001f ? _dashDirXZ : Vector3.forward)
+                * RenderPipeline2DSetup.GroundDecalRotation;
+            streak.AddComponent<RisingAshParticle>().Init(sr, driftUpSpeed: 0f, duration: .12f);
         }
 
         private void SpawnFootstepDust()
@@ -810,6 +803,10 @@ namespace OrpheusBelow
         {
             if (IsGameOver || IsVictory) return;
             IsVictory = true;
+            _isDashing = false;
+            _velocityXZ = _lungeVelXZ = Vector3.zero;
+            MoveInputXZ = Vector3.zero;
+            _lungeTimer = _dashBufferTimer = 0f;
             _spriteAnimator?.TriggerVictory();
             _eurydice?.Celebrate(3f);
             Time.timeScale = 1f;

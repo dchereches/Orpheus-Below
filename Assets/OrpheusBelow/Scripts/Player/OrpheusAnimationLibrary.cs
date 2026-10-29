@@ -29,6 +29,8 @@ namespace OrpheusBelow
         [Min(1)] public int framesPerDirection = 1;
         [Min(.1f)] public float fps = 8f;
         public bool loop;
+        public bool mirrorWest;
+        public bool embeddedEffects;
 
         public bool IsComplete => frames != null && directions > 0 && framesPerDirection > 0 &&
             frames.Length == directions * framesPerDirection && Array.TrueForAll(frames, frame => frame != null);

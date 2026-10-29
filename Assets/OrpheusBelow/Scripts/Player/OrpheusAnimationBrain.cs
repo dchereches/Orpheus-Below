@@ -16,6 +16,8 @@ namespace OrpheusBelow
         public bool defeated;
         public bool bossStage;
         public OrpheusAnimationState action;
+        // Controller intent distinguishes the last dash displacement from a requested running recovery.
+        public bool? movementRequested;
     }
 
     /// <summary>Renderer-independent animation choice using ground travel and explicit gameplay priorities.</summary>
@@ -56,24 +58,25 @@ namespace OrpheusBelow
             else if (GroundSpeed < .12f)
             {
                 _stillTime += input.deltaTime;
-                if (_stillTime >= .12f) _moving = false;
+                _moving = false;
             }
             else _stillTime = 0f;
 
             bool directedAction = input.action != OrpheusAnimationState.None;
             bool terminalAction = input.action == OrpheusAnimationState.LookBackFatal ||
                 input.action == OrpheusAnimationState.EurydiceGrief;
-            Vector3 facingVector = directedAction ? input.aimDirection : ground;
+            Vector3 facingVector = input.dashing ? (ground.sqrMagnitude > .000001f ? ground : input.aimDirection)
+                : directedAction ? input.aimDirection : ground;
             if (input.bossStage && Mathf.Abs(Vector3.Dot(input.aimDirection, UnderworldCamera2D.IsoRightXZ)) > .001f)
                 facingVector = Mathf.Sign(Vector3.Dot(input.aimDirection, UnderworldCamera2D.IsoRightXZ)) * UnderworldCamera2D.IsoRightXZ;
             if (facingVector.sqrMagnitude > .000001f) Facing = FacingFor(facingVector, Facing);
 
             OrpheusAnimationState locomotion;
-            if (State == OrpheusAnimationState.Start && _moving && ActionElapsed + input.deltaTime < .16f)
+            if (State == OrpheusAnimationState.Start && _moving && ActionElapsed + input.deltaTime < .06f)
                 locomotion = OrpheusAnimationState.Start;
-            else if (State == OrpheusAnimationState.Stop && !_moving && ActionElapsed + input.deltaTime < .16f)
+            else if (State == OrpheusAnimationState.Stop && !_moving && ActionElapsed + input.deltaTime < .07f)
                 locomotion = OrpheusAnimationState.Stop;
-            else if (State == OrpheusAnimationState.Turn && _moving && ActionElapsed + input.deltaTime < .12f)
+            else if (State == OrpheusAnimationState.Turn && _moving && ActionElapsed + input.deltaTime < .06f)
                 locomotion = OrpheusAnimationState.Turn;
             else if (!wasMoving && _moving)
                 locomotion = OrpheusAnimationState.Start;
@@ -86,7 +89,8 @@ namespace OrpheusBelow
             else if (_moving)
                 locomotion = OrpheusAnimationState.Walk;
             else
-                locomotion = State == OrpheusAnimationState.Idle && ActionElapsed >= 2.5f
+                locomotion = (State == OrpheusAnimationState.Idle && ActionElapsed >= 2.5f) ||
+                    (State == OrpheusAnimationState.RestlessIdle && ActionElapsed < .8f)
                     ? OrpheusAnimationState.RestlessIdle : OrpheusAnimationState.Idle;
 
             OrpheusAnimationState next = terminalAction ? input.action

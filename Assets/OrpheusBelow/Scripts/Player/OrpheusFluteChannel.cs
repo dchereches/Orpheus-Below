@@ -118,13 +118,29 @@ namespace OrpheusBelow
             }
 
             _noteDisplayRoot.gameObject.SetActive(false);
+            UpdateStavePose();
+        }
+
+        private void UpdateStavePose()
+        {
+            if (_billboardRoot == null) return;
+            Quaternion rotation = UnderworldCamera2D.CurrentBillboardRotation;
+            Vector3 up = rotation * Vector3.up;
+            float height = 2.15f;
+            SpriteRenderer body = _spriteAnimator != null ? _spriteAnimator.BodyRenderer : null;
+            if (_spriteAnimator != null && _spriteAnimator.UsesProductionArt && body != null && body.sprite != null)
+            {
+                Vector3 top = body.transform.TransformPoint(Vector3.up * body.sprite.bounds.max.y);
+                height = Vector3.Dot(top - transform.position, up) + .45f;
+            }
+            _billboardRoot.rotation = rotation;
+            _billboardRoot.position = transform.position + up * height;
         }
 
         private void Update()
         {
             if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive) return;
-            if (_billboardRoot != null)
-                _billboardRoot.rotation = UnderworldCamera2D.CurrentBillboardRotation;
+            UpdateStavePose();
 
             float dt = Time.deltaTime;
             if (_lockoutCooldown > 0f) _lockoutCooldown -= dt;
@@ -174,10 +190,11 @@ namespace OrpheusBelow
             if (IsFluteActive) return;
             IsFluteActive = true;
             _spriteAnimator?.EnterFlute();
+            UpdateStavePose();
             StanceEntryCount++;
             GenerateNewMelody();
             if (_noteDisplayRoot != null) _noteDisplayRoot.gameObject.SetActive(true);
-            if (_fluteVis != null) _fluteVis.gameObject.SetActive(true);
+            if (_fluteVis != null) _fluteVis.gameObject.SetActive(_spriteAnimator == null || !_spriteAnimator.UsesProductionArt);
             OrpheusHud.Instance?.ShowSubtleCallout("Aulos Drawn  [Play Notes — Cataclysmic Requiem on 4th Note!]");
             GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.05f, 0f), 2.2f, new Color(0.6f, 1.8f, 2.4f, 0.7f), 0.25f);
         }

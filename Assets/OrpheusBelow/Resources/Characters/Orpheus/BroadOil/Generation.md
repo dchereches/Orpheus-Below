@@ -23,6 +23,13 @@ All 11 PNG files are original generated RGBA sources. Hidden RGB may retain a br
 | `Narrative.png` | `7319770A9FCE2D1C33C95FF1B7DD1824E049B9782CD345C2551FA1FAB608A759` |
 | `Effects.png` | `11C1428716C0F888B6A2D4796F0E2D20065AB3097F920908B5FBC0B7BE4D00A1` |
 
-`OrpheusBroadOilAssetBuilder` alpha-crops 64 cells per atlas, measures upright paint height, assigns stable bottom pivots, and saves `Library.asset` at the runtime resource path. The installed library contains 48 named motions, 1,360 body-frame references, 640 distinct body source frames, 64 effect frames, 704 distinct referenced sprites in total, and a 3.9-world-unit standing height.
+The original PNGs above remain unchanged. On 2026-10-29 two additional native RGBA sources were generated with the built-in image tool to replace the nearly stationary locomotion cycles:
+
+| Atlas | SHA-256 |
+|---|---|
+| `RunCycle.png` | `2900F95275DE164A3970B6E6FF89229B79ECBDA70AD20026BBEA593B81CF9872` |
+| `WalkCycle.png` | `D2654AEF623AA7BD7770B4B3C6FBC72C47671F09548A813795AC3B65C5F05F9B` |
+
+`OrpheusBroadOilAssetBuilder` uses `OrpheusAtlasSlicer` to isolate connected figures, exclude neighboring alpha islands with sprite geometry, and anchor each figure on its boots. Locomotion uses four poses in five source directions plus explicit western mirroring. The singing source has seven rows, not eight; its five consistent directions supply vocal clips. The installed library contains 48 named motions, 1,296 body-frame references, 672 body source poses, 64 effect frames, 736 referenced source/effect sprites in total, and a 3.9-world-unit standing height.
 
 Exact prompts are recorded in `GenerationPrompts.json`; cell semantics are in `AtlasLayout.json`.

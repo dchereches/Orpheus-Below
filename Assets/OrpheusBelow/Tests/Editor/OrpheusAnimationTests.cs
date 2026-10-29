@@ -177,8 +177,8 @@ namespace OrpheusBelow.Tests
                 animator.Initialize(body, null, null, library);
                 animator.TriggerSoftAttack(1);
                 Assert.That(animator.CurrentState, Is.EqualTo(OrpheusAnimationState.SoftStrike1));
-                animator.TriggerVictory();
-                Assert.That(animator.CurrentState, Is.EqualTo(OrpheusAnimationState.SoftStrike1), "Cosmetic victory cannot interrupt committed combat.");
+                animator.TriggerChamberClear();
+                Assert.That(animator.CurrentState, Is.EqualTo(OrpheusAnimationState.SoftStrike1), "Chamber celebration cannot interrupt committed combat; terminal run victory is tested separately.");
                 animator.TriggerHit(true);
                 Assert.That(animator.CurrentState, Is.EqualTo(OrpheusAnimationState.HeavyHit));
                 animator.TriggerLookBack(true);
@@ -493,7 +493,7 @@ namespace OrpheusBelow.Tests
         }
 
         [Test]
-        public void OilRimUsesPropertyBlocksWithoutChangingSpriteGeometryOrTransforms()
+        public void OilFinishKeepsColoredRimsDisabledWithoutChangingSpriteGeometryOrTransforms()
         {
             var texture = new Texture2D(4, 4);
             var sprite = Sprite.Create(texture, new Rect(0, 0, 4, 4), new Vector2(.25f, .1f), 4f);
@@ -512,8 +512,8 @@ namespace OrpheusBelow.Tests
                 var blockB = new MaterialPropertyBlock(); rb.GetPropertyBlock(blockB);
                 Assert.That(blockA.GetVector("_RimDirection"), Is.Not.EqualTo(blockB.GetVector("_RimDirection")));
                 Assert.That(blockA.GetColor("_RimColor"), Is.Not.EqualTo(blockB.GetColor("_RimColor")));
-                Assert.That(blockA.GetFloat("_RimIntensity"), Is.EqualTo(.4f).Within(.001f));
-                Assert.That(blockB.GetFloat("_RimIntensity"), Is.EqualTo(1.7f).Within(.001f));
+                Assert.That(blockA.GetFloat("_RimIntensity"), Is.Zero, "Colored rims were disabled by art direction.");
+                Assert.That(blockB.GetFloat("_RimIntensity"), Is.Zero);
                 Assert.That(ra.sprite, Is.SameAs(sprite));
                 Assert.That(a.transform.localScale, Is.EqualTo(scale));
                 Assert.That(sprite.pivot, Is.EqualTo(pivot));

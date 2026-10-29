@@ -34,6 +34,8 @@ namespace OrpheusBelow.EditorTools
             foreach (string name in new[] { "IdleTransitions", "Walk", "Run", "DashStairs", "SoftCombat",
                 "HardCadence", "LyreSinging", "Aulos", "Reactions", "Narrative" })
                 sheets[name] = BakeSheet(name, library, false);
+            sheets["WalkCycle"] = BakeSheet("WalkCycle", library, false);
+            sheets["RunCycle"] = BakeSheet("RunCycle", library, false);
             var sourceFrames = new List<Sprite>();
             foreach (Sprite[] sheetFrames in sheets.Values) sourceFrames.AddRange(sheetFrames);
             library.sourceFrames = sourceFrames.ToArray();
@@ -42,58 +44,58 @@ namespace OrpheusBelow.EditorTools
             var clips = new List<OrpheusAnimationClip>();
             Add(clips, sheets, OrpheusAnimationState.Idle, "IdleTransitions", 0, true, 6f);
             Add(clips, sheets, OrpheusAnimationState.RestlessIdle, "IdleTransitions", 2, true, 6f);
-            AddSequence(clips, sheets, OrpheusAnimationState.Start, "IdleTransitions", false, 9f, 4, 4, 5, 5);
-            Add(clips, sheets, OrpheusAnimationState.Walk, "Walk", 0, true, 9f, 8);
-            Add(clips, sheets, OrpheusAnimationState.Run, "Run", 0, true, 12f, 8);
-            AddSequence(clips, sheets, OrpheusAnimationState.Stop, "IdleTransitions", false, 8f, 5, 6, 6, 6);
-            AddFixed(clips, sheets, OrpheusAnimationState.Turn, "IdleTransitions", 7, false, 8f);
+            AddCycle(clips, sheets, OrpheusAnimationState.Start, "WalkCycle", false, 40f, 0, 1, 2, 3);
+            AddCycle(clips, sheets, OrpheusAnimationState.Walk, "WalkCycle", true, 8f, 0, 1, 2, 3);
+            AddCycle(clips, sheets, OrpheusAnimationState.Run, "RunCycle", true, 12f, 0, 1, 2, 3);
+            AddSequence(clips, sheets, OrpheusAnimationState.Stop, "IdleTransitions", false, 45f, 5, 6, 0, 0);
+            AddCycle(clips, sheets, OrpheusAnimationState.Turn, "WalkCycle", false, 40f, 1, 3, 1, 3);
 
-            AddSequence(clips, sheets, OrpheusAnimationState.DashStart, "DashStairs", false, 14f, 0, 0, 1, 1);
-            AddSequence(clips, sheets, OrpheusAnimationState.DashTravel, "DashStairs", true, 16f, 2, 3, 2, 3);
-            AddSequence(clips, sheets, OrpheusAnimationState.DashSettle, "DashStairs", false, 12f, 5, 5, 5, 5);
-            AddSequence(clips, sheets, OrpheusAnimationState.DashStrike, "DashStairs", false, 22f, 3, 4, 4, 5);
-            AddSequence(clips, sheets, OrpheusAnimationState.StairAscent, "DashStairs", true, 8f, 6, 6, 6, 6);
-            AddSequence(clips, sheets, OrpheusAnimationState.StairDescent, "DashStairs", true, 8f, 7, 7, 7, 7);
+            AddCycle(clips, sheets, OrpheusAnimationState.DashStart, "RunCycle", false, 90f, 1, 0, 1, 0);
+            AddCycle(clips, sheets, OrpheusAnimationState.DashTravel, "RunCycle", true, 30f, 1, 3, 1, 3);
+            AddCycle(clips, sheets, OrpheusAnimationState.DashSettle, "WalkCycle", false, 60f, 1, 0, 1, 0);
+            AddSequence(clips, sheets, OrpheusAnimationState.DashStrike, "SoftCombat", false, 24f, 5, 6, 7, 1);
+            AddCycle(clips, sheets, OrpheusAnimationState.StairAscent, "WalkCycle", true, 8f, 0, 1, 2, 3);
+            AddCycle(clips, sheets, OrpheusAnimationState.StairDescent, "WalkCycle", true, 8f, 0, 1, 2, 3);
 
-            Add(clips, sheets, OrpheusAnimationState.SoftStrike1, "SoftCombat", 0, false, 24f);
-            Add(clips, sheets, OrpheusAnimationState.SoftStrike2, "SoftCombat", 2, false, 24f);
-            Add(clips, sheets, OrpheusAnimationState.SoftStrike3, "SoftCombat", 4, false, 24f);
+            AddSequence(clips, sheets, OrpheusAnimationState.SoftStrike1, "SoftCombat", false, 24f, 1, 2, 3, 1);
+            AddSequence(clips, sheets, OrpheusAnimationState.SoftStrike2, "SoftCombat", false, 24f, 3, 4, 5, 3);
+            AddSequence(clips, sheets, OrpheusAnimationState.SoftStrike3, "SoftCombat", false, 24f, 5, 6, 7, 1);
             AddSequence(clips, sheets, OrpheusAnimationState.SoftBolt, "SoftCombat", false, 20f, 5, 6, 7, 7);
-            AddSequence(clips, sheets, OrpheusAnimationState.HardBoomWindup, "HardCadence", false, 16f, 0, 0, 1, 1);
-            AddSequence(clips, sheets, OrpheusAnimationState.HardBoomRelease, "HardCadence", false, 20f, 1, 2, 2, 2);
-            AddSequence(clips, sheets, OrpheusAnimationState.HymnBeam, "HardCadence", false, 10f, 3, 3, 3, 3);
-            AddSequence(clips, sheets, OrpheusAnimationState.SanctuaryCast, "HardCadence", false, 9f, 4, 4, 4, 4);
-            AddSequence(clips, sheets, OrpheusAnimationState.ConvergenceCast, "HardCadence", false, 10f, 5, 5, 5, 5);
+            AddSequence(clips, sheets, OrpheusAnimationState.HardBoomWindup, "HardCadence", false, 60f, 0, 1, 1, 1);
+            AddSequence(clips, sheets, OrpheusAnimationState.HardBoomRelease, "HardCadence", false, 20f, 2, 2, 7, 0);
+            AddVocal(clips, sheets, OrpheusAnimationState.HymnBeam, false, 12f, 3, 6, 5, 7);
+            AddVocal(clips, sheets, OrpheusAnimationState.SanctuaryCast, false, 12f, 3, 4, 6, 7);
+            AddVocal(clips, sheets, OrpheusAnimationState.ConvergenceCast, false, 12f, 4, 6, 5, 7);
 
-            AddSequence(clips, sheets, OrpheusAnimationState.LyreDraw, "SoftCombat", false, 8f, 0, 0, 1, 1);
-            AddSequence(clips, sheets, OrpheusAnimationState.SoftPluck, "SoftCombat", false, 10f, 0, 1, 2, 3);
-            AddFixed(clips, sheets, OrpheusAnimationState.SingSustain, "HardCadence", 6, true, 7f);
-            AddSequence(clips, sheets, OrpheusAnimationState.FullVoiceRelease, "HardCadence", false, 9f, 5, 6, 6, 6);
-            AddSequence(clips, sheets, OrpheusAnimationState.PhraseResolve, "HardCadence", false, 7f, 6, 7, 7, 7);
+            AddVocal(clips, sheets, OrpheusAnimationState.LyreDraw, false, 16f, 0, 1, 2, 1);
+            AddVocal(clips, sheets, OrpheusAnimationState.SoftPluck, false, 16f, 1, 2, 1, 7);
+            AddVocal(clips, sheets, OrpheusAnimationState.SingSustain, true, 6f, 3, 4, 5, 4);
+            AddVocal(clips, sheets, OrpheusAnimationState.FullVoiceRelease, false, 20f, 3, 4, 6, 5);
+            AddVocal(clips, sheets, OrpheusAnimationState.PhraseResolve, false, 14f, 5, 4, 3, 7);
 
             AddSequence(clips, sheets, OrpheusAnimationState.AulosDraw, "Aulos", false, 8f, 0, 0, 1, 1);
             AddSequence(clips, sheets, OrpheusAnimationState.AulosLoop, "Aulos", true, 7f, 2, 3, 2, 3);
-            AddSequence(clips, sheets, OrpheusAnimationState.AulosNoteSoft, "Aulos", false, 10f, 4, 4, 4, 4);
-            AddSequence(clips, sheets, OrpheusAnimationState.AulosNoteHard, "Aulos", false, 11f, 5, 5, 5, 5);
-            AddSequence(clips, sheets, OrpheusAnimationState.Discord, "Aulos", false, 11f, 6, 6, 6, 6);
-            AddSequence(clips, sheets, OrpheusAnimationState.Requiem, "Aulos", false, 8f, 7, 7, 7, 7);
+            AddSequence(clips, sheets, OrpheusAnimationState.AulosNoteSoft, "Aulos", false, 16f, 2, 4, 3, 2);
+            AddSequence(clips, sheets, OrpheusAnimationState.AulosNoteHard, "Aulos", false, 16f, 3, 5, 3, 2);
+            AddSequence(clips, sheets, OrpheusAnimationState.Discord, "Aulos", false, 14f, 5, 6, 6, 1);
+            AddSequence(clips, sheets, OrpheusAnimationState.Requiem, "Aulos", false, 12f, 3, 5, 7, 2);
 
-            AddFixed(clips, sheets, OrpheusAnimationState.BreathExhausted, "Reactions", 0, true, 5f);
-            AddFixed(clips, sheets, OrpheusAnimationState.BreathRecover, "Reactions", 1, false, 7f);
-            AddFixed(clips, sheets, OrpheusAnimationState.LightHit, "Reactions", 2, false, 11f);
-            AddFixed(clips, sheets, OrpheusAnimationState.HeavyHit, "Reactions", 3, false, 10f);
+            AddSequence(clips, sheets, OrpheusAnimationState.BreathExhausted, "Reactions", true, 4f, 0, 1, 0, 1);
+            AddSequence(clips, sheets, OrpheusAnimationState.BreathRecover, "Reactions", false, 10f, 0, 1, 1, 7);
+            AddSequence(clips, sheets, OrpheusAnimationState.LightHit, "Reactions", false, 24f, 2, 2, 1, 1);
+            AddSequence(clips, sheets, OrpheusAnimationState.HeavyHit, "Reactions", false, 16f, 2, 3, 4, 4);
             AddFixed(clips, sheets, OrpheusAnimationState.GroundedHurt, "Reactions", 4, true, 5f);
-            AddFixed(clips, sheets, OrpheusAnimationState.Rise, "Reactions", 5, false, 7f);
-            AddFixed(clips, sheets, OrpheusAnimationState.Alert, "Reactions", 7, false, 8f);
-            AddFixed(clips, sheets, OrpheusAnimationState.Defeat, "Reactions", 6, false, 6f);
+            AddSequence(clips, sheets, OrpheusAnimationState.Rise, "Reactions", false, 12f, 4, 5, 1, 7);
+            AddSequence(clips, sheets, OrpheusAnimationState.Alert, "Reactions", false, 16f, 1, 7, 7, 1);
+            AddSequence(clips, sheets, OrpheusAnimationState.Defeat, "Reactions", false, 8f, 3, 4, 6, 6);
 
-            AddFixed(clips, sheets, OrpheusAnimationState.ChamberEntrance, "Narrative", 0, false, 7f);
-            AddFixed(clips, sheets, OrpheusAnimationState.Inspect, "Narrative", 2, false, 6f);
-            AddFixed(clips, sheets, OrpheusAnimationState.LookBackTemptation, "Narrative", 3, false, 6f);
-            AddFixed(clips, sheets, OrpheusAnimationState.LookBackFatal, "Narrative", 4, false, 7f);
-            AddFixed(clips, sheets, OrpheusAnimationState.EurydiceGrief, "Narrative", 5, true, 5f);
-            AddFixed(clips, sheets, OrpheusAnimationState.ChamberClear, "Narrative", 6, false, 7f);
-            AddFixed(clips, sheets, OrpheusAnimationState.Victory, "Narrative", 7, true, 6f);
+            AddSequence(clips, sheets, OrpheusAnimationState.ChamberEntrance, "Narrative", false, 12f, 0, 1, 0, 1);
+            AddSequence(clips, sheets, OrpheusAnimationState.Inspect, "Narrative", false, 10f, 0, 2, 2, 0);
+            AddSequence(clips, sheets, OrpheusAnimationState.LookBackTemptation, "Narrative", false, 12f, 0, 3, 3, 0);
+            AddSequence(clips, sheets, OrpheusAnimationState.LookBackFatal, "Narrative", false, 10f, 3, 4, 4, 4);
+            AddSequence(clips, sheets, OrpheusAnimationState.EurydiceGrief, "Narrative", false, 5f, 4, 5, 5, 5);
+            AddSequence(clips, sheets, OrpheusAnimationState.ChamberClear, "Narrative", false, 12f, 0, 6, 7, 6);
+            AddSequence(clips, sheets, OrpheusAnimationState.Victory, "Narrative", false, 8f, 0, 6, 7, 7);
 
             library.clips = clips.ToArray();
             EditorUtility.SetDirty(library);
@@ -120,7 +122,7 @@ namespace OrpheusBelow.EditorTools
             clips.Add(new OrpheusAnimationClip
             {
                 state = state, directions = directions, framesPerDirection = frameCount,
-                frames = frames, fps = fps, loop = loop
+                frames = frames, fps = fps, loop = loop, embeddedEffects = sheet == "SoftCombat" || sheet == "HardCadence" || sheet == "Aulos"
             });
         }
 
@@ -142,16 +144,35 @@ namespace OrpheusBelow.EditorTools
             clips.Add(new OrpheusAnimationClip
             {
                 state = state, directions = directions, framesPerDirection = columns.Length,
-                frames = frames, fps = fps, loop = loop
+                frames = frames, fps = fps, loop = loop, embeddedEffects = sheet == "SoftCombat" || sheet == "HardCadence" || sheet == "Aulos"
             });
         }
 
         private static Sprite SourceFrame(Dictionary<string, Sprite[]> sheets, string sheet, int row, int column)
         {
-            // The generated north-facing settle cell overlaps its neighbour despite a measured gutter.
-            // Use the adjacent authored north settle/stair pose instead of shipping a clipped paint fragment.
-            if (sheet == "DashStairs" && row == 4 && column == 5) column = 6;
             return sheets[sheet][row * Columns + column];
+        }
+
+        private static void AddCycle(List<OrpheusAnimationClip> clips, Dictionary<string, Sprite[]> sheets,
+            OrpheusAnimationState state, string sheet, bool loop, float fps, params int[] columns)
+        {
+            int[] sourceRows = { 0, 1, 2, 3, 4, 3, 2, 1 };
+            var frames = new Sprite[8 * columns.Length];
+            for (int d = 0; d < 8; d++) for (int f = 0; f < columns.Length; f++)
+                frames[d * columns.Length + f] = sheets[sheet][sourceRows[d] * 4 + columns[f]];
+            clips.Add(new OrpheusAnimationClip { state = state, frames = frames, directions = 8,
+                framesPerDirection = columns.Length, fps = fps, loop = loop, mirrorWest = true });
+        }
+
+        private static void AddVocal(List<OrpheusAnimationClip> clips, Dictionary<string, Sprite[]> sheets,
+            OrpheusAnimationState state, bool loop, float fps, params int[] columns)
+        {
+            int[] sourceRows = { 0, 1, 2, 3, 4, 3, 2, 1 };
+            var frames = new Sprite[8 * columns.Length];
+            for (int d = 0; d < 8; d++) for (int f = 0; f < columns.Length; f++)
+                frames[d * columns.Length + f] = sheets["LyreSinging"][sourceRows[d] * 8 + columns[f]];
+            clips.Add(new OrpheusAnimationClip { state = state, frames = frames, directions = 8,
+                framesPerDirection = columns.Length, fps = fps, loop = loop, mirrorWest = true });
         }
 
         private static Sprite[] BakeSheet(string name, OrpheusAnimationLibrary owner, bool effects)
@@ -176,119 +197,11 @@ namespace OrpheusBelow.EditorTools
             foreach (Color32 pixel in pixels) if (pixel.a < 10) clear++;
             if (clear < pixels.Length / 5) throw new InvalidOperationException(name + " needs a real transparent background.");
 
-            var bounds = new RectInt[Columns * Rows];
-            var uprightHeights = new List<int>();
-            var rowCoverage = new int[texture.height];
-            for (int y = 0; y < texture.height; y++)
-                for (int x = 0; x < texture.width; x++)
-                    if (pixels[y * texture.width + x].a >= 24) rowCoverage[texture.height - 1 - y]++;
-            bool fixedGrid = name == "LyreSinging";
-            int[] rowCuts = fixedGrid ? RegularCuts(texture.height, Rows) : GutterCuts(rowCoverage, Rows, false);
-            for (int topRow = 0; topRow < Rows; topRow++)
-            {
-                int yMin = texture.height - rowCuts[topRow + 1];
-                int yMax = texture.height - rowCuts[topRow];
-                var columnCoverage = new int[texture.width];
-                for (int y = yMin; y < yMax; y++)
-                    for (int x = 0; x < texture.width; x++)
-                        if (pixels[y * texture.width + x].a >= 24) columnCoverage[x]++;
-                int[] columnCuts = fixedGrid ? RegularCuts(texture.width, Columns) : GutterCuts(columnCoverage, Columns, false);
-                for (int column = 0; column < Columns; column++)
-                {
-                    int xMin = columnCuts[column];
-                    int xMax = columnCuts[column + 1];
-                    int cellYMin = yMin;
-                    int cellYMax = yMax;
-                    if (!fixedGrid)
-                    {
-                        var localRows = new int[texture.height];
-                        for (int y = 0; y < texture.height; y++)
-                            for (int x = xMin; x < xMax; x++)
-                                if (pixels[y * texture.width + x].a >= 24) localRows[texture.height - 1 - y]++;
-                        int[] localCuts = GutterCuts(localRows, Rows, false);
-                        cellYMin = texture.height - localCuts[topRow + 1];
-                        cellYMax = texture.height - localCuts[topRow];
-                    }
-                    int left = xMax, right = xMin, bottom = cellYMax, top = cellYMin;
-                    for (int y = cellYMin; y < cellYMax; y++)
-                        for (int x = xMin; x < xMax; x++)
-                            if (pixels[y * texture.width + x].a >= 24)
-                            {
-                                left = Mathf.Min(left, x); right = Mathf.Max(right, x);
-                                bottom = Mathf.Min(bottom, y); top = Mathf.Max(top, y);
-                            }
-                    if (left > right)
-                    {
-                        left = xMin; right = xMax - 1; bottom = cellYMin; top = cellYMax - 1;
-                    }
-                    left = Mathf.Max(xMin, left - 2); right = Mathf.Min(xMax - 1, right + 2);
-                    bottom = Mathf.Max(cellYMin, bottom - 2); top = Mathf.Min(cellYMax - 1, top + 2);
-                    var bound = new RectInt(left, bottom, right - left + 1, top - bottom + 1);
-                    bounds[topRow * Columns + column] = bound;
-                    if (!effects && bound.height > (cellYMax - cellYMin) * .45f) uprightHeights.Add(bound.height);
-                }
-            }
-            uprightHeights.Sort();
-            float ppu = effects ? texture.height / (Rows * 4.6f) :
-                uprightHeights[Mathf.Clamp(uprightHeights.Count / 2, 0, uprightHeights.Count - 1)] / owner.visibleHeight;
-            var sprites = new Sprite[bounds.Length];
-            for (int row = 0; row < Rows; row++)
-                for (int column = 0; column < Columns; column++)
-                {
-                    int index = row * Columns + column;
-                    RectInt bound = bounds[index];
-                    Vector2 pivot = effects ? Vector2.one * .5f : new Vector2(.5f, .02f);
-                    Sprite sprite = Sprite.Create(texture, new Rect(bound.x, bound.y, bound.width, bound.height),
-                        pivot, ppu, 0, SpriteMeshType.FullRect);
-                    sprite.name = name + "_" + row.ToString("D2") + "_" + column.ToString("D2");
-                    sprites[index] = sprite;
-                    AssetDatabase.AddObjectToAsset(sprite, owner);
-                }
-            Debug.Log($"[Orpheus Broad Oil] {name}: {texture.width}x{texture.height}, 64 alpha-cut cells, {clear} clear pixels.");
+            int columns = name.EndsWith("Cycle") ? 4 : Columns;
+            int rows = name.EndsWith("Cycle") ? 5 : name == "LyreSinging" ? 7 : Rows;
+            Sprite[] sprites = OrpheusAtlasSlicer.Bake(texture, name, owner, columns, rows, effects);
+            Debug.Log($"[Orpheus Broad Oil] {name}: {columns}x{rows} isolated source poses.");
             return sprites;
-        }
-
-        private static int[] GutterCuts(int[] coverage, int count, bool fitContent)
-        {
-            int first = 0, last = coverage.Length - 1;
-            if (fitContent)
-            {
-                while (first < last && coverage[first] < count) first++;
-                while (last > first && coverage[last] < count) last--;
-            }
-            float spacing = (last - first + 1f) / count;
-            var cuts = new int[count + 1];
-            cuts[0] = 0; cuts[count] = coverage.Length;
-            for (int i = 1; i < count; i++)
-            {
-                int target = Mathf.RoundToInt(first + spacing * i);
-                // Allow dynamic wide search (up to 58% spacing) so wide lunging/slashing poses (up to 220px) are not cut off
-                int radius = Mathf.Max(8, Mathf.RoundToInt(spacing * .58f));
-                int start = Mathf.Max(cuts[i - 1] + 6, target - radius);
-                int end = Mathf.Min(coverage.Length - 6, target + radius);
-                int best = Mathf.Clamp(target, start, end);
-                int bestScore = int.MaxValue;
-                for (int p = start; p <= end; p++)
-                {
-                    // Strongly prioritize zero / low-alpha gutters over slicing through poses
-                    int cov = coverage[p - 1] + coverage[p] + coverage[p + 1];
-                    int score = cov * 1000 + Mathf.Abs(p - target);
-                    if (score < bestScore)
-                    {
-                        best = p;
-                        bestScore = score;
-                    }
-                }
-                cuts[i] = best;
-            }
-            return cuts;
-        }
-
-        private static int[] RegularCuts(int size, int count)
-        {
-            var cuts = new int[count + 1];
-            for (int i = 0; i <= count; i++) cuts[i] = Mathf.RoundToInt(i * size / (float)count);
-            return cuts;
         }
     }
 }
