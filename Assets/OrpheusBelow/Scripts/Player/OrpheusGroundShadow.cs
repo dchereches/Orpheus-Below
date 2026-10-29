@@ -34,12 +34,12 @@ namespace OrpheusBelow
         public void Initialize(OrpheusPlayerController player)
         {
             _player = player;
-            if (_contact == null) _contact = CreateLayer("ContactShadow", RenderPipeline2DSetup.CircleSprite,
+            if (_contact == null) _contact = GroundShadowPaint.Create(transform, "ContactShadow",
                 new Color(.012f, .008f, .018f, .62f), 0);
-            if (_ambient == null) _ambient = CreateLayer("AmbientPaintShadow", RenderPipeline2DSetup.SoftGlowSprite,
-                new Color(.025f, .012f, .035f, .34f), 1);
-            if (_cast == null) _cast = CreateLayer("DominantLightCast", RenderPipeline2DSetup.SoftGlowSprite,
-                new Color(.035f, .012f, .025f, .28f), 1);
+            if (_ambient == null) _ambient = GroundShadowPaint.Create(transform, "AmbientPaintShadow",
+                new Color(.025f, .012f, .035f, .34f), -1);
+            if (_cast == null) _cast = GroundShadowPaint.Create(transform, "DominantLightCast",
+                new Color(.035f, .012f, .025f, .28f), -2);
             ApplyState(false, false, PaintedChamberMap.Active?.definition);
         }
 
@@ -75,36 +75,18 @@ namespace OrpheusBelow
         public void ApplyState(bool dashing, bool attacking, PaintedChamberDefinition chamber)
         {
             if (_contact == null || _ambient == null || _cast == null) return;
+            _contact.enabled = _ambient.enabled = _cast.enabled = _player == null || _player.CurrentHealth > 0;
             float intensity = chamber == null ? 1f : chamber.dominantLightIntensity;
             OrpheusShadowShape shape = Evaluate(dashing, attacking, intensity);
-            SetScale(_contact, shape.contactScale);
-            SetScale(_ambient, shape.ambientScale);
-            SetScale(_cast, shape.castScale);
-
             Vector2 castDirection = ResolveCastDirection(chamber);
-            Vector3 groundDirection = UnderworldCamera2D.IsoRightXZ * castDirection.x +
-                UnderworldCamera2D.IsoUpXZ * castDirection.y;
-            groundDirection.y = 0f;
-            if (groundDirection.sqrMagnitude < .0001f) groundDirection = new Vector3(-1f, 0f, -1f);
-            groundDirection.Normalize();
-            _cast.transform.localPosition = groundDirection * (dashing ? .82f : .62f) + Vector3.up * .014f;
-            _cast.transform.rotation = Quaternion.LookRotation(groundDirection) * Quaternion.Euler(90f, 0f, 0f);
-            _contact.transform.localPosition = Vector3.up * .025f;
-            _ambient.transform.localPosition = Vector3.up * .018f;
+            bool stage = _player != null && _player.IsIn2DBossStage;
+            GroundShadowPaint.Place(_contact, transform, shape.contactScale, Vector2.right, 0, .035f, stage);
+            GroundShadowPaint.Place(_ambient, transform, shape.ambientScale, Vector2.right, 0, .025f, stage);
+            GroundShadowPaint.Place(_cast, transform, shape.castScale, castDirection, dashing ? .82f : .62f, .015f, stage);
             _contact.color = new Color(.012f, .008f, .018f, Mathf.Clamp(shape.opacity + .1f, .18f, .68f));
             _ambient.color = new Color(.025f, .012f, .035f, shape.opacity * .72f);
             _cast.color = new Color(.035f, .012f, .025f, shape.opacity * .62f);
         }
-
-        private SpriteRenderer CreateLayer(string name, Sprite sprite, Color color, int order)
-        {
-            var layer = new GameObject(name);
-            layer.transform.SetParent(transform, false);
-            return RenderPipeline2DSetup.AttachGroundDecal(layer, sprite, color, order);
-        }
-
-        private static void SetScale(SpriteRenderer renderer, Vector2 scale)
-            => renderer.transform.localScale = new Vector3(scale.x, scale.y, 1f);
 
         private void LateUpdate()
         {

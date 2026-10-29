@@ -41,7 +41,7 @@ namespace OrpheusBelow
         [Header("Guardian Identity & Rhythm")]
         public BossIdentity identity = BossIdentity.CantorOfFury;
         public string bossDisplayName = "Cantor of Tisiphone";
-        public float maxHealth = 260f;
+        public float maxHealth = 520f;
         public float bpm = 100f;
         public float noteTravelSeconds = 1.15f;
         public float hitWindowSeconds = 0.23f;
@@ -164,7 +164,7 @@ namespace OrpheusBelow
                     _headBaseColor = new Color(.9f, .7f, .3f); break;
             }
 
-            maxHealth *= 3.60f;
+            maxHealth *= 7.20f;
             hitWindowSeconds = 0.23f;
             CurrentHealth = maxHealth;
             _beatInterval = 60f / Mathf.Max(50f, bpm);
@@ -531,12 +531,12 @@ namespace OrpheusBelow
 
                 case 1: // Ground Cleave Wave
                     StageSweepWave2D.Spawn(transform.position + new Vector3(0f, 0.65f, 0f), _stageCenter,
-                        speed: identity == BossIdentity.CerberusHoundOfHades ? 12.8f : 10.6f);
+                        speed: identity == BossIdentity.CerberusHoundOfHades ? 12.8f : 10.6f, identity: identity);
                     UnderworldCamera2D.Instance?.AddShake(0.25f);
                     break;
 
                 case 2: // Stygian Geyser Hazard under player
-                    StageGeyserHazard2D.Spawn(player.transform.position);
+                    StageGeyserHazard2D.Spawn(player.transform.position, identity);
                     break;
             }
         }
@@ -639,7 +639,8 @@ namespace OrpheusBelow
                 }
                 else
                 {
-                    RenderPipeline2DSetup.AttachSprite(go, RenderPipeline2DSetup.DiamondSprite, new Color(2.5f, 2.05f, 0.45f, 1f), 22);
+                    go.transform.localScale = Vector3.one;
+                    BossAttackArt.Attach(go.transform, identity, 1.25f, 24);
                 }
             }
 
@@ -678,7 +679,7 @@ namespace OrpheusBelow
                     n.resolved = true;
                     HarmonyStreak = 0;
                     LastJudgement = "Missed Beat — Dash the Shockwave!";
-                    StageSweepWave2D.Spawn(transform.position + new Vector3(0f, 0.65f, 0f), _stageCenter, speed: 10.6f);
+                    StageSweepWave2D.Spawn(transform.position + new Vector3(0f, 0.65f, 0f), _stageCenter, speed: 10.6f, identity: identity);
                     if (n.visual != null) Destroy(n.visual.gameObject);
                     _notes.RemoveAt(i);
                 }
@@ -711,7 +712,7 @@ namespace OrpheusBelow
                 if (Time.time >= _nextDiscordPenalty)
                 {
                     _nextDiscordPenalty = Time.time + 1.2f;
-                    StageSweepWave2D.Spawn(transform.position + new Vector3(0f, 0.65f, 0f), _stageCenter, speed: 10.6f);
+                    StageSweepWave2D.Spawn(transform.position + new Vector3(0f, 0.65f, 0f), _stageCenter, speed: 10.6f, identity: identity);
                     UnderworldSoundscape.Instance?.PlayDryNote();
                 }
                 return;
@@ -742,7 +743,7 @@ namespace OrpheusBelow
             {
                 HarmonyStreak = 0;
                 LastJudgement = best.requiresHardBoom ? "Too Soft — Needed Fermata (Heavy Strike)" : "Too Loud — Needed Quaver (Small Strike)";
-                StageSweepWave2D.Spawn(transform.position + new Vector3(0f, 0.65f, 0f), _stageCenter, speed: 10.6f);
+                StageSweepWave2D.Spawn(transform.position + new Vector3(0f, 0.65f, 0f), _stageCenter, speed: 10.6f, identity: identity);
             }
         }
 
@@ -923,101 +924,108 @@ namespace OrpheusBelow
         }
     }
 
-    /// <summary>
-    /// Low 2D shockwave wall sweeping Left across the Boss Stage — Dash through with [Space] i-frames!
-    /// </summary>
+    /// <summary>A low painted guardian projectile; dash through its leading core to evade it.</summary>
     public class StageSweepWave2D : MonoBehaviour
     {
         private Vector3 _stageCenter;
-        private float _horizOffset;
-        private float _speed;
-        private float _life = 2.2f;
-
-        public static void Spawn(Vector3 bossWorldPos, Vector3 stageCenter, float speed)
+        private float _horizOffset, _speed, _elapsed, _life = 2.2f;
+        public BossIdentity Identity { get; private set; }
+        public SpriteRenderer ArtRenderer { get; private set; }
+        public bool Removed { get; private set; }
+        public static StageSweepWave2D Spawn(Vector3 bossWorldPos, Vector3 stageCenter, float speed,
+            BossIdentity identity = BossIdentity.CantorOfFury)
         {
-            GameObject go = new GameObject("Boss2DSweepWave");
-            go.transform.position = bossWorldPos;
-            go.transform.localScale = new Vector3(0.85f, 1.55f, 1f);
-            RenderPipeline2DSetup.AttachSprite(go, RenderPipeline2DSetup.DiamondSprite, new Color(2.8f, 0.38f, 0.20f, 0.95f), 19);
-
-            StageSweepWave2D w = go.AddComponent<StageSweepWave2D>();
-            w._stageCenter = stageCenter;
-            w._horizOffset = Vector3.Dot(bossWorldPos - stageCenter, UnderworldCamera2D.IsoRightXZ) - 0.8f;
-            w._speed = speed;
+            var go = new GameObject(identity + "_GuardianProjectile");
+            var wave = go.AddComponent<StageSweepWave2D>();
+            wave.Identity = identity; wave._stageCenter = stageCenter; wave._speed = speed;
+            wave._horizOffset = Vector3.Dot(bossWorldPos - stageCenter, UnderworldCamera2D.IsoRightXZ) - .8f;
+            go.transform.position = stageCenter + UnderworldCamera2D.IsoRightXZ * wave._horizOffset + Vector3.up * .72f;
+            go.transform.rotation = UnderworldCamera2D.CurrentBillboardRotation;
+            wave.ArtRenderer = BossAttackArt.Attach(go.transform, identity);
+            return wave;
         }
-
         private void Update()
         {
+            if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive) return;
+            Advance(Time.deltaTime);
+        }
+        public void Advance(float dt)
+        {
+            if (Removed || dt <= 0) return;
             transform.rotation = UnderworldCamera2D.CurrentBillboardRotation;
-            _horizOffset -= _speed * Time.deltaTime;
-            transform.position = _stageCenter + UnderworldCamera2D.IsoRightXZ * _horizOffset + new Vector3(0f, 0.72f, 0f);
-
-            OrpheusPlayerController p = OrpheusPlayerController.Instance;
-            if (p != null && p.IsIn2DBossStage && !p.IsDashing)
+            float previous = _horizOffset; _horizOffset -= _speed * dt; _elapsed += dt;
+            transform.position = _stageCenter + UnderworldCamera2D.IsoRightXZ * _horizOffset + Vector3.up * .72f;
+            Vector2 motion = BossAttackArt.Motion(Identity, _elapsed);
+            ArtRenderer.transform.localPosition = Vector3.up * motion.x;
+            ArtRenderer.transform.localRotation = Quaternion.Euler(0, 0, motion.y);
+            var player = OrpheusPlayerController.Instance;
+            if (player != null && player.IsIn2DBossStage && !player.IsDashing && !player.IsGameOver && !player.IsVictory)
             {
-                float pHoriz = Vector3.Dot(p.transform.position - _stageCenter, UnderworldCamera2D.IsoRightXZ);
-                if (Mathf.Abs(pHoriz - _horizOffset) < 0.62f)
-                {
-                    p.TakeDamage(24f, transform.position);
-                    Destroy(gameObject);
-                    return;
-                }
+                float playerX = Vector3.Dot(player.transform.position - _stageCenter, UnderworldCamera2D.IsoRightXZ);
+                if (playerX >= Mathf.Min(previous, _horizOffset) - .62f && playerX <= Mathf.Max(previous, _horizOffset) + .62f)
+                { player.TakeDamage(24f, transform.position); Remove(); return; }
             }
-
-            _life -= Time.deltaTime;
-            if (_life <= 0f || _horizOffset < -10f) Destroy(gameObject);
+            _life -= dt;
+            if (_life <= 0 || _horizOffset < -10f) Remove();
+        }
+        private void Remove()
+        {
+            if (Removed) return; Removed = true;
+            if (Application.isPlaying) Destroy(gameObject); else DestroyImmediate(gameObject);
         }
     }
 
-    /// <summary>
-    /// Vertical 2D Stygian Geyser Telegraph under Orpheus's feet — step Left/Right with A/D before 0.72s eruption!
-    /// </summary>
+    /// <summary>The guardian's painted eruption grows above its committed ground warning.</summary>
     public class StageGeyserHazard2D : MonoBehaviour
     {
         private Transform _columnVis;
+        private PaintedAttackShadow _warning;
         private float _timer;
-        private const float TelegraphTime = 0.72f;
-
-        public static void Spawn(Vector3 playerWorldPos)
+        private const float TelegraphTime = .72f;
+        public BossIdentity Identity { get; private set; }
+        public SpriteRenderer ArtRenderer { get; private set; }
+        public bool Erupted { get; private set; }
+        private Vector3 _fullScale;
+        public static StageGeyserHazard2D Spawn(Vector3 playerWorldPos, BossIdentity identity = BossIdentity.CantorOfFury)
         {
-            GameObject go = new GameObject("Boss2DGeyserTelegraph");
-            go.transform.position = new Vector3(playerWorldPos.x, 0.05f, playerWorldPos.z);
-
-            GameObject col = new GameObject("GeyserBeam");
-            col.transform.SetParent(go.transform, false);
-            col.transform.localPosition = new Vector3(0f, 2.2f, 0f);
-            col.transform.localScale = new Vector3(0.28f, 4.4f, 1f);
-            RenderPipeline2DSetup.AttachSprite(col, RenderPipeline2DSetup.SquareSprite, new Color(0.4f, 2.4f, 1.8f, 0.45f), 17);
-
-            StageGeyserHazard2D g = go.AddComponent<StageGeyserHazard2D>();
-            g._columnVis = col.transform;
+            var go = new GameObject(identity + "_GuardianEruption");
+            go.transform.position = new Vector3(playerWorldPos.x, .05f, playerWorldPos.z);
+            go.transform.rotation = UnderworldCamera2D.CurrentBillboardRotation;
+            var hazard = go.AddComponent<StageGeyserHazard2D>(); hazard.Identity = identity;
+            hazard.ArtRenderer = BossAttackArt.Attach(go.transform, identity, 2.1f, 19);
+            hazard._columnVis = hazard.ArtRenderer.transform;
+            hazard._columnVis.localPosition = Vector3.up * .8f;
+            hazard._fullScale = hazard._columnVis.localScale;
+            hazard._columnVis.localScale *= .35f;
+            hazard.ArtRenderer.color = new Color(1, 1, 1, .28f);
+            hazard._warning = PaintedAttackShadow.Create(go.transform.position, .95f, TelegraphTime);
+            return hazard;
         }
-
         private void Update()
         {
-            transform.rotation = UnderworldCamera2D.CurrentBillboardRotation;
-            _timer += Time.deltaTime;
-
-            if (_columnVis != null)
-            {
-                float w = Mathf.Lerp(0.22f, 1.15f, _timer / TelegraphTime);
-                _columnVis.localScale = new Vector3(w, 4.4f, 1f);
-            }
-
-            if (_timer >= TelegraphTime)
-            {
-                GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 1.2f, 0f), 2.8f, new Color(0.4f, 2.7f, 1.9f, 1f), 0.25f, upright2D: true);
-                UnderworldCamera2D.Instance?.AddShake(0.25f);
-
-                OrpheusPlayerController p = OrpheusPlayerController.Instance;
-                if (p != null && !p.IsDashing)
-                {
-                    Vector3 diff = p.transform.position - transform.position;
-                    diff.y = 0f;
-                    if (diff.magnitude < 0.95f) p.TakeDamage(25f, transform.position);
-                }
-                Destroy(gameObject);
-            }
+            if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive) return;
+            Advance(Time.deltaTime);
         }
+        public void Advance(float dt)
+        {
+            if (Erupted || dt <= 0) return;
+            transform.rotation = UnderworldCamera2D.CurrentBillboardRotation;
+            _timer += Mathf.Min(dt, .1f);
+            float progress = Mathf.Clamp01(_timer / TelegraphTime);
+            _warning?.Progress(progress);
+            _columnVis.localScale = _fullScale * Mathf.Lerp(.35f, 1f, progress);
+            ArtRenderer.color = new Color(1, 1, 1, Mathf.Lerp(.28f, 1f, progress));
+            if (_timer < TelegraphTime) return;
+            Erupted = true; _warning?.Dispose(); _warning = null;
+            UnderworldCamera2D.Instance?.AddShake(.25f);
+            var player = OrpheusPlayerController.Instance;
+            if (player != null && !player.IsDashing && !player.IsGameOver && !player.IsVictory)
+            {
+                Vector3 diff = player.transform.position - transform.position; diff.y = 0;
+                if (diff.magnitude < .95f) player.TakeDamage(25f, transform.position);
+            }
+            if (Application.isPlaying) Destroy(gameObject, .16f); else DestroyImmediate(gameObject);
+        }
+        private void OnDestroy() { _warning?.Dispose(); _warning = null; }
     }
 }

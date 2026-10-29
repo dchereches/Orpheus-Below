@@ -20,11 +20,22 @@ namespace OrpheusBelow.EditorTools
             // limb; removed polygons erase the other source limb from the retained body layer.
             public Vector2 hip, knee, ankle, shoulder, elbow, wrist, otherShoulder, otherHip;
             public Vector2[] leg, removedLeg, arm, removedArm;
+            public Garment[] garments;
+            public SourceHand[] sourceHands;
             public int sourceWidth, sourceHeight;
             public float legMargin, armMargin, removedMargin = 2f, removedArmMargin = 2f;
         }
 
-        private struct Cell { public Vector2 min, max; public bool leg, arm, body; }
+        [Serializable] private sealed class Garment
+        {
+            // A retained coat panel under the moving sleeve, sampled from intact torso paint.
+            // Native pixels use the same top-left origin as the anatomical masks.
+            public Vector2 min, max, sourceMin, sourceMax;
+        }
+
+        [Serializable] private sealed class SourceHand { public Vector2 center; public float radius; }
+
+        private struct Cell { public Vector2 min, max; public bool leg, arm, body; public int garment; }
 
         public static Sprite[] Bake(Sprite[] canonicalFive, OrpheusAnimationLibrary owner, string layoutJsonPath)
         {
@@ -63,7 +74,14 @@ namespace OrpheusBelow.EditorTools
             rig.otherShoulder = Vector2.Scale(rig.otherShoulder, scale); rig.otherHip = Vector2.Scale(rig.otherHip, scale);
             foreach (Vector2[] polygon in new[] { rig.leg, rig.removedLeg, rig.arm, rig.removedArm })
                 if (polygon != null) for (int i = 0; i < polygon.Length; i++) polygon[i] = Vector2.Scale(polygon[i], scale);
+            if (rig.garments != null) foreach (Garment panel in rig.garments)
+            {
+                panel.min = Vector2.Scale(panel.min, scale); panel.max = Vector2.Scale(panel.max, scale);
+                panel.sourceMin = Vector2.Scale(panel.sourceMin, scale); panel.sourceMax = Vector2.Scale(panel.sourceMax, scale);
+            }
             float marginScale = Mathf.Min(scale.x, scale.y);
+            if (rig.sourceHands != null) foreach (SourceHand hand in rig.sourceHands)
+            { hand.center = Vector2.Scale(hand.center, scale); hand.radius *= marginScale; }
             rig.legMargin *= marginScale; rig.armMargin *= marginScale;
             rig.removedMargin *= marginScale; rig.removedArmMargin *= marginScale;
         }
@@ -96,32 +114,75 @@ namespace OrpheusBelow.EditorTools
                 bool arm = Within(centre, rig.arm, rig.armMargin);
                 bool removedLeg = Within(centre, rig.removedLeg, rig.removedMargin);
                 bool removedArm = Within(centre, rig.removedArm, rig.removedArmMargin);
+                bool sourceHand = false;
+                if (rig.sourceHands != null) foreach (SourceHand hand in rig.sourceHands)
+                    sourceHand |= (centre - hand.center).sqrMagnitude <= hand.radius * hand.radius;
                 // Keep the solid coat/pelvis and the shoulder caps painted under the moving
                 // limbs. Limbs blend from this same pinned root, preventing transparent seams.
                 bool retainPelvis = centre.y <= rig.hip.y + 12f;
                 bool retainShoulder = Vector2.Distance(centre, rig.shoulder) <= 7f ||
                     Vector2.Distance(centre, rig.otherShoulder) <= 7f;
                 bool body = (!(leg || removedLeg) || retainPelvis) &&
-                    (!(arm || removedArm) || retainShoulder);
-                cells.Add(new Cell { min = new Vector2(x, y), max = new Vector2(xmax, ymax), leg = leg && !arm, arm = arm, body = body });
+                    (!(arm || removedArm) || retainShoulder) && !sourceHand;
+                int garment = -1;
+                // Backing replaces only excised arm/hand cells. Filling unrelated leg cuts
+                // inside a panel rectangle would leave fixed rectangular coat appendages.
+                bool clothCut = arm || removedArm || (sourceHand && !(leg || removedLeg));
+                if (clothCut && rig.garments != null) for (int panel = 0; panel < rig.garments.Length; panel++)
+                {
+                    Garment cloth = rig.garments[panel];
+                    if (centre.x >= cloth.min.x && centre.x <= cloth.max.x && centre.y >= cloth.min.y && centre.y <= cloth.max.y)
+                    { garment = panel; break; }
+                }
+                cells.Add(new Cell { min = new Vector2(x, y), max = new Vector2(xmax, ymax), leg = leg && !arm, arm = arm, body = body, garment = garment });
             }
-            KeepLargestBodyIsland(cells);
+            // Orphaned original fingertips must be removed before they can widen the coat
+            // silhouette or reconnect through newly retained cloth.
+            KeepLargestBodyIsland(cells, false);
+            ClipBackingToCoat(cells, rig, paint.texture.height);
+            KeepLargestBodyIsland(cells, true);
             return cells;
         }
 
-        private static void KeepLargestBodyIsland(List<Cell> cells)
+        private static void ClipBackingToCoat(List<Cell> cells, Rig rig, int textureHeight)
+        {
+            // The original hanging hands sometimes covered the long coat at waist height.
+            // Back those interior cuts all the way down, but do not turn an exposed hand
+            // outside the coat into a stationary cloth appendage. Retained paint on both
+            // sides of a cut establishes the original coat's horizontal silhouette.
+            var silhouette = new Dictionary<float, Vector2>();
+            foreach (Cell cell in cells)
+            {
+                if (!cell.body) continue;
+                if (silhouette.TryGetValue(cell.min.y, out Vector2 span))
+                    silhouette[cell.min.y] = new Vector2(Mathf.Min(span.x, cell.min.x), Mathf.Max(span.y, cell.max.x));
+                else silhouette.Add(cell.min.y, new Vector2(cell.min.x, cell.max.x));
+            }
+            for (int i = 0; i < cells.Count; i++)
+            {
+                Cell cell = cells[i];
+                if (cell.garment < 0 || cell.body) continue;
+                float y = textureHeight - (cell.min.y + cell.max.y) * .5f;
+                if (y <= rig.elbow.y + 5f) continue;
+                if (!silhouette.TryGetValue(cell.min.y, out Vector2 span) ||
+                    cell.min.x <= span.x || cell.max.x >= span.y)
+                { cell.garment = -1; cells[i] = cell; }
+            }
+        }
+
+        private static void KeepLargestBodyIsland(List<Cell> cells, bool includeBacking)
         {
             // Removing both source limbs can leave an unowned boot or hand tip behind. Only
             // the retained torso/cape/head is filtered: moving anatomical paint stays intact.
             var bodyGrid = new Dictionary<Vector2, int>();
             for (int i = 0; i < cells.Count; i++)
-                if (cells[i].body) bodyGrid.Add(cells[i].min, i);
+                if (cells[i].body || (includeBacking && cells[i].garment >= 0)) bodyGrid.Add(cells[i].min, i);
             var visited = new bool[cells.Count];
             var largest = new List<int>();
             var queue = new Queue<int>();
             for (int seed = 0; seed < cells.Count; seed++)
             {
-                if (!cells[seed].body || visited[seed]) continue;
+                if ((!cells[seed].body && (!includeBacking || cells[seed].garment < 0)) || visited[seed]) continue;
                 var component = new List<int>();
                 visited[seed] = true; queue.Enqueue(seed);
                 while (queue.Count > 0)
@@ -141,8 +202,10 @@ namespace OrpheusBelow.EditorTools
             var retained = new HashSet<int>(largest);
             for (int i = 0; i < cells.Count; i++)
             {
-                if (!cells[i].body || retained.Contains(i)) continue;
-                Cell cell = cells[i]; cell.body = false; cells[i] = cell;
+                if (retained.Contains(i)) continue;
+                Cell cell = cells[i]; cell.body = false;
+                if (includeBacking) cell.garment = -1;
+                cells[i] = cell;
             }
         }
 
@@ -163,12 +226,13 @@ namespace OrpheusBelow.EditorTools
             var positions = new List<Vector3>();
             var uvs = new List<Vector2>();
             var indices = new List<ushort>();
-            // Far arm, far leg, retained body/cape/head, near leg, near arm.
-            for (int layer = 0; layer < 5; layer++)
+            // Far arm, far leg, retained garment backing, body/cape/head, near leg, near arm.
+            // Backing sits behind the uncut torso and never retains an original fist/forearm.
+            for (int layer = 0; layer < 6; layer++)
             {
                 var welded = new Dictionary<Vector2, ushort>();
-                bool arm = layer == 0 || layer == 4, leg = layer == 1 || layer == 3;
-                bool near = layer >= 3;
+                bool garment = layer == 2, arm = layer == 0 || layer == 5, leg = layer == 1 || layer == 4;
+                bool near = layer >= 4;
                 var limb = arm ? (near ? pose.nearArm : pose.farArm) : (near ? pose.nearLeg : pose.farLeg);
                 Vector2 rootOffset = arm ? (near ? Vector2.zero : Local(paint, rig.otherShoulder) - shoulder)
                     : (near ? Vector2.zero : farHipOffset);
@@ -178,7 +242,7 @@ namespace OrpheusBelow.EditorTools
                 float q = Mathf.Repeat(phase + (near ? 0f : .5f), 1f);
                 foreach (Cell cell in cells)
                 {
-                    if (arm ? !cell.arm : leg ? !cell.leg : !cell.body) continue;
+                    if (arm ? !cell.arm : leg ? !cell.leg : garment ? cell.garment < 0 : !cell.body) continue;
                     var quad = new ushort[4];
                     Vector2[] corners = { cell.min, new Vector2(cell.max.x, cell.min.y), new Vector2(cell.min.x, cell.max.y), cell.max };
                     for (int c = 0; c < 4; c++)
@@ -196,7 +260,17 @@ namespace OrpheusBelow.EditorTools
                             position = Skin(point, arm ? shoulder : hip, arm ? elbow : knee, arm ? wrist : ankle,
                                 targetRoot, targetJoint, targetEnd, body + rootOffset, arm, q, paint.pixelsPerUnit);
                         positions.Add(position);
-                        uvs.Add(new Vector2(pixel.x / paint.texture.width, pixel.y / paint.texture.height));
+                        Vector2 sample = pixel;
+                        if (garment)
+                        {
+                            Garment panel = rig.garments[cell.garment];
+                            Vector2 topLeft = new Vector2(pixel.x, paint.texture.height - pixel.y);
+                            Vector2 t = new Vector2(Mathf.InverseLerp(panel.min.x, panel.max.x, topLeft.x),
+                                Mathf.InverseLerp(panel.min.y, panel.max.y, topLeft.y));
+                            sample = new Vector2(Mathf.Lerp(panel.sourceMin.x, panel.sourceMax.x, t.x),
+                                paint.texture.height - Mathf.Lerp(panel.sourceMin.y, panel.sourceMax.y, t.y));
+                        }
+                        uvs.Add(new Vector2(sample.x / paint.texture.width, sample.y / paint.texture.height));
                     }
                     indices.Add(quad[0]); indices.Add(quad[2]); indices.Add(quad[1]);
                     indices.Add(quad[1]); indices.Add(quad[2]); indices.Add(quad[3]);

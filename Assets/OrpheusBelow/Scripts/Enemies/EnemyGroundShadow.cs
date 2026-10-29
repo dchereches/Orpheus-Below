@@ -8,6 +8,7 @@ namespace OrpheusBelow
     {
         private PaintedEnemyActor _actor;
         private SpriteRenderer _renderer;
+        private SpriteRenderer _cast;
         public static void Ensure(PaintedEnemyActor actor)
         {
             var shadow = actor.GetComponent<EnemyGroundShadow>();
@@ -15,25 +16,31 @@ namespace OrpheusBelow
             shadow._actor = actor;
             if (shadow._renderer == null)
             {
-                var go = new GameObject("EnemyGroundShadow"); go.transform.SetParent(actor.transform, false);
-                shadow._renderer = RenderPipeline2DSetup.AttachGroundDecal(go, RenderPipeline2DSetup.SoftGlowSprite,
-                    new Color(.025f, .015f, .035f, .66f), 4);
-                actor.GetComponent<PaintedActorDepth>()?.Exclude(shadow._renderer);
+                shadow._renderer = GroundShadowPaint.Create(actor.transform, "EnemyGroundShadow",
+                    new Color(.025f, .015f, .035f, .66f), 0);
             }
+            if (shadow._cast == null)
+                shadow._cast = GroundShadowPaint.Create(actor.transform, "EnemyCastShadow",
+                    new Color(.03f, .018f, .04f, .34f), -1);
             shadow.LateUpdate();
         }
 
         private void LateUpdate()
         {
-            if (_actor == null || _renderer == null) return;
+            if (_actor == null || _renderer == null || _cast == null) return;
+            bool alive = (_actor.OwnerShade == null || (_actor.OwnerShade.CurrentHealth > 0 && !_actor.OwnerShade.IsPacified))
+                && (_actor.OwnerBoss == null || !_actor.OwnerBoss.IsDefeated);
+            _renderer.enabled = _cast.enabled = alive;
+            if (!alive) return;
             bool stage = _actor.IsBossStage;
             float width = Mathf.Clamp((_actor.Art?.Library?.visibleHeight ?? 3f) * .6f, 1f, 3.3f);
-            _renderer.transform.localScale = new Vector3(width, stage ? width * .24f : width * .7f, 1f);
-            _renderer.transform.rotation = stage ? UnderworldCamera2D.CurrentBillboardRotation : RenderPipeline2DSetup.GroundDecalRotation;
-            Vector3 position = _actor.transform.position; position.y = .035f;
-            _renderer.transform.position = position;
+            Vector2 castDirection = OrpheusGroundShadow.ResolveCastDirection(PaintedChamberMap.Active?.definition);
+            GroundShadowPaint.Place(_renderer, transform, new Vector2(width, width * .7f), Vector2.right, 0, .035f, stage);
+            GroundShadowPaint.Place(_cast, transform, new Vector2(width * 1.4f, width * .62f), castDirection, width * .32f, .025f, stage);
             float airborne = Mathf.Max(0, _actor.transform.position.y);
-            _renderer.color = new Color(.025f, .015f, .035f, Mathf.Lerp(.66f, .26f, Mathf.Clamp01(airborne / 5f)));
+            float strength = Mathf.Lerp(1f, .45f, Mathf.Clamp01(airborne / 5f));
+            _renderer.color = new Color(.025f, .015f, .035f, .66f * strength);
+            _cast.color = new Color(.03f, .018f, .04f, .34f * strength);
         }
     }
 }

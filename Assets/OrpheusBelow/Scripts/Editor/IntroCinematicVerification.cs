@@ -221,7 +221,7 @@ namespace OrpheusBelow.EditorTools
                         var damageText=feedback.GetComponentsInChildren<Text>().Single(t=>t.name=="EnemyDamageNumber");
                         Require(damageText.text=="14" && damageText.font==GameTypography.Font,"Applied armored damage/font mismatch");
                         Require(damageText.rectTransform.anchoredPosition.sqrMagnitude>100,"Damage number not anchored near enemy");
-                        Require(feedback.GetComponentsInChildren<Text>().Any(t=>t.name=="EnemyHealthValue" && t.text.Contains(" / ")),"Enemy health readout missing");
+                        Require(!feedback.GetComponentsInChildren<Text>(true).Any(t=>t.name=="EnemyHealthValue"),"Enemy numeric health label remains");
                         var map=PaintedChamberMap.Active; var door=map.ActivePassage;
                         bool unlocked=door.IsUnlocked; door.SetUnlocked(true);
                         typeof(ChamberExitDoor).GetMethod("TryEnter",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(door,new object[]{OrpheusPlayerController.Instance.GetComponent<Collider>()});
