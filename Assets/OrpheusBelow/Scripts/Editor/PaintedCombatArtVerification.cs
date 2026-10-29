@@ -48,12 +48,14 @@ namespace OrpheusBelow.EditorTools
         {
             public string boss, projectileAsset, capture;
             public float maxHealth;
+            public int contactAndCastPixels, orpheusContactAndCastPixels;
         }
         [Serializable] private sealed class Evidence
         {
             public string result, error, facing;
             public int runtimeErrors, uniqueRunFrames, shadowChangedPixels;
             public int orpheusShadowPixels, eurydiceShadowPixels, enemyShadowPixels;
+            public int waitingEurydiceShadowPixels;
             public float actualRunDistance;
             public string[] captures;
             public BossEvidence[] bosses;
@@ -220,6 +222,7 @@ namespace OrpheusBelow.EditorTools
                     Proof.orpheusShadowPixels = CheckActorShadow(_player.transform, "orpheus");
                     Proof.eurydiceShadowPixels = CheckActorShadow(_companion.transform, "eurydice");
                     Proof.enemyShadowPixels = CheckActorShadow(_shade.transform, "enemy");
+                    VerifyWaitingEurydice();
                     _shade.OnOrphicHit(5, .25f, false, _player.transform.position);
                     Step(7); return;
                 }
@@ -356,7 +359,40 @@ namespace OrpheusBelow.EditorTools
 
         private static SpriteRenderer[] ShadowRenderers() => new[] { _player.transform, _companion.transform, _shade.transform }
             .SelectMany(t => t.GetComponentsInChildren<SpriteRenderer>())
-            .Where(r => r.sharedMaterial != null && r.sharedMaterial.shader.name == "OrpheusBelow/GroundShadow").ToArray();
+            .Where(r => r.enabled && r.gameObject.activeInHierarchy && r.name != "StageFloorPool" &&
+                r.sharedMaterial != null && r.sharedMaterial.shader.name == "OrpheusBelow/GroundShadow").ToArray();
+
+        private static void VerifyWaitingEurydice()
+        {
+            var originalMap = PaintedChamberMap.Active;
+            var originalProgress = UnderworldJourney.Progress;
+            var temporary = new GameObject("NativeThroneShadowFactory");
+            bool companionActive = _companion.gameObject.activeSelf;
+            try
+            {
+                UnderworldJourney.Reset();
+                var map = temporary.AddComponent<PaintedChamberMap>();
+                map.definition = Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_07");
+                Call(map, "CreateWaitingSoul");
+                var waiting = map.transform.Find("Eurydice_WaitingAtTheThrone");
+                Require(waiting != null && waiting.GetComponent<EurydiceGroundShadow>() != null,
+                    "The real throne factory omitted waiting Eurydice's shadows.");
+                originalMap.MakeActive();
+                waiting.position = _companion.transform.position;
+                _companion.gameObject.SetActive(false);
+                Call(waiting.GetComponent<EurydiceGroundShadow>(), "LateUpdate");
+                Call(waiting.GetComponent<PaintedActorDepth>(), "LateUpdate");
+                Capture("waiting-eurydice-grounded-shadows");
+                Proof.waitingEurydiceShadowPixels = CheckActorShadow(waiting, "waiting-eurydice", "waiting-eurydice-grounded-shadows");
+            }
+            finally
+            {
+                Object.DestroyImmediate(temporary);
+                typeof(UnderworldJourney).GetProperty("Progress").SetValue(null, originalProgress);
+                originalMap.MakeActive();
+                _companion.gameObject.SetActive(companionActive);
+            }
+        }
 
         private static void PrepareBoss()
         {
@@ -388,7 +424,12 @@ namespace OrpheusBelow.EditorTools
             string path = AssetDatabase.GetAssetPath(painted.sprite).Replace('\\', '/');
             Require(AttackPaths.Add(path), "Two guardians share the same attack art: " + path);
             string name = "boss-projectile-" + BossNames[_bossIndex]; Capture(name);
-            BossProof.Add(new BossEvidence { boss = BossNames[_bossIndex], projectileAsset = path, maxHealth = _boss.maxHealth, capture = name + ".png" });
+            var floor = _boss.transform.Find("StageFloorPool").GetComponent<SpriteRenderer>();
+            Require(floor.enabled && floor.color.grayscale > .1f, "Black boss stage has no visible grounding floor for " + BossNames[_bossIndex]);
+            int bossPixels = CheckActorShadow(_boss.transform, "boss-" + BossNames[_bossIndex], name);
+            int playerPixels = CheckActorShadow(_player.transform, "stage-orpheus-" + BossNames[_bossIndex], name);
+            BossProof.Add(new BossEvidence { boss = BossNames[_bossIndex], projectileAsset = path, maxHealth = _boss.maxHealth,
+                capture = name + ".png", contactAndCastPixels = bossPixels, orpheusContactAndCastPixels = playerPixels });
         }
 
         private static void Capture(string name, bool hud = false)
@@ -400,9 +441,10 @@ namespace OrpheusBelow.EditorTools
             File.Copy(source, Path.Combine(Output, name + ".png"), true); File.Delete(source); Captures.Add(name + ".png");
         }
 
-        private static int CheckActorShadow(Transform actor, string name)
+        private static int CheckActorShadow(Transform actor, string name, string baseline = "three-actors-grounded-shadows")
         {
-            var shadows = actor.GetComponentsInChildren<SpriteRenderer>().Where(r => r.sharedMaterial != null &&
+            // Leave the lit stage-floor pool enabled: the pair must prove the dark contact/cast itself renders.
+            var shadows = actor.GetComponentsInChildren<SpriteRenderer>().Where(r => r.enabled && r.name != "StageFloorPool" && r.sharedMaterial != null &&
                 r.sharedMaterial.shader.name == "OrpheusBelow/GroundShadow").ToArray();
             Require(shadows.Length >= 2, "Persistent contact and cast shadows are missing for " + name);
             foreach (var shadow in shadows) shadow.enabled = false;
@@ -410,7 +452,7 @@ namespace OrpheusBelow.EditorTools
             try
             {
                 Capture(reference);
-                int changed = ChangedPixels("three-actors-grounded-shadows", reference);
+                int changed = ChangedPixels(baseline, reference);
                 Require(changed > 10, name + " shadow paint was not visible in the rendered camera (" + changed + " pixels).");
                 return changed;
             }

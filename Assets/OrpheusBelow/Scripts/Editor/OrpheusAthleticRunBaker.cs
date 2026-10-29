@@ -134,6 +134,8 @@ namespace OrpheusBelow.EditorTools
                     if (centre.x >= cloth.min.x && centre.x <= cloth.max.x && centre.y >= cloth.min.y && centre.y <= cloth.max.y)
                     { garment = panel; break; }
                 }
+                // Keep an overlap at the pinned pelvis rather than cutting the moving
+                // trousers at a horizontal row. Skin keeps this overlap on the body.
                 cells.Add(new Cell { min = new Vector2(x, y), max = new Vector2(xmax, ymax), leg = leg && !arm, arm = arm, body = body, garment = garment });
             }
             // Orphaned original fingertips must be removed before they can widen the coat
@@ -221,8 +223,11 @@ namespace OrpheusBelow.EditorTools
             Vector2 lateral = new Vector2(Mathf.Cos(angle), -Mathf.Sin(angle) * .2f);
             // The rendered boot anchor is independent of the source sprite's import pivot.
             Vector2 pelvis = new Vector2(0f, .30f + pose.hipHeight);
-            Vector2 farHipOffset = rig.otherHip.sqrMagnitude > .01f
-                ? Local(paint, rig.otherHip) - hip : lateral * -.26f;
+            // otherHip belongs to the source walking pose: its fore/aft separation is
+            // already painted into that stride. Reusing it as a running pelvis offset
+            // leaves the East far leg half a body-width behind the near leg on every
+            // step. Project an anatomical hip width instead, including side-view depth.
+            Vector2 farHipOffset = lateral * -.44f;
             var positions = new List<Vector3>();
             var uvs = new List<Vector2>();
             var indices = new List<ushort>();
@@ -258,7 +263,7 @@ namespace OrpheusBelow.EditorTools
                         Vector2 position = body;
                         if (arm || leg)
                             position = Skin(point, arm ? shoulder : hip, arm ? elbow : knee, arm ? wrist : ankle,
-                                targetRoot, targetJoint, targetEnd, body + rootOffset, arm, q, paint.pixelsPerUnit);
+                                targetRoot, targetJoint, targetEnd, body + (arm ? rootOffset : Vector2.zero), arm, q, paint.pixelsPerUnit, Mathf.Abs(travel.x));
                         positions.Add(position);
                         Vector2 sample = pixel;
                         if (garment)
@@ -305,10 +310,22 @@ namespace OrpheusBelow.EditorTools
         }
 
         private static Vector2 Skin(Vector2 point, Vector2 a, Vector2 b, Vector2 c, Vector2 ta, Vector2 tb, Vector2 tc,
-            Vector2 rootPaint, bool arm, float phase, float ppu)
+            Vector2 rootPaint, bool arm, float phase, float ppu, float sideGather)
         {
-            Vector2 upper = Bone(point, a, b, ta, tb);
-            Vector2 lower = Bone(point, b, c, tb, tc);
+            float depth = arm ? Vector2.Distance(point, a) : a.y - point.y;
+            float pinned = (arm ? 5f : 12f) / ppu;
+            float weight = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(pinned, pinned + (arm ? .16f : .24f), depth));
+            // The walking donor has broad hanging trouser folds. Keeping their full width
+            // on a horizontal running thigh makes a rounded sack around the raised knee.
+            // Gather only the moving fabric across the bone; UVs and anatomical anchors
+            // stay fixed, and the lower leg opens back to the original rigid boot width.
+            float calf = Vector2.Dot(point - b, c - b) / (c - b).sqrMagnitude;
+            // Front/back views need their painted cloth width to cover the foreshortened
+            // limb. Gather side views smoothly below the pinned seam, never at that seam.
+            float gather = arm ? 0f : sideGather * weight;
+            float lowerWidth = Mathf.Lerp(1f, Mathf.Lerp(.72f, 1f, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.5f, 1f, calf))), gather);
+            Vector2 upper = Bone(point, a, b, ta, tb, Mathf.Lerp(1f, .62f, gather));
+            Vector2 lower = Bone(point, b, c, tb, tc, lowerWidth);
             Vector2 direction = ((b - a).normalized + (c - b).normalized).normalized;
             float joint = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-.10f, .10f, Vector2.Dot(point - b, direction)));
             Vector2 result = Vector2.Lerp(upper, lower, joint);
@@ -321,18 +338,15 @@ namespace OrpheusBelow.EditorTools
                 float footWeight = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-.07f, .04f, Vector2.Dot(point - c, (c - b).normalized)));
                 result = Vector2.Lerp(result, foot, footWeight);
             }
-            float depth = arm ? Vector2.Distance(point, a) : a.y - point.y;
-            float pinned = (arm ? 5f : 12f) / ppu;
-            float weight = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(pinned, pinned + (arm ? .16f : .24f), depth));
             return Vector2.Lerp(rootPaint, result, weight);
         }
 
-        private static Vector2 Bone(Vector2 point, Vector2 a, Vector2 b, Vector2 ta, Vector2 tb)
+        private static Vector2 Bone(Vector2 point, Vector2 a, Vector2 b, Vector2 ta, Vector2 tb, float width)
         {
             Vector2 bone = b - a, posed = tb - ta, delta = point - a;
             float along = Vector2.Dot(delta, bone) / bone.sqrMagnitude;
             float across = (bone.x * delta.y - bone.y * delta.x) / bone.magnitude;
-            return ta + posed * along + new Vector2(-posed.y, posed.x).normalized * across;
+            return ta + posed * along + new Vector2(-posed.y, posed.x).normalized * (across * width);
         }
 
         private static Vector2 Rotate(Vector2 p, float radians)

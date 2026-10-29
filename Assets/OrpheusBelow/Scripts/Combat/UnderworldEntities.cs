@@ -764,6 +764,7 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            if (UnderworldFrontEnd.BlocksMenusOrTransitions) return;
             transform.rotation = UnderworldCamera2D.CurrentBillboardRotation;
             float dt = Time.unscaledDeltaTime;
             _elapsed += dt;
@@ -944,6 +945,7 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            if (UnderworldFrontEnd.BlocksMenusOrTransitions) return;
             if (_uprightBillboard) transform.rotation = UnderworldCamera2D.CurrentBillboardRotation;
 
             _elapsed += Time.unscaledDeltaTime;
@@ -987,6 +989,7 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            if (UnderworldFrontEnd.BlocksMenusOrTransitions) return;
             _life -= Time.unscaledDeltaTime;
             float u = 1f - Mathf.Clamp01(_life / _maxLife);
             if (_sr != null)
@@ -1023,6 +1026,7 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            if (UnderworldFrontEnd.BlocksMenusOrTransitions) return;
             float dt = Time.unscaledDeltaTime;
             _elapsed += dt;
             float u = Mathf.Clamp01(_elapsed / Duration);

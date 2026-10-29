@@ -605,12 +605,13 @@ namespace OrpheusBelow
             OrpheusPlayerController.Instance?.TriggerChamberClear();
 
             ChamberRuntimeData ch = chambers[CurrentChamberIndex];
+            CompletionLensPulse.PlayChamberClear(OrpheusPlayerController.Instance != null
+                ? OrpheusPlayerController.Instance.transform.position + Vector3.up : ch.centerWorld);
             ProceduralLyreAudio.Instance?.PlayCadenceComplete();
 
             if (ch.exitDoor != null)
             {
                 ch.exitDoor.SetUnlocked(true);
-                GroundShockwaveRing.Spawn(ch.exitDoor.transform.position + new Vector3(0f, 0.06f, 0f), 4.2f, new Color(0.5f, 2.6f, 1.5f, 1f), 0.45f);
             }
 
             // Deterministic Mythic Cadence Progression (Zero RNG Stat Boons!)
@@ -860,23 +861,10 @@ namespace OrpheusBelow
             trig.size = new Vector3(3.2f, 2.5f, 3.2f);
             trig.center = new Vector3(-0.4f, 1.0f, -0.4f);
 
-            GameObject portalVis = new GameObject("ArchwayPortalGlow");
-            portalVis.transform.SetParent(doorGo.transform, false);
-            portalVis.transform.localPosition = new Vector3(-0.3f, 1.45f, -0.3f);
-            portalVis.transform.localScale = new Vector3(2.2f, 2.9f, 1f);
-            SpriteRenderer portalSr = RenderPipeline2DSetup.AttachBillboardSprite(portalVis, RenderPipeline2DSetup.SoftGlowSprite, Color.red, 10);
-            portalVis.AddComponent<PortalLocationParticles>().SetAccent(new Color(0.9f, 0.58f, 0.30f));
-
-            GameObject floorRing = new GameObject("DoorThresholdRune");
-            floorRing.transform.SetParent(doorGo.transform, false);
-            floorRing.transform.localPosition = new Vector3(-0.8f, 0.03f, -0.8f);
-            floorRing.transform.localScale = new Vector3(2.4f, 2.4f, 1f);
-            SpriteRenderer beaconSr = RenderPipeline2DSetup.AttachGroundDecal(floorRing, RenderPipeline2DSetup.RingSprite, Color.red, 4);
-
             ChamberExitDoor exitComp = doorGo.AddComponent<ChamberExitDoor>();
             exitComp.targetChamberIndex = targetChamber;
             exitComp.isFinalSunlightExit = finalExit;
-            exitComp.SetupVisuals(portalSr, beaconSr);
+            exitComp.SetupVisuals(null, null);
 
             CreateHadesBrazier(room, new Vector3(-hx + 1.8f, 0f,  hz - 1.8f));
             CreateHadesBrazier(room, new Vector3( hx - 1.8f, 0f, -hz + 1.8f));

@@ -22,7 +22,7 @@ Shader "OrpheusBelow/GroundShadow"
             {
                 fixed4 paint = tex2D(_MainTex, i.uv) * i.color * _Color;
                 // A broad contact core with a soft edge reads on the busy oil-painted floors.
-                paint.a *= 1.0 - smoothstep(.25, 1.0, length(i.uv * 2.0 - 1.0));
+                paint.a *= 1.0 - smoothstep(.45, 1.0, length(i.uv * 2.0 - 1.0));
                 return paint;
             }
             ENDCG

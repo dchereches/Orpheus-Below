@@ -329,6 +329,7 @@ namespace OrpheusBelow
 
         private void CompleteMelodyOfSorrow()
         {
+            CompletionLensPulse.PlayCombo(transform.position + Vector3.up);
             _spriteAnimator?.TriggerRequiem();
             ProceduralLyreAudio.Instance?.PlayFluteFleeCatharsis();
             UnderworldSoundscape.Instance?.PlayImpact(true);

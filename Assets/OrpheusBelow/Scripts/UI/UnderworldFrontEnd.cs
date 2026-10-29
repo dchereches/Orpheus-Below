@@ -13,7 +13,7 @@ namespace OrpheusBelow
     ///   - Main Menu with 3 Hellenic-styled buttons: [ NEW GAME ], [ SETTINGS ], [ QUIT ].
     ///   - Comprehensive Greek Settings Submenu:
     ///       1. Live Microphone Calibration (VU Meter, Note Recognition, Mic Sensitivity / Gain slider, Soft/Boom thresholds, Input Mode).
-    ///       2. Brightness / Gamma adjustment slider (persisted in PlayerPrefs and applied via fullscreen luminance veil).
+    ///       2. World lighting controls (persisted HDRP exposure, contrast and bloom).
     ///       3. Underworld Difficulty selector (Mortal, Heroic, Tartarus with live mechanical descriptions).
     ///       4. Master Volume slider and Audio Mute toggle.
     ///       5. Back button to return to the Main Menu or Pause Screen.
@@ -39,7 +39,7 @@ namespace OrpheusBelow
         private static readonly Color Crimson = new Color(0.98f, 0.32f, 0.25f);
 
         private Font _serif, _sans;
-        private GameObject _canvasObject, _main, _settings;
+        private GameObject _canvasObject, _titleBackdrop, _main, _pause, _settings;
         private RawImage _panorama;
         private Texture2D _shadeTexture;
         private EventSystem _events;
@@ -48,12 +48,15 @@ namespace OrpheusBelow
         private bool _open, _inRun, _reloading, _ownsSerif, _ownsSans;
         private bool _startingIntro, _introSucceeded;
         private IntroCinematicPlayer _intro;
+        private UnderworldCamera2D _pausedCamera;
         private Button _replay;
         private int _lastWidth, _lastHeight;
 
         // Main Menu controls (The 3 Greek Buttons)
         private Text _eyebrow, _premise, _primaryLabel, _settingsLabel, _leaveLabel;
         private Button _primary, _settingsBtn, _leave;
+        private Button _pauseResume, _pauseSettings, _pauseRestart, _pauseLeave;
+        private Text _pauseProgress;
 
         // Settings Submenu controls
         // 1. Microphone & Breath Calibration
@@ -66,11 +69,10 @@ namespace OrpheusBelow
         private Button _inputModeBtn;
         private Text _inputModeLabel;
 
-        // 2. Brightness
-        private Slider _brightnessSlider;
-        private Text _brightnessLabel;
-        private Image _brightnessVeil;
-        private float _currentBrightness = 1.0f;
+        // 2. World lighting
+        private Slider _brightnessSlider, _contrastSlider, _bloomSlider;
+        private Text _brightnessLabel, _contrastLabel, _bloomLabel;
+        private Button _resetLighting;
 
         // 3. Difficulty
         private Button _diffBtn;
@@ -107,7 +109,7 @@ namespace OrpheusBelow
             _serif = _sans = GameTypography.Font;
             _ownsSerif = _ownsSans = false;
 
-            _currentBrightness = PlayerPrefs.GetFloat("Orpheus_Brightness", 1.0f);
+            WorldLightingSettings.EnsureApplied();
             DifficultySettings.Initialize();
 
             EnsureEventSystem();
@@ -187,25 +189,12 @@ namespace OrpheusBelow
 
             var screen = root.GetComponent<RectTransform>();
 
-            // A sibling canvas keeps exposure active when the menu canvas is hidden.
-            var exposure = new GameObject("ExposureCanvas", typeof(RectTransform), typeof(Canvas));
-            exposure.transform.SetParent(transform, false);
-            exposure.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
-            exposure.GetComponent<Canvas>().sortingOrder = 1200;
-            var veilGo = new GameObject("BrightnessVeil", typeof(RectTransform), typeof(Image));
-            veilGo.transform.SetParent(exposure.transform, false);
-            var veilRt = veilGo.GetComponent<RectTransform>();
-            veilRt.anchorMin = Vector2.zero;
-            veilRt.anchorMax = Vector2.one;
-            veilRt.offsetMin = veilRt.offsetMax = Vector2.zero;
-            _brightnessVeil = veilGo.GetComponent<Image>();
-            _brightnessVeil.raycastTarget = false;
-            ApplyBrightness(_currentBrightness);
-
-            // Panorama Underworld art
-            var background = Stretch("Panorama", screen);
+            // Title art belongs only to the title presentation. A paused run keeps its live chamber visible.
+            _titleBackdrop = Stretch("TitleBackdrop", screen).gameObject;
+            var titleBackdrop = _titleBackdrop.GetComponent<RectTransform>();
+            var background = Stretch("Panorama", titleBackdrop);
             background.gameObject.AddComponent<Image>().color = new Color(0.025f, 0.055f, 0.06f);
-            var art = Stretch("PaintedUnderworld", screen);
+            var art = Stretch("PaintedUnderworld", titleBackdrop);
             _panorama = art.gameObject.AddComponent<RawImage>();
             _panorama.texture = Resources.Load<Texture2D>("Art/AsphodelQuietVista")
                 ?? Resources.Load<Texture2D>("Art/UnderworldPanorama");
@@ -222,7 +211,7 @@ namespace OrpheusBelow
                 _shadeTexture.SetPixel(i, 0, new Color(0.018f, 0.035f, 0.04f, alpha));
             }
             _shadeTexture.Apply();
-            var veil = Stretch("ReadabilityVeil", screen).gameObject.AddComponent<RawImage>();
+            var veil = Stretch("ReadabilityVeil", titleBackdrop).gameObject.AddComponent<RawImage>();
             veil.texture = _shadeTexture;
             veil.raycastTarget = false;
 
@@ -252,10 +241,32 @@ namespace OrpheusBelow
             Label(main, "A song can cross what a blade cannot.", 760, 630, 445, 30, 18, Ivory).alignment = TextAnchor.MiddleRight;
             LinkVertical(_primary, _settingsBtn, _leave);
 
+            BuildPauseOverlay(content);
+
             // --- 2. GREEK SETTINGS SUBMENU ---
             BuildSettingsSubmenu(content);
 
             FitPanorama();
+        }
+
+        private void BuildPauseOverlay(RectTransform parent)
+        {
+            var panel = Rect("PauseOverlay", parent, 0, 0, 480, 460);
+            panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(.5f, .5f);
+            panel.anchoredPosition = Vector2.zero;
+            _pause = panel.gameObject;
+            panel.gameObject.AddComponent<Image>().color = new Color(.025f, .035f, .04f, .92f);
+            Line(panel, 28, 26, 424, Gold);
+            Label(panel, "Paused", 40, 44, 400, 48, 38, Ivory).alignment = TextAnchor.MiddleCenter;
+            _pauseProgress = Label(panel, "", 40, 100, 400, 28, 15, Gold, false);
+            _pauseProgress.alignment = TextAnchor.MiddleCenter;
+            _pauseResume = MakeGreekButton(panel, "ResumeBtn", "Resume journey", 48, 148, 384, 52, BeginOrResume, out _, true);
+            _pauseSettings = MakeGreekButton(panel, "PauseSettingsBtn", "Settings", 48, 214, 384, 48, ShowSettings, out _);
+            _pauseRestart = MakeGreekButton(panel, "RestartBtn", "Restart descent", 48, 276, 384, 48, Restart, out _);
+            _pauseLeave = MakeGreekButton(panel, "PauseLeaveBtn", "Return to title", 48, 338, 384, 48, Leave, out _);
+            Label(panel, "Esc / Start to resume", 40, 408, 400, 24, 14, Muted, false).alignment = TextAnchor.MiddleCenter;
+            LinkVertical(_pauseResume, _pauseSettings, _pauseRestart, _pauseLeave);
+            _pause.SetActive(false);
         }
 
         private void BuildSettingsSubmenu(RectTransform parent)
@@ -336,37 +347,60 @@ namespace OrpheusBelow
             // Input Mode Toggle Button
             _inputModeBtn = MakeGreekButton(body, "InputModeBtn", "Input: Keyboard & Mouse", 72, 468, 500, 42, CycleInputMode, out _inputModeLabel);
 
-            // === RIGHT COLUMN (x = 660): BRIGHTNESS, DIFFICULTY, AUDIO ===
-            // 2. Brightness
-            Label(body, "Display", 660, 148, 500, 28, 20, Ivory);
-            _brightnessLabel = Label(body, "Brightness   100%", 660, 182, 500, 22, 14, Ivory, false);
-            _brightnessSlider = MakeGenericSlider(body, 660, 206, 500, 0.5f, 1.5f, false, val =>
+            // World adjustments are real HDRP parameters; overlay text remains readable.
+            Label(body, "Lighting", 660, 148, 500, 28, 20, Ivory);
+            _brightnessLabel = Label(body, "Brightness / exposure   +0.00 EV", 660, 182, 500, 22, 14, Ivory, false);
+            _brightnessSlider = MakeGenericSlider(body, 660, 206, 500, -1f, 1f, false, val =>
             {
-                ApplyBrightness(val);
-                _brightnessLabel.text = "Brightness   " + Mathf.RoundToInt(val * 100f) + "%";
+                WorldLightingSettings.SetExposure(val);
+                UpdateLightingLabels();
             });
+            _brightnessSlider.gameObject.name = "LightingExposureSlider";
+            _contrastLabel = Label(body, "Contrast   0", 660, 240, 500, 22, 14, Ivory, false);
+            _contrastSlider = MakeGenericSlider(body, 660, 264, 500, -40f, 40f, true, val =>
+            {
+                WorldLightingSettings.SetContrast(val);
+                UpdateLightingLabels();
+            });
+            _contrastSlider.gameObject.name = "LightingContrastSlider";
+            _bloomLabel = Label(body, "Bloom   20%", 660, 298, 500, 22, 14, Ivory, false);
+            _bloomSlider = MakeGenericSlider(body, 660, 322, 500, 0f, 1f, false, val =>
+            {
+                WorldLightingSettings.SetBloom(val);
+                UpdateLightingLabels();
+            });
+            _bloomSlider.gameObject.name = "LightingBloomSlider";
+            _resetLighting = MakeGreekButton(body, "ResetLightingBtn", "Reset lighting", 660, 360, 240, 38, () =>
+            {
+                WorldLightingSettings.ResetDefaults();
+                SyncLightingControls();
+                UnderworldSoundscape.Instance?.PlayMenuConfirm();
+            }, out _);
+            Label(body, "Adjusts the world while menus stay readable.", 660, 405, 500, 20, 13, Muted, false);
 
             // 3. Difficulty Setting
-            Label(body, "Difficulty", 660, 252, 500, 28, 20, Ivory);
-            _diffBtn = MakeGreekButton(body, "DiffBtn", "Heroic", 660, 290, 500, 44, CycleDifficulty, out _diffLabel);
-            _diffDesc = Label(body, DifficultySettings.GetDescription(DifficultySettings.CurrentDifficulty), 660, 342, 500, 46, 14, Muted, false);
+            Label(body, "Difficulty", 660, 442, 500, 28, 20, Ivory);
+            _diffBtn = MakeGreekButton(body, "DiffBtn", "Heroic", 660, 480, 500, 44, CycleDifficulty, out _diffLabel);
+            _diffDesc = Label(body, DifficultySettings.GetDescription(DifficultySettings.CurrentDifficulty), 660, 532, 500, 54, 14, Muted, false);
 
             // 4. Audio Controls
-            Label(body, "Audio", 660, 396, 500, 28, 20, Ivory);
-            _volumeLabel = Label(body, "Master volume   75%", 660, 430, 330, 22, 14, Ivory, false);
-            _volume = MakeGenericSlider(body, 660, 452, 330, 0f, 100f, true, val =>
+            Label(body, "Audio", 72, 528, 500, 28, 20, Ivory);
+            _volumeLabel = Label(body, "Master volume   75%", 72, 562, 330, 22, 14, Ivory, false);
+            _volume = MakeGenericSlider(body, 72, 584, 330, 0f, 100f, true, val =>
             {
                 UnderworldSoundscape.Instance?.SetVolume(val / 100f);
                 UpdateAudioLabels();
             });
-            _mute = MakeGreekButton(body, "MuteBtn", "Audio: On", 1010, 442, 150, 40, ToggleMute, out _muteLabel);
+            _mute = MakeGreekButton(body, "MuteBtn", "Audio: On", 422, 574, 150, 40, ToggleMute, out _muteLabel);
 
             // Bottom Divider & Return Button
-            Line(body, 72, 560, 1136, Bronze);
-            _settingsBack = MakeGreekButton(body, "SettingsBack", "Back to menu", 72, 586, 260, 48, HideSettings, out _, true);
-            Label(body, "Esc to go back", 960, 598, 200, 24, 13, Muted, false).alignment = TextAnchor.MiddleRight;
+            Line(body, 72, 634, 1136, Bronze);
+            _settingsBack = MakeGreekButton(body, "SettingsBack", "Back to menu", 72, 654, 260, 48, HideSettings, out _, true);
+            Label(body, "Esc to go back", 960, 666, 200, 24, 13, Muted, false).alignment = TextAnchor.MiddleRight;
             LinkVertical(_sensitivitySlider, _softThresholdSlider, _boomThresholdSlider, _inputModeBtn,
-                _brightnessSlider, _diffBtn, _volume, _mute, _settingsBack);
+                _volume, _mute, _brightnessSlider, _contrastSlider, _bloomSlider, _resetLighting, _diffBtn, _settingsBack);
+
+            SyncLightingControls();
 
             _settings.SetActive(false);
         }
@@ -411,27 +445,19 @@ namespace OrpheusBelow
                 _diffDesc.text = DifficultySettings.GetDescription(DifficultySettings.CurrentDifficulty);
         }
 
-        private void ApplyBrightness(float val)
+        private void SyncLightingControls()
         {
-            _currentBrightness = Mathf.Clamp(val, 0.5f, 1.5f);
-            PlayerPrefs.SetFloat("Orpheus_Brightness", _currentBrightness);
-            PlayerPrefs.Save();
+            _brightnessSlider?.SetValueWithoutNotify(WorldLightingSettings.Exposure);
+            _contrastSlider?.SetValueWithoutNotify(WorldLightingSettings.Contrast);
+            _bloomSlider?.SetValueWithoutNotify(WorldLightingSettings.Bloom);
+            UpdateLightingLabels();
+        }
 
-            if (_brightnessVeil != null)
-            {
-                if (_currentBrightness < 1.0f)
-                {
-                    // Darken
-                    float darkness = (1.0f - _currentBrightness) * 0.72f;
-                    _brightnessVeil.color = new Color(0f, 0f, 0f, darkness);
-                }
-                else
-                {
-                    // Lighten with warm amber exposure
-                    float brilliance = (_currentBrightness - 1.0f) * 0.38f;
-                    _brightnessVeil.color = new Color(1.0f, 0.95f, 0.85f, brilliance);
-                }
-            }
+        private void UpdateLightingLabels()
+        {
+            if (_brightnessLabel != null) _brightnessLabel.text = "Brightness / exposure   " + WorldLightingSettings.Exposure.ToString("+0.00;-0.00;+0.00") + " EV";
+            if (_contrastLabel != null) _contrastLabel.text = "Contrast   " + WorldLightingSettings.Contrast.ToString("+0;-0;0");
+            if (_bloomLabel != null) _bloomLabel.text = "Bloom   " + Mathf.RoundToInt(WorldLightingSettings.Bloom * 100f) + "%";
         }
 
         private Slider MakeGenericSlider(RectTransform parent, float x, float y, float width, float min, float max, bool whole, UnityEngine.Events.UnityAction<float> onVal)
@@ -530,7 +556,7 @@ namespace OrpheusBelow
             if (_lastWidth != Screen.width || _lastHeight != Screen.height) FitPanorama();
             if (_events != null && _events.currentSelectedGameObject == null)
             {
-                Select(_settings.activeSelf ? _settingsBack : _primary);
+                Select(_settings.activeSelf ? _settingsBack : _inRun ? _pauseResume : _primary);
             }
         }
 
@@ -605,25 +631,26 @@ namespace OrpheusBelow
             _menuBlocksGameplay = true;
             Time.timeScale = 0f;
             AudioListener.pause = true;
+            // Follow, zoom and trauma shake use unscaled time. Keep the camera rendering its exact paused pose.
+            if (_inRun && _pausedCamera == null && UnderworldCamera2D.Instance != null && UnderworldCamera2D.Instance.enabled)
+            {
+                _pausedCamera = UnderworldCamera2D.Instance;
+                _pausedCamera.enabled = false;
+            }
             _canvasObject.SetActive(true);
             _canvasGroup.alpha = 0f;
             _canvasGroup.interactable = false;
             _canvasGroup.blocksRaycasts = false;
-            _main.SetActive(true);
+            _titleBackdrop.SetActive(!_inRun);
+            _main.SetActive(!_inRun);
+            _pause.SetActive(_inRun);
             _settings.SetActive(false);
 
-            _eyebrow.text = _inRun ? UnderworldJourney.ProgressLabel : "The descent";
-            _primaryLabel.text = _inRun ? "Resume journey" : "Begin descent";
-            _leaveLabel.text = _inRun ? "Return to title" : "Quit";
-            _replay.gameObject.SetActive(!_inRun);
-            if (_inRun) LinkVertical(_primary, _settingsBtn, _leave);
-            else LinkVertical(_primary, _settingsBtn, _leave, _replay);
-            _premise.text = _inRun
-                ? UnderworldJourney.Objective
-                : "Descend alone to the deepest throne.\nRescue Eurydice, then bring her home.";
+            _pauseProgress.text = UnderworldJourney.ProgressLabel;
+            LinkVertical(_primary, _settingsBtn, _leave, _replay);
 
             SyncAudioControls();
-            Select(_primary);
+            Select(_inRun ? _pauseResume : _primary);
             StartMenuFade(1f, true);
         }
 
@@ -660,6 +687,7 @@ namespace OrpheusBelow
             _blockThroughFrame = Time.frameCount + 1;
             _events.SetSelectedGameObject(null);
             _canvasObject.SetActive(false);
+            RestoreRunCamera();
             Time.timeScale = OrpheusHud.IsTutorialModalActive || VoiceDirector.BlocksGameplay ? 0f : GameplayClock.ResumeScale;
             AudioListener.pause = false;
             _menuFadeRoutine = null;
@@ -745,6 +773,7 @@ namespace OrpheusBelow
         {
             UnderworldSoundscape.Instance?.PlayMenuConfirm();
             _main.SetActive(false);
+            _pause.SetActive(false);
             _settings.SetActive(true);
 
             // Sync Settings Controls
@@ -763,8 +792,7 @@ namespace OrpheusBelow
                 UpdateInputModeLabel();
             }
 
-            _brightnessSlider?.SetValueWithoutNotify(_currentBrightness);
-            if (_brightnessLabel != null) _brightnessLabel.text = "Brightness   " + Mathf.RoundToInt(_currentBrightness * 100f) + "%";
+            SyncLightingControls();
 
             UpdateDifficultyLabels();
             SyncAudioControls();
@@ -775,8 +803,9 @@ namespace OrpheusBelow
         {
             UnderworldSoundscape.Instance?.PlayMenuConfirm();
             _settings.SetActive(false);
-            _main.SetActive(true);
-            Select(_settingsBtn);
+            _main.SetActive(!_inRun);
+            _pause.SetActive(_inRun);
+            Select(_inRun ? _pauseSettings : _settingsBtn);
         }
 
         private void ToggleMute()
@@ -802,6 +831,14 @@ namespace OrpheusBelow
             if (_muteLabel != null) _muteLabel.text = muted ? "Audio: Muted" : "Audio: On";
             int percent = Mathf.RoundToInt((sound == null ? 0.75f : sound.Volume) * 100f);
             if (_volumeLabel != null) _volumeLabel.text = "Master volume   " + percent + "%";
+        }
+
+        private void Restart()
+        {
+            if (!_inRun || _reloading) return;
+            UnderworldSoundscape.Instance?.PlayMenuConfirm();
+            _reloading = true;
+            OrpheusPrototypeBuilder.RestartDescent(true);
         }
 
         private void Leave()
@@ -909,8 +946,15 @@ namespace OrpheusBelow
             image.raycastTarget = false;
         }
 
+        private void RestoreRunCamera()
+        {
+            if (_pausedCamera != null) _pausedCamera.enabled = true;
+            _pausedCamera = null;
+        }
+
         private void OnDestroy()
         {
+            RestoreRunCamera();
             if (Instance != this) return;
             Instance = null;
             _menuBlocksGameplay = false;

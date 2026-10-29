@@ -10,8 +10,9 @@ namespace OrpheusBelow
         public float Volume { get; private set; }
         public bool IsMuted { get; private set; }
         public bool CinematicActive { get; set; }
-        public const float DialogueAmbientGain = .12f;
-        private float _dialogueMix = 1f;
+        public const float DialogueAmbientGain = SpeechDucking.DuckedGain;
+        public float SpeechEffectsGain => _dialogueMix.Gain;
+        private readonly SpeechDucking _dialogueMix = new SpeechDucking();
 
         private const int SampleRate = 22050;
         private const float Tau = Mathf.PI * 2f;
@@ -78,12 +79,13 @@ namespace OrpheusBelow
             // Ambient baseline volumes balanced so voices always dominate the mix
             _wind.volume = Mathf.Lerp(0.08f, 0.13f, depth) + _tension * 0.03f;
             _drone.volume = (menu ? 0.10f : 0.07f) + _tension * 0.04f;
-            // Duck ambient sound whenever ANY voice is playing or blocking
-            bool isDucked = VoiceDirector.IsVoicePlaying || VoiceDirector.BlocksGameplay;
-            _dialogueMix = Mathf.MoveTowards(_dialogueMix, isDucked ? DialogueAmbientGain : 1f,
-                Time.unscaledDeltaTime * (isDucked ? 20f : 2.5f));
-            _wind.volume *= _dialogueMix;
-            _drone.volume *= _dialogueMix;
+            // Interactive lessons also speak while gameplay runs. Duck playing audio rather than world locks.
+            _dialogueMix.Advance(VoiceDirector.IsSpeaking || CinematicActive, Time.unscaledDeltaTime);
+            _wind.volume *= _dialogueMix.Gain;
+            _drone.volume *= _dialogueMix.Gain;
+            _effects.volume = _dialogueMix.Gain;
+            _feet.volume = _dialogueMix.Gain;
+            _ui.volume = _dialogueMix.Gain;
             if (CinematicActive) { _wind.volume = 0f; _drone.volume = 0f; }
         }
 

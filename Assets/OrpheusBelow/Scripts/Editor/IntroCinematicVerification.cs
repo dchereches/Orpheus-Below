@@ -97,7 +97,7 @@ namespace OrpheusBelow.EditorTools
                         if (VoiceDirector.Instance!=null) Require(!VoiceSource.isPlaying,"Dialogue overlaps intro");
                         Require(intro.GetComponentsInChildren<Button>(true).Length==0,"Introduction still has buttons");
                         var skipCaption=intro.transform.Find("IntroSkipCaption").GetComponent<Text>();
-                        Require(skipCaption.text=="Backspace to skip" && skipCaption.rectTransform.anchorMin==Vector2.right,"Missing bottom-right skip caption");
+                        Require(skipCaption.text=="Hold Enter to skip" && skipCaption.font==GameTypography.Font && skipCaption.rectTransform.anchorMin==Vector2.right,"Missing bottom-right skip caption");
                         intro.SetPaused(false); menu.TogglePause(); intro.TogglePaused();
                         Require(intro.IsPaused,"Duplicate input toggled pause twice");
                         _pausedClock=intro.PlaybackTime; Step(2,.35); break;
@@ -114,10 +114,52 @@ namespace OrpheusBelow.EditorTools
                     case 4:
                         if (Keyboard.current==null) InputSystem.AddDevice<Keyboard>();
                         InputSystem.EnableDevice(Keyboard.current);
-                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(UnityEngine.InputSystem.Key.Backspace));
-                        Step(40,.4); break;
-                    case 40:
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(UnityEngine.InputSystem.Key.Enter));
+                        Step(41,1.1); break;
+                    case 41:
+                        Require(intro!=null && intro.IsPlaying && intro.SkipHoldProgress==0,"Paused hold advanced or skipped intro");
                         InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
+                        intro.SetPaused(false); Step(42,.15); break;
+                    case 42:
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(UnityEngine.InputSystem.Key.Enter));
+                        Step(43,.25); break;
+                    case 43:
+                        Require(intro!=null && intro.IsPlaying && intro.SkipHoldProgress>0 && intro.SkipHoldProgress<1,"Short Enter hold did not show progress");
+                        var progress=intro.transform.Find("IntroSkipProgress").GetComponent<Image>();
+                        Require(progress.rectTransform.sizeDelta.x>0 && progress.rectTransform.sizeDelta.x<150 && !progress.raycastTarget,"Hold progress is missing or interactive");
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
+                        Step(44,.15); break;
+                    case 44:
+                        Require(intro!=null && intro.IsPlaying && intro.SkipHoldProgress==0,"Releasing Enter failed to reset hold");
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(UnityEngine.InputSystem.Key.Backspace));
+                        Step(45,.2); break;
+                    case 45:
+                        Require(intro!=null && intro.IsPlaying && intro.SkipHoldProgress==0,"Backspace bypassed hold-to-skip");
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
+                        Step(46,.15); break;
+                    case 46:
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(UnityEngine.InputSystem.Key.Enter));
+                        Step(47,.3); break;
+                    case 47:
+                        Require(intro!=null && intro.SkipHoldProgress>0,"Fresh hold did not begin");
+                        intro.SetPaused(true); Step(48,1.1); break;
+                    case 48:
+                        Require(intro!=null && intro.IsPlaying && intro.SkipHoldProgress==0,"Pause retained hold progress");
+                        intro.SetPaused(false); Step(49,1.1); break;
+                    case 49:
+                        Require(intro!=null && intro.IsPlaying && intro.SkipHoldProgress==0,"Held Enter across resume skipped intro without fresh press");
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
+                        Step(491,.15); break;
+                    case 491:
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(UnityEngine.InputSystem.Key.Enter));
+                        Step(492,.35); break;
+                    case 492:
+                        Require(intro!=null && intro.IsPlaying && intro.SkipHoldProgress>0 && intro.SkipHoldProgress<1,"Final hold skipped early");
+                        Step(493,.65); break;
+                    case 493:
+                        Require(intro!=null && Field(intro,"_skipping"),"Sustained Enter did not start skip fade");
+                        Step(40,.3); break;
+                    case 40:
                         Require(intro!=null && !intro.IsPlaying,"No end-frame handoff fade");
                         var fade=intro.GetComponent<CanvasGroup>();
                         Require(fade!=null && fade.alpha>0 && fade.alpha<1,"Handoff did not fade");
@@ -127,6 +169,7 @@ namespace OrpheusBelow.EditorTools
                     case 5:
                         Require(intro==null && Field(menu,"_inRun"),"Skip failed to start journey");
                         Require(!UnderworldSoundscape.Instance.CinematicActive,"Music mute leaked");
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
                         Step(12,.2); break;
                     case 12:
                         if (VoiceDirector.Instance.CurrentLine != VoiceLineId.Narrator_ClearChambers) return;
@@ -289,9 +332,14 @@ namespace OrpheusBelow.EditorTools
                         Call(menu,"Leave"); Step(7,2); break;
                     case 7:
                         if (Field(menu,"_inRun")) return;
-                        Call(menu,"ReplayIntro"); Step(8,.5); break;
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(UnityEngine.InputSystem.Key.Enter));
+                        Step(701,.15); break;
+                    case 701:
+                        Call(menu,"ReplayIntro"); Step(8,1.3); break;
                     case 8:
                         if (intro==null || intro.PlaybackTime<.25f) return;
+                        Require(intro.IsPlaying && intro.SkipHoldProgress==0,"Enter held before activation skipped replay");
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
                         PlayerPrefs.DeleteKey(IntroCinematicPlayer.ViewedKey);
                         intro.GetComponent<AudioSource>().Stop(); Step(9,.6); break;
                     case 9:
@@ -305,7 +353,7 @@ namespace OrpheusBelow.EditorTools
                         Require(intro==null && Field(menu,"_open") && !Field(menu,"_inRun"),"Replay completion did not return to title");
                         Require(PlayerPrefs.GetInt(IntroCinematicPlayer.ViewedKey)==1,"Natural completion not recorded");
                         Require(_errors==0,"Unexpected runtime errors: "+_errors);
-                        File.WriteAllText(Path.Combine(Output,"result.json"),"{\"passed\":true,\"checks\":[\"boot auto intro\",\"navigation overlay hidden\",\"duplicate activation\",\"pause deduplication\",\"pause clock\",\"no intro buttons\",\"bottom-right caption\",\"seek and strike painting\",\"Backspace input skip\",\"handoff fade\",\"pause during handoff\",\"voice simulation lock\",\"voice full gain\",\"ambient ducking\",\"visible synchronized subtitles\",\"locked trigger and direct travel\",\"locked attack\",\"voice and subtitle menu pause\",\"queued voice order\",\"sequence gaps locked\",\"callback exactly once\",\"disabled voice cleanup\",\"resume bypass\",\"replay\",\"audio failure\",\"natural ending\",\"cleanup\",\"six tutorial actions skip speech\",\"Enter skips speech exactly once\",\"recognition chatter removed\",\"mic .8 speed and menu resume\",\"final chamber arrival and wall dash sweeps\"]}");
+                        File.WriteAllText(Path.Combine(Output,"result.json"),"{\"passed\":true,\"checks\":[\"boot auto intro\",\"navigation overlay hidden\",\"duplicate activation\",\"pause deduplication\",\"pause clock\",\"no intro buttons\",\"bottom-right caption\",\"seek and strike painting\",\"Enter short hold and release reset\",\"pause resets hold and requires fresh press\",\"sustained Enter input skip\",\"held Enter handoff does not skip gameplay speech\",\"handoff fade\",\"pause during handoff\",\"voice simulation lock\",\"voice full gain\",\"ambient ducking\",\"visible synchronized subtitles\",\"locked trigger and direct travel\",\"locked attack\",\"voice and subtitle menu pause\",\"queued voice order\",\"sequence gaps locked\",\"callback exactly once\",\"disabled voice cleanup\",\"resume bypass\",\"replay\",\"pre-held Enter requires release on activation\",\"audio failure\",\"natural ending\",\"cleanup\",\"six tutorial actions skip speech\",\"Enter skips speech exactly once\",\"recognition chatter removed\",\"mic .8 speed and menu resume\",\"final chamber arrival and wall dash sweeps\"]}");
                         Finish(0); break;
                 }
             }

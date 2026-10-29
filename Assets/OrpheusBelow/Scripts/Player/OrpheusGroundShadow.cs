@@ -26,6 +26,7 @@ namespace OrpheusBelow
         private SpriteRenderer _contact;
         private SpriteRenderer _ambient;
         private SpriteRenderer _cast;
+        private SpriteRenderer _floor;
 
         public SpriteRenderer ContactRenderer => _contact;
         public SpriteRenderer AmbientRenderer => _ambient;
@@ -34,6 +35,7 @@ namespace OrpheusBelow
         public void Initialize(OrpheusPlayerController player)
         {
             _player = player;
+            if (_floor == null) _floor = GroundShadowPaint.CreateStageFloor(transform);
             if (_contact == null) _contact = GroundShadowPaint.Create(transform, "ContactShadow",
                 new Color(.012f, .008f, .018f, .62f), 0);
             if (_ambient == null) _ambient = GroundShadowPaint.Create(transform, "AmbientPaintShadow",
@@ -52,11 +54,11 @@ namespace OrpheusBelow
 
         public static OrpheusShadowShape Evaluate(bool dashing, bool attacking, float lightIntensity)
         {
-            float opacity = Mathf.Clamp(.28f + Mathf.Clamp(lightIntensity, 0f, 2f) * .15f, .18f, .62f);
-            Vector2 contact = dashing ? new Vector2(.82f, .22f) : new Vector2(.78f, .34f);
-            Vector2 ambient = attacking ? new Vector2(1.72f, .62f) : new Vector2(1.38f, .52f);
-            Vector2 cast = dashing ? new Vector2(2.28f, .23f) : attacking
-                ? new Vector2(2.42f, .48f) : new Vector2(1.82f, .42f);
+            float opacity = Mathf.Clamp(.4f + Mathf.Clamp(lightIntensity, 0f, 2f) * .11f, .18f, .62f);
+            Vector2 contact = dashing ? new Vector2(1.05f, .4f) : new Vector2(1.02f, .56f);
+            Vector2 ambient = attacking ? new Vector2(1.95f, .86f) : new Vector2(1.65f, .72f);
+            Vector2 cast = dashing ? new Vector2(2.65f, .4f) : attacking
+                ? new Vector2(2.8f, .72f) : new Vector2(2.25f, .64f);
             return new OrpheusShadowShape(contact, ambient, cast, opacity);
         }
 
@@ -80,6 +82,7 @@ namespace OrpheusBelow
             OrpheusShadowShape shape = Evaluate(dashing, attacking, intensity);
             Vector2 castDirection = ResolveCastDirection(chamber);
             bool stage = _player != null && _player.IsIn2DBossStage;
+            GroundShadowPaint.PlaceStageFloor(_floor, transform, shape.contactScale.x, _contact.enabled, stage);
             GroundShadowPaint.Place(_contact, transform, shape.contactScale, Vector2.right, 0, .035f, stage);
             GroundShadowPaint.Place(_ambient, transform, shape.ambientScale, Vector2.right, 0, .025f, stage);
             GroundShadowPaint.Place(_cast, transform, shape.castScale, castDirection, dashing ? .82f : .62f, .015f, stage);

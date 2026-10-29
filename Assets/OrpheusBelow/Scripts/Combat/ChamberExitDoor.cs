@@ -32,9 +32,9 @@ namespace OrpheusBelow
 
         public void EnsureParticles()
         {
-            if (_exitParticles != null) return;
-            _exitParticles = GetComponent<PortalLocationParticles>();
-            if (_exitParticles == null) _exitParticles = GetComponentInChildren<PortalLocationParticles>();
+            SuppressLegacyMarkers();
+            if (_exitParticles == null) _exitParticles = GetComponent<PortalLocationParticles>();
+            if (_exitParticles == null) _exitParticles = GetComponentInChildren<PortalLocationParticles>(true);
             if (_exitParticles == null && _portalSr != null) _exitParticles = _portalSr.GetComponent<PortalLocationParticles>();
             if (_exitParticles == null)
             {
@@ -43,6 +43,19 @@ namespace OrpheusBelow
                 pGo.transform.localPosition = new Vector3(0f, 0.08f, 0f);
                 _exitParticles = pGo.AddComponent<PortalLocationParticles>();
             }
+            _exitParticles.SetDoorway(transform);
+            _exitParticles.SetUnlocked(IsUnlocked);
+        }
+
+        private void SuppressLegacyMarkers()
+        {
+            // Old baked scenes retain these references. Their painted doorway is part of the
+            // chamber plate; these two sprites are only the obsolete glow/rune indicators.
+            if (_portalSr != null) _portalSr.enabled = false;
+            if (_floorBeaconSr != null) _floorBeaconSr.enabled = false;
+            foreach (var renderer in GetComponentsInChildren<SpriteRenderer>(true))
+                if (renderer.gameObject.name == "ExitThreshold" || renderer.gameObject.name == "DoorThresholdRune" ||
+                    renderer.gameObject.name == "ArchwayPortalGlow") renderer.enabled = false;
         }
 
         public void SetUnlocked(bool unlocked)
@@ -50,19 +63,12 @@ namespace OrpheusBelow
             IsUnlocked = unlocked;
             EnsureSolidThreshold();
             if (_lockedThreshold != null) _lockedThreshold.enabled = !unlocked;
-            if (_portalSr != null)
-                _portalSr.color = unlocked
-                    ? (isFinalSunlightExit ? new Color(3.2f, 2.6f, .9f, .98f) : new Color(.45f, 2.6f, 1.55f, .95f))
-                    : new Color(1.5f, .15f, .25f, .45f);
-            if (_floorBeaconSr != null)
-                _floorBeaconSr.color = unlocked ? new Color(.6f, 2.4f, 1.5f, .85f) : new Color(.9f, .15f, .22f, .30f);
-
             EnsureParticles();
             if (_exitParticles != null)
             {
                 Color accent = isFinalSunlightExit
                     ? new Color(1.0f, 0.85f, 0.42f)
-                    : new Color(0.35f, 0.95f, 0.72f);
+                    : new Color(.95f, .84f, .58f);
                 _exitParticles.SetAccent(accent);
                 _exitParticles.SetUnlocked(unlocked);
             }

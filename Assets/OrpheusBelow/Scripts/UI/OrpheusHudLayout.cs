@@ -107,13 +107,13 @@ namespace OrpheusBelow
         private void BuildSubtitlePanel(RectTransform root)
         {
             var panel = CreateRect("SubtitleCluster", root, new Vector2(.5f, 0), new Vector2(.5f, 0), new Vector2(.5f, 0),
-                new Vector2(0, 56), new Vector2(1040, 150));
+                new Vector2(0, 56), new Vector2(1040, 172));
             _subtitleRoot = panel.gameObject; Frame(panel, .90f);
             _subtitleGroup = panel.gameObject.AddComponent<CanvasGroup>(); _subtitleGroup.alpha = 0; _subtitleGroup.blocksRaycasts = false;
             _subtitleSpeakerText = CreateSerifText("SubSpeaker", panel, new Vector2(0, -14), new Vector2(1000, 26), 18,
                 FontStyle.Normal, TextAnchor.MiddleCenter, GameTypography.Gold,
                 new Vector2(.5f, 1), new Vector2(.5f, 1), new Vector2(.5f, 1));
-            _subtitleBodyText = CreateSerifText("SubBody", panel, new Vector2(0, -44), new Vector2(1000, 56), 24,
+            _subtitleBodyText = CreateSerifText("SubBody", panel, new Vector2(0, -44), new Vector2(1000, 68), 28,
                 FontStyle.Normal, TextAnchor.UpperCenter, GameTypography.Ivory,
                 new Vector2(.5f, 1), new Vector2(.5f, 1), new Vector2(.5f, 1));
             _subtitleBodyText.lineSpacing = 1.15f;

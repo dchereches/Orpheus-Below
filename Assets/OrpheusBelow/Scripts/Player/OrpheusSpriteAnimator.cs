@@ -374,7 +374,7 @@ namespace OrpheusBelow
             }
             else _body.ResetLocalBounds();
             ApplyEffectFrame();
-            OrpheusOilSurface.Apply(_body, PaintedChamberMap.Active?.definition);
+            OrpheusOilSurface.Apply(_body, PaintedChamberMap.Active?.definition, visual == OrpheusAnimationState.Run);
         }
 
         private void ApplyEffectFrame()

@@ -28,6 +28,56 @@ namespace OrpheusBelow.Tests
         }
 
         [Test]
+        public void SwingMeetsPlantAndToeOffAtTheGroundRelativeFootSpeed()
+        {
+            const float sample = .0001f;
+            var beforeContact = OrpheusRunMotion.Evaluate(1f - sample).nearLeg.end;
+            var contact = OrpheusRunMotion.Evaluate(0f).nearLeg.end;
+            var toeOff = OrpheusRunMotion.Evaluate(OrpheusRunMotion.SupportDuty).nearLeg.end;
+            var afterToeOff = OrpheusRunMotion.Evaluate(OrpheusRunMotion.SupportDuty + sample).nearLeg.end;
+            Assert.That((contact.x - beforeContact.x) / sample, Is.EqualTo(-5.8f).Within(.04f),
+                "The descending foot must already travel backward at ground speed when it plants.");
+            Assert.That((afterToeOff.x - toeOff.x) / sample, Is.EqualTo(-5.8f).Within(.04f),
+                "The recovery must continue the planted foot's motion rather than snagging at toe-off.");
+            Assert.That(Mathf.Abs((contact.y - beforeContact.y) / sample), Is.LessThan(.02f));
+            Assert.That(Mathf.Abs((afterToeOff.y - toeOff.y) / sample), Is.LessThan(.02f));
+        }
+
+        [TestCase(.50f)]
+        [TestCase(.73f)]
+        public void RecoveryChangesDirectionWithoutVelocitySnaps(float phase)
+        {
+            const float sample = .0001f;
+            Vector2 before = OrpheusRunMotion.Evaluate(phase - sample).nearLeg.end;
+            Vector2 at = OrpheusRunMotion.Evaluate(phase).nearLeg.end;
+            Vector2 after = OrpheusRunMotion.Evaluate(phase + sample).nearLeg.end;
+            Assert.That(Vector2.Distance((at - before) / sample, (after - at) / sample), Is.LessThan(.08f),
+                "The heel fold and forward extension must share velocity at their boundary.");
+        }
+
+        [Test]
+        public void LegsExchangeIdenticalStridesWithAlternatingSingleSupport()
+        {
+            int nearPlants = 0, farPlants = 0, flights = 0;
+            for (int i = 0; i < 256; i++)
+            {
+                float phase = i / 256f;
+                var pose = OrpheusRunMotion.Evaluate(phase);
+                var opposite = OrpheusRunMotion.Evaluate(phase + .5f);
+                Assert.That(pose.nearLeg.support && pose.farLeg.support, Is.False,
+                    "Running alternates single support with flight, rather than shuffling on both boots.");
+                Assert.That(Vector2.Distance(pose.nearLeg.end, opposite.farLeg.end), Is.LessThan(.00001f));
+                Assert.That(Vector2.Distance(pose.nearLeg.joint, opposite.farLeg.joint), Is.LessThan(.00001f));
+                if (pose.nearLeg.support) nearPlants++;
+                if (pose.farLeg.support) farPlants++;
+                if (!pose.nearLeg.support && !pose.farLeg.support) flights++;
+            }
+            Assert.That(nearPlants, Is.EqualTo(farPlants));
+            Assert.That(nearPlants, Is.InRange(80, 95));
+            Assert.That(flights, Is.InRange(70, 90));
+        }
+
+        [Test]
         public void RecoveryFoldsHeelThenDrivesFootForward()
         {
             var kick = OrpheusRunMotion.Evaluate(.50f);
@@ -116,6 +166,24 @@ namespace OrpheusBelow.Tests
                     Assert.That(Vector2.Distance(p.nearLeg.root, p.nearLeg.joint), Is.EqualTo(length * .46f).Within(.00001f));
                     Assert.That(Vector2.Distance(p.nearLeg.joint, p.nearLeg.end), Is.EqualTo(length * .54f).Within(.00001f));
                 }
+        }
+
+        [Test]
+        public void AsymmetricNorthRigNeverFoldsInsideItsMinimumReach()
+        {
+            // Actual upright North painting after fitting. Its .199-unit minimum ankle
+            // reach is much larger than the .06-unit minimum of the default skeleton.
+            const float upper = .9240033f, lower = .7250422f;
+            for (int i = 0; i < 4096; i++)
+            {
+                var pose = OrpheusRunMotion.Evaluate(i / 4096f, upper, lower);
+                foreach (var leg in new[] { pose.nearLeg, pose.farLeg })
+                {
+                    Assert.That(Vector2.Distance(leg.root, leg.end), Is.GreaterThan(Mathf.Abs(upper - lower)));
+                    Assert.That(Vector2.Distance(leg.root, leg.joint), Is.EqualTo(upper).Within(.00001f));
+                    Assert.That(Vector2.Distance(leg.joint, leg.end), Is.EqualTo(lower).Within(.00001f));
+                }
+            }
         }
 
         [Test]

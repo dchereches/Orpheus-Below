@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 using UnityEngine.UI;
 
 namespace OrpheusBelow
@@ -10,6 +11,8 @@ namespace OrpheusBelow
     /// <summary>One narration clock drives the approved paintings; no independent shot timers.</summary>
     public sealed class IntroCinematicPlayer : MonoBehaviour
     {
+        public const float SkipHoldSeconds = .9f;
+        public float SkipHoldProgress => Mathf.Clamp01(_skipHoldElapsed / SkipHoldSeconds);
         public const string ViewedKey = "OrpheusBelow.IntroViewed";
         public bool IsPlaying { get; private set; }
         public bool Succeeded { get; private set; }
@@ -17,8 +20,13 @@ namespace OrpheusBelow
         public float PlaybackTime => _clock;
         private IntroCinematicTimeline _timeline;
         private AudioSource _audio;
+        private readonly VoiceAudioClipCache _loudClips = new VoiceAudioClipCache();
         private RawImage _back, _front;
-        private Image _black;
+        private Image _black, _skipProgress;
+        private Text _skipCaption;
+        private float _skipHoldElapsed;
+        private bool _skipInputReady;
+        private ButtonControl _skipHoldButton;
         private RectTransform _viewport;
         private Text _status;
         private readonly Dictionary<int,Texture2D> _textures = new Dictionary<int,Texture2D>();
@@ -32,6 +40,7 @@ namespace OrpheusBelow
         {
             if (IsPlaying) return;
             IsPlaying = true;
+            _skipInputReady = HeldSkipButton() == null;
             _waiting = true;
             try { _timeline = IntroCinematicTimeline.Load(); }
             catch (Exception error) { Debug.LogError(error.Message); Finish(false); return; }
@@ -50,7 +59,9 @@ namespace OrpheusBelow
             var narration = _narrationRequest = Resources.LoadAsync<AudioClip>("Cinematic/Intro/Narration");
             yield return narration;
             if (!IsPlaying) yield break;
-            _audio.clip = narration.asset as AudioClip;
+            var narrationAsset = narration.asset as AudioClip;
+            _audio.clip = _loudClips.Prepare(narrationAsset);
+            if (narrationAsset != null && _audio.clip != narrationAsset) Resources.UnloadAsset(narrationAsset);
             _narrationRequest = null;
             if (_audio.clip == null) { Fail("Intro narration is missing."); yield break; }
             if (Mathf.Abs(_audio.clip.length-_timeline.duration)>.1f) { Fail("Intro narration length does not match the timeline."); yield break; }
@@ -163,6 +174,8 @@ namespace OrpheusBelow
         {
             if (!IsPlaying || _skipping) return;
             _paused=paused;
+            ResetSkipHold();
+            _skipInputReady=false;
             if (_audio!=null && _audio.clip!=null)
             {
                 if (paused)
@@ -184,6 +197,7 @@ namespace OrpheusBelow
         {
             if (!IsPlaying || _skipping) return;
             _skipping=true;
+            ResetSkipHold();
             _audio?.Pause();
             StartCoroutine(FadeSkip());
         }
@@ -199,8 +213,58 @@ namespace OrpheusBelow
             if (!IsPlaying) return;
             var keyboard=Keyboard.current; var pad=Gamepad.current;
             if ((keyboard!=null && (keyboard.escapeKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame)) || (pad!=null && pad.startButton.wasPressedThisFrame)) TogglePaused();
-            if ((keyboard!=null && keyboard.backspaceKey.wasPressedThisFrame) ||
-                (pad!=null && pad.buttonEast.wasPressedThisFrame)) Skip();
+            UpdateSkipHold();
+        }
+        private static ButtonControl HeldSkipButton()
+        {
+            var keyboard=Keyboard.current;
+            if (keyboard!=null)
+            {
+                if (keyboard.enterKey.isPressed) return keyboard.enterKey;
+                if (keyboard.numpadEnterKey.isPressed) return keyboard.numpadEnterKey;
+            }
+            var pad=Gamepad.current;
+            return pad!=null && pad.buttonEast.isPressed ? pad.buttonEast : null;
+        }
+        private void ResetSkipHold()
+        {
+            _skipHoldElapsed=0;
+            _skipHoldButton=null;
+            if (_skipProgress!=null) _skipProgress.rectTransform.sizeDelta=new Vector2(0,2);
+        }
+        private void UpdateSkipHold()
+        {
+            var held=HeldSkipButton();
+            if (_skipping || _paused || _waiting)
+            {
+                ResetSkipHold();
+                _skipInputReady=false;
+                return;
+            }
+            if (held==null)
+            {
+                ResetSkipHold();
+                _skipInputReady=true;
+                return;
+            }
+            if (!_skipInputReady) return;
+            if (_skipHoldButton==null)
+            {
+                // A key already down on activation or resume must first be released.
+                if (!held.wasPressedThisFrame) { _skipInputReady=false; return; }
+                _skipHoldButton=held;
+                _skipCaption.text=held==Gamepad.current?.buttonEast ? "Hold B to skip" : "Hold Enter to skip";
+                return;
+            }
+            if (held!=_skipHoldButton)
+            {
+                ResetSkipHold();
+                _skipInputReady=false;
+                return;
+            }
+            _skipHoldElapsed+=Time.unscaledDeltaTime;
+            _skipProgress.rectTransform.sizeDelta=new Vector2(150*SkipHoldProgress,2);
+            if (_skipHoldElapsed>=SkipHoldSeconds) Skip();
         }
         private void OnApplicationPause(bool paused) { if (paused) SetPaused(true); }
         private void Fail(string message) { Debug.LogError(message); Finish(false); }
@@ -208,12 +272,18 @@ namespace OrpheusBelow
         {
             if (!IsPlaying) return;
             IsPlaying=false; Succeeded=success;
+            ResetSkipHold();
             if (_black!=null) _black.color=Color.black;
             if (success) { PlayerPrefs.SetInt(ViewedKey,1); PlayerPrefs.Save(); }
             if (UnderworldSoundscape.Instance!=null) UnderworldSoundscape.Instance.CinematicActive=false;
             if (_back!=null) _back.texture=null;
             if (_front!=null) _front.texture=null;
-            if (_audio!=null) { var clip=_audio.clip; _audio.Stop(); _audio.clip=null; if (clip!=null) Resources.UnloadAsset(clip); }
+            if (_audio!=null)
+            {
+                var clip=_audio.clip; _audio.Stop(); _audio.clip=null;
+                if (clip!=null && (clip.hideFlags & HideFlags.DontSave)==0) Resources.UnloadAsset(clip);
+            }
+            _loudClips.Dispose();
             if (_narrationRequest!=null)
             {
                 var pending=_narrationRequest;
@@ -258,11 +328,19 @@ namespace OrpheusBelow
             _black=Rect("Fade",transform).gameObject.AddComponent<Image>(); _black.color=Color.black;
             _black.rectTransform.anchorMin=Vector2.zero; _black.rectTransform.anchorMax=Vector2.one; _black.rectTransform.sizeDelta=Vector2.zero; _black.raycastTarget=false;
             _status=Label("Loading introduction…",new Vector2(0,85),new Vector2(420,32));
-            Text skip=Label("Backspace to skip",new Vector2(-36,24),new Vector2(250,30));
+            Text skip=_skipCaption=Label("Hold Enter to skip",new Vector2(-36,24),new Vector2(250,30));
             skip.name="IntroSkipCaption";
             skip.rectTransform.anchorMin=skip.rectTransform.anchorMax=skip.rectTransform.pivot=Vector2.right;
             skip.alignment=TextAnchor.MiddleRight; skip.fontSize=20;
             skip.color=new Color(.96f,.92f,.81f,.78f);
+            _skipProgress=Rect("IntroSkipProgress",transform).gameObject.AddComponent<Image>();
+            _skipProgress.raycastTarget=false;
+            _skipProgress.color=new Color(.96f,.92f,.81f,.55f);
+            var progressRect=_skipProgress.rectTransform;
+            progressRect.anchorMin=progressRect.anchorMax=Vector2.right;
+            progressRect.pivot=Vector2.zero;
+            progressRect.anchoredPosition=new Vector2(-186,18);
+            progressRect.sizeDelta=new Vector2(0,2);
         }
         private Text Label(string text,Vector2 position,Vector2 size)
         {

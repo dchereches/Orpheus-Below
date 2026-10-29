@@ -108,6 +108,7 @@ namespace OrpheusBelow
                 }
 
                 EnsureHdrpZeroExposureVolume();
+                WorldLightingSettings.EnsureApplied();
             }
         }
 
