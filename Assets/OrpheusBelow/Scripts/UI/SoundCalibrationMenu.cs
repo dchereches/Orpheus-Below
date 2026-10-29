@@ -69,10 +69,7 @@ namespace OrpheusBelow
             }
             Instance = this;
 
-            _serifFont = Font.CreateDynamicFontFromOSFont(new[] { "Palatino Linotype", "Georgia", "Times New Roman" }, 20);
-            _sansFont = Font.CreateDynamicFontFromOSFont(new[] { "Segoe UI", "Arial" }, 16);
-            if (_serifFont == null) _serifFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (_sansFont == null) _sansFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            _serifFont = _sansFont = GameTypography.Font;
 
             BuildUI();
             SetOpen(false);
@@ -156,17 +153,17 @@ namespace OrpheusBelow
             {
                 if (live >= sensor.hardBoomThreshold)
                 {
-                    _detectionStatusText.text = "● TRIGGERING: BOOM FERMATA!";
+                    _detectionStatusText.text = "TRIGGERING: BOOM FERMATA!";
                     _detectionStatusText.color = Crimson;
                 }
                 else if (live >= sensor.softMinThreshold)
                 {
-                    _detectionStatusText.text = "● TRIGGERING: SMALL QUAVER (♪)";
+                    _detectionStatusText.text = "TRIGGERING: SMALL QUAVER (Soft)";
                     _detectionStatusText.color = Gold;
                 }
                 else
                 {
-                    _detectionStatusText.text = "● SILENCE / BACKGROUND NOISE (No Note)";
+                    _detectionStatusText.text = "SILENCE / BACKGROUND NOISE (No Note)";
                     _detectionStatusText.color = DimText;
                 }
             }
@@ -324,7 +321,7 @@ namespace OrpheusBelow
             curY += 30f;
 
             // Legend / Detection status readout
-            _detectionStatusText = CreateLabel(_panelRoot.transform, "● SILENCE / BACKGROUND NOISE", 34, curY, cardW - 68, 22, 14, DimText, false);
+            _detectionStatusText = CreateLabel(_panelRoot.transform, "SILENCE / BACKGROUND NOISE", 34, curY, cardW - 68, 22, 14, DimText, false);
             _detectionStatusText.alignment = TextAnchor.MiddleCenter;
             curY += 28f;
 
@@ -343,15 +340,15 @@ namespace OrpheusBelow
             CreateButton(_panelRoot.transform, "BtnSensUp", "+", 402, curY, 36, 28, () => AdjustSensitivity(+0.2f), out _);
             curY += 34f;
 
-            // Row B: Small Quaver (♪) Threshold
-            CreateLabel(_panelRoot.transform, "Small Quaver Threshold ♪ (Whisper/Puff):", 34, curY, 240, 28, 15, Ivory, false);
+            // Row B: Small Quaver (Soft) Threshold
+            CreateLabel(_panelRoot.transform, "Small Quaver Threshold Soft (Whisper/Puff):", 34, curY, 240, 28, 15, Ivory, false);
             CreateButton(_panelRoot.transform, "BtnSoftDown", "-", 280, curY, 36, 28, () => AdjustSoftThreshold(-0.02f), out _);
             _softThresholdValueLabel = CreateLabel(_panelRoot.transform, "0.14 (14%)", 324, curY, 70, 28, 15, Gold, false);
             _softThresholdValueLabel.alignment = TextAnchor.MiddleCenter;
             CreateButton(_panelRoot.transform, "BtnSoftUp", "+", 402, curY, 36, 28, () => AdjustSoftThreshold(+0.02f), out _);
             curY += 34f;
 
-            // Row C: Boom Fermata (𝄐) Threshold
+            // Row C: Boom Fermata (Boom) Threshold
             CreateLabel(_panelRoot.transform, "Boom Fermata Threshold (Loud/Exhale):", 34, curY, 240, 28, 15, Ivory, false);
             CreateButton(_panelRoot.transform, "BtnBoomDown", "-", 280, curY, 36, 28, () => AdjustBoomThreshold(-0.02f), out _);
             _boomThresholdValueLabel = CreateLabel(_panelRoot.transform, "0.60 (60%)", 324, curY, 70, 28, 15, Crimson, false);
@@ -383,7 +380,7 @@ namespace OrpheusBelow
             curY += 40f;
 
             // --- 5. PREVIEW & FOOTER ---
-            CreateButton(_panelRoot.transform, "BtnTestSoft", "♪ Test Quaver", 34, curY, 150, 32, PlayTestSoft, out _);
+            CreateButton(_panelRoot.transform, "BtnTestSoft", "Soft Test Quaver", 34, curY, 150, 32, PlayTestSoft, out _);
             CreateButton(_panelRoot.transform, "BtnTestBoom", "Test Fermata", 194, curY, 140, 32, PlayTestBoom, out _);
             CreateButton(_panelRoot.transform, "BtnReset", "Reset Defaults", 344, curY, 130, 32, ResetDefaults, out _);
             CreateButton(_panelRoot.transform, "BtnClose", "Close [C]", cardW - 170, curY, 136, 32, () => SetOpen(false), out _, primary: true);

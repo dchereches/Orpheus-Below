@@ -125,57 +125,42 @@ namespace OrpheusBelow.EditorTools
         private static void Blit(Sprite sprite, Color32[] target, int targetWidth, int targetHeight,
             int cellX, int cellY, int cellWidth, int cellHeight, bool flip = false)
         {
-            Rect rect = sprite.rect;
             Color32[] source = sprite.texture.GetPixels32();
-            int sourceWidth = sprite.texture.width;
-            bool[] mask = GeometryMask(sprite);
-            float scale = (cellHeight - 28f) / (5f * sprite.pixelsPerUnit);
-            int width = Mathf.Max(1, Mathf.RoundToInt(rect.width * scale));
-            int height = Mathf.Max(1, Mathf.RoundToInt(rect.height * scale));
-            int left = cellX + cellWidth / 2 - Mathf.RoundToInt(sprite.pivot.x * scale);
-            int bottom = cellY + 12 - Mathf.RoundToInt(sprite.pivot.y * scale);
-            for (int y = 0; y < height; y++)
-                for (int x = 0; x < width; x++)
+            Vector2[] vertices = sprite.vertices;
+            Vector2[] uv = sprite.uv;
+            float scale = (cellHeight - 28f) / 5f;
+            Vector2 origin = new Vector2(cellX + cellWidth * .5f, cellY + 12f);
+            for (int i = 0; i < vertices.Length; i++)
+                vertices[i] = origin + new Vector2(vertices[i].x * (flip ? -1f : 1f), vertices[i].y) * scale;
+            ushort[] indices = sprite.triangles;
+            for (int t = 0; t < indices.Length; t += 3)
+            {
+                int ia = indices[t], ib = indices[t + 1], ic = indices[t + 2];
+                Vector2 a = vertices[ia], b = vertices[ib], c = vertices[ic];
+                float determinant = Cross(b - a, c - a);
+                if (Mathf.Abs(determinant) < .000001f) continue;
+                int minX = Mathf.Max(cellX, Mathf.FloorToInt(Mathf.Min(a.x, Mathf.Min(b.x, c.x))));
+                int maxX = Mathf.Min(cellX + cellWidth - 1, Mathf.CeilToInt(Mathf.Max(a.x, Mathf.Max(b.x, c.x))));
+                int minY = Mathf.Max(cellY, Mathf.FloorToInt(Mathf.Min(a.y, Mathf.Min(b.y, c.y))));
+                int maxY = Mathf.Min(cellY + cellHeight - 1, Mathf.CeilToInt(Mathf.Max(a.y, Mathf.Max(b.y, c.y))));
+                for (int y = minY; y <= maxY; y++) for (int x = minX; x <= maxX; x++)
                 {
-                    int sx = Mathf.Clamp(Mathf.FloorToInt(rect.x + x / scale), 0, sprite.texture.width - 1);
-                    int sy = Mathf.Clamp(Mathf.FloorToInt(rect.y + y / scale), 0, sprite.texture.height - 1);
-                    int mx = sx - Mathf.RoundToInt(rect.x), my = sy - Mathf.RoundToInt(rect.y);
-                    if (!mask[my * Mathf.RoundToInt(rect.width) + mx]) continue;
-                    Color32 src = source[sy * sourceWidth + sx];
+                    Vector2 p = new Vector2(x + .5f, y + .5f) - a;
+                    float u = Cross(p, c - a) / determinant, v = Cross(b - a, p) / determinant;
+                    if (u < 0f || v < 0f || u + v >= 1f) continue;
+                    Vector2 sample = uv[ia] + (uv[ib] - uv[ia]) * u + (uv[ic] - uv[ia]) * v;
+                    int sx = Mathf.Clamp(Mathf.FloorToInt(sample.x * sprite.texture.width), 0, sprite.texture.width - 1);
+                    int sy = Mathf.Clamp(Mathf.FloorToInt(sample.y * sprite.texture.height), 0, sprite.texture.height - 1);
+                    Color32 src = source[sy * sprite.texture.width + sx];
                     if (src.a == 0) continue;
-                    int dx = flip ? cellX * 2 + cellWidth - 1 - (left + x) : left + x, dy = bottom + y;
-                    if (dx < cellX || dx >= cellX + cellWidth || dy < cellY || dy >= cellY + cellHeight) continue;
-                    int index = dy * targetWidth + dx;
+                    int index = y * targetWidth + x;
                     Color32 dst = target[index];
                     float alpha = src.a / 255f;
                     target[index] = new Color32((byte)Mathf.RoundToInt(src.r * alpha + dst.r * (1f - alpha)),
                         (byte)Mathf.RoundToInt(src.g * alpha + dst.g * (1f - alpha)),
                         (byte)Mathf.RoundToInt(src.b * alpha + dst.b * (1f - alpha)), 255);
                 }
-        }
-
-        private static bool[] GeometryMask(Sprite sprite)
-        {
-            int width = Mathf.RoundToInt(sprite.rect.width), height = Mathf.RoundToInt(sprite.rect.height);
-            var mask = new bool[width * height];
-            Vector2[] vertices = sprite.vertices;
-            for (int i = 0; i < vertices.Length; i++) vertices[i] = vertices[i] * sprite.pixelsPerUnit + sprite.pivot;
-            ushort[] indices = sprite.triangles;
-            for (int t = 0; t < indices.Length; t += 3)
-            {
-                Vector2 a = vertices[indices[t]], b = vertices[indices[t + 1]], c = vertices[indices[t + 2]];
-                int minX = Mathf.Max(0, Mathf.FloorToInt(Mathf.Min(a.x, Mathf.Min(b.x, c.x))));
-                int maxX = Mathf.Min(width - 1, Mathf.CeilToInt(Mathf.Max(a.x, Mathf.Max(b.x, c.x))));
-                int minY = Mathf.Max(0, Mathf.FloorToInt(Mathf.Min(a.y, Mathf.Min(b.y, c.y))));
-                int maxY = Mathf.Min(height - 1, Mathf.CeilToInt(Mathf.Max(a.y, Mathf.Max(b.y, c.y))));
-                for (int y = minY; y <= maxY; y++) for (int x = minX; x <= maxX; x++)
-                {
-                    Vector2 p = new Vector2(x + .5f, y + .5f);
-                    float ab = Cross(b - a, p - a), bc = Cross(c - b, p - b), ca = Cross(a - c, p - c);
-                    if ((ab >= 0 && bc >= 0 && ca >= 0) || (ab <= 0 && bc <= 0 && ca <= 0)) mask[y * width + x] = true;
-                }
             }
-            return mask;
         }
 
         private static float Cross(Vector2 a, Vector2 b) => a.x * b.y - a.y * b.x;

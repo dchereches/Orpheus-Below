@@ -5,6 +5,7 @@ namespace OrpheusBelow
 {
     public sealed class OrpheusSpriteAnimator : MonoBehaviour
     {
+        public const float RunCycleDistance = 3.2f;
         private readonly OrpheusAnimationBrain _brain = new OrpheusAnimationBrain();
         private SpriteRenderer _body;
         private SpriteRenderer _effects;
@@ -81,7 +82,7 @@ namespace OrpheusBelow
             SetState(_brain.State);
             if (IsGait(_state))
             {
-                _gaitPhase = Mathf.Repeat(_gaitPhase + distance / (_brain.GroundSpeed >= 4.5f ? 3.8f : 2.5f), 1f);
+                _gaitPhase = Mathf.Repeat(_gaitPhase + distance / (_brain.GroundSpeed >= 4.5f ? RunCycleDistance : 2.5f), 1f);
                 OrpheusAnimationClip clip = _library?.FindClip(_state);
                 if (clip != null) _frame = Mathf.Min((int)(_gaitPhase * clip.framesPerDirection), clip.framesPerDirection - 1);
             }

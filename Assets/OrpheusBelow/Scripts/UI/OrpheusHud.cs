@@ -9,7 +9,7 @@ namespace OrpheusBelow
     /// Uses classical Windows serif typography (Palatino Linotype / Georgia) + ultra-thin geometric bars
     /// rendering razor-sharp in HDRP without cluttering the artwork.
     /// </summary>
-    public class OrpheusHud : MonoBehaviour
+    public partial class OrpheusHud : MonoBehaviour
     {
         public static OrpheusHud Instance { get; private set; }
         public static bool IsTutorialModalActive { get; private set; }
@@ -117,8 +117,8 @@ namespace OrpheusBelow
         private Text _endTitleText;
         private Text _endBodyText;
 
-        private const float BarWidth = 240f;
-        private const float BossBarWidth = 460f;
+        private const float BarWidth = 300f;
+        private const float BossBarWidth = 592f;
 
         private void Awake()
         {
@@ -135,9 +135,8 @@ namespace OrpheusBelow
             }
 
             _serifFont = LoadClassicalFont();
-            _bodyFont = Font.CreateDynamicFontFromOSFont(new[] { "Segoe UI", "Arial" }, 24);
-            _ownsBodyFont = _bodyFont != null;
-            if (_bodyFont == null) _bodyFont = _serifFont;
+            _bodyFont = _serifFont;
+            _ownsBodyFont = false;
 
             // Load transparent PNG musical notation assets
             _quaverSprite = Resources.Load<Sprite>("MusicalNotation/symbol_quaver_small");
@@ -171,13 +170,7 @@ namespace OrpheusBelow
 
         private static Font LoadClassicalFont()
         {
-            Font f = Font.CreateDynamicFontFromOSFont(
-                new[] { "Palatino Linotype", "Georgia", "Book Antiqua", "Times New Roman", "Segoe UI" }, 28);
-            if (f == null)
-            {
-                f = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            }
-            return f;
+            return GameTypography.Font;
         }
 
         public void ShowBanner(string text, float duration = 2.8f)
@@ -205,9 +198,9 @@ namespace OrpheusBelow
             {
                 _subtitleBodyText.text = text;
                 float h = Mathf.Max(40f, _subtitleBodyText.preferredHeight + 8f);
-                _subtitleBodyText.rectTransform.sizeDelta = new Vector2(940f, h);
+                _subtitleBodyText.rectTransform.sizeDelta = new Vector2(1000f, h);
                 RectTransform rt = _subtitleRoot.GetComponent<RectTransform>();
-                if (rt != null) rt.sizeDelta = new Vector2(980f, Mathf.Max(84f, h + 36f));
+                if (rt != null) rt.sizeDelta = new Vector2(1040f, Mathf.Max(138f, h + 68f));
             }
             _subtitleTimer = duration;
         }
@@ -465,113 +458,21 @@ namespace OrpheusBelow
             RectTransform root = canvas.GetComponent<RectTransform>();
             _canvasRoot = root;
 
-            // --- 1. BOTTOM-LEFT: VITALITY, DASH GEMS, SENSOR PULSE & PHYSICAL CADENCES ---
-            RectTransform bl = CreateRect("BottomLeftCluster", root, Vector2.zero, Vector2.zero, Vector2.zero, new Vector2(42f, 30f), new Vector2(480f, 114f));
-            _vitalsGroup = bl.gameObject.AddComponent<CanvasGroup>();
-            Text vitality = CreateSerifText("VitalityLabel", bl, new Vector2(0f, 94f), new Vector2(240f, 20f),
-                14, FontStyle.Normal, TextAnchor.LowerLeft, new Color(.82f, .80f, .75f, .85f));
-            vitality.text = "Vitality";
-            vitality.font = _bodyFont;
-            _journeyLabel = CreateSerifText("JourneyProgress", root, new Vector2(42f, -34f), new Vector2(330f, 28f),
-                16, FontStyle.Normal, TextAnchor.UpperLeft, new Color(.84f, .81f, .74f, .85f),
-                Vector2.up, Vector2.up, Vector2.up);
-            _journeyLabel.font = _bodyFont;
-            _journeyObjective = CreateSerifText("JourneyObjective", root, new Vector2(42f, -66f), new Vector2(380f, 54f),
-                15, FontStyle.Normal, TextAnchor.UpperLeft, new Color(.80f, .80f, .73f, .82f),
-                Vector2.up, Vector2.up, Vector2.up);
-            _journeyObjective.font = _bodyFont;
-            _journeyLabel.text = UnderworldJourney.ProgressLabel;
-            _journeyObjective.text = UnderworldJourney.Objective;
-            _navigationLegend = CreateSerifText("NavigationLegend", root, new Vector2(42f, -126f), new Vector2(660f, 28f),
-                16, FontStyle.Normal, TextAnchor.UpperLeft, new Color(.9f, .94f, .86f),
-                Vector2.up, Vector2.up, Vector2.up);
-            _navigationLegend.font = _bodyFont;
-            _navigationLegend.text = "Green: walkable     Red: blocked     Cyan: exit";
-            _navigationLegend.gameObject.SetActive(false);
-            // Vitality hairline (Original subtle 5px bar)
-            CreateBarBg(bl, new Vector2(0f, 78f), new Vector2(BarWidth, 5f), new Color(0.18f, 0.06f, 0.10f, 0.72f));
-            _hpFill = CreateBarFill(bl, "HpFill", new Vector2(0f, 78f), new Vector2(BarWidth, 5f), new Color(0.86f, 0.22f, 0.30f, 0.90f), out _);
-
-            // Two rotated 45 deg Dash Gems next to Vitality
-            _dashGems = new Image[2];
-            for (int i = 0; i < 2; i++)
-            {
-                RectTransform gem = CreateRect("DashGem_" + i, bl, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(BarWidth + 22f + i * 20f, 80.5f), new Vector2(9f, 9f));
-                gem.localRotation = Quaternion.Euler(0f, 0f, 45f);
-                _dashGems[i] = gem.gameObject.AddComponent<Image>();
-            }
-
-            // Sensor / Piezo / Breath hairline + 60% Boom threshold marker
-            CreateBarBg(bl, new Vector2(0f, 58f), new Vector2(BarWidth, 4f), new Color(0.12f, 0.10f, 0.18f, 0.68f));
-            _pulseFill = CreateBarFill(bl, "PulseFill", new Vector2(0f, 58f), new Vector2(0f, 4f), new Color(0.95f, 0.78f, 0.36f, 0.88f), out _pulseFillImg);
-
-            // Fermata (Boom) icon at 60% threshold (transparent PNG image replacing flat tick)
-            RectTransform fermataMarkerRt = CreateRect("FermataThresholdMarker", bl, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(BarWidth * 0.60f, 60f), new Vector2(22f, 22f));
-            _fermataThresholdMarker = fermataMarkerRt.gameObject.AddComponent<Image>();
-            if (_fermataSprite != null)
-            {
-                _fermataThresholdMarker.sprite = _fermataSprite;
-                _fermataThresholdMarker.color = new Color(1.0f, 0.90f, 0.25f, 0.95f);
-            }
-            else
-            {
-                _fermataThresholdMarker.color = new Color(0.95f, 0.90f, 0.80f, 0.75f);
-            }
-
-            // Dedicated Cadence Image Slots for Transparent PNG Sprites
-            GameObject cadenceSlotsGo = new GameObject("CadenceImageSlots");
-            cadenceSlotsGo.transform.SetParent(bl, false);
-            _cadenceSlotContainer = cadenceSlotsGo;
-            RectTransform csRt = cadenceSlotsGo.AddComponent<RectTransform>();
-            csRt.anchorMin = Vector2.zero;
-            csRt.anchorMax = Vector2.zero;
-            csRt.pivot = new Vector2(0f, 0f);
-            csRt.anchoredPosition = new Vector2(0f, 20f);
-            csRt.sizeDelta = new Vector2(100f, 26f);
-
-            _cadenceSlotImages = new Image[3];
-            for (int i = 0; i < 3; i++)
-            {
-                RectTransform slotRt = CreateRect("CadenceSlot_" + i, csRt, Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), new Vector2(i * 28f + 12f, 13f), new Vector2(24f, 24f));
-                _cadenceSlotImages[i] = slotRt.gameObject.AddComponent<Image>();
-                _cadenceSlotImages[i].color = new Color(1f, 1f, 1f, 0f); // Hidden until played
-            }
-
-            // Physical Cadence Readout alongside musical symbol image slots
-            _cadenceLabel = CreateSerifText("CadenceText", bl, new Vector2(96f, 24f), new Vector2(430f, 24f),
-                15, FontStyle.Italic, TextAnchor.LowerLeft, new Color(0.94f, 0.86f, 0.64f, 0.76f));
-
-            _sensorModeLabel = CreateSerifText("SensorModeText", bl, new Vector2(0f, 0f), new Vector2(420f, 22f),
-                14, FontStyle.Normal, TextAnchor.LowerLeft, new Color(0.84f, 0.80f, 0.74f, 0.76f));
-            _cadenceLabel.font = _bodyFont;
-            _cadenceLabel.fontStyle = FontStyle.Normal;
-            _sensorModeLabel.font = _bodyFont;
+            BuildVitalsPanel(root);
+            BuildJourneyPanel(root);
 
             // --- 2. TOP-CENTER: FADING LITERARY CHAMBER TITLE & GUARDIAN RHYTHM BAR ---
             RectTransform bannerRt = CreateRect("TopChamberBanner", root, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -44f), new Vector2(1040f, 48f));
             _bannerGroup = bannerRt.gameObject.AddComponent<CanvasGroup>();
             _bannerGroup.alpha = 0f;
             _bannerTitleText = CreateSerifText("BannerText", bannerRt, Vector2.zero, new Vector2(1040f, 48f),
-                25, FontStyle.Italic, TextAnchor.MiddleCenter, new Color(0.93f, 0.86f, 0.70f, 0.88f));
+                29, FontStyle.Normal, TextAnchor.MiddleCenter, GameTypography.Ivory);
 
             _calloutText = CreateSerifText("SubtleCallout", root, new Vector2(0f, -96f), new Vector2(680f, 32f),
-                18, FontStyle.Italic, TextAnchor.MiddleCenter, new Color(0.95f, 0.84f, 0.58f, 0f),
+                23, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.95f, 0.84f, 0.58f, 0f),
                 anchorMin: new Vector2(0.5f, 1f), anchorMax: new Vector2(0.5f, 1f), pivot: new Vector2(0.5f, 1f));
 
-            // Guardian Boss Thin Discord/Catharsis Bar (active only in 2D Rhythm Showdown!)
-            RectTransform bossRt = CreateRect("GuardianBarCluster", root, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -34f), new Vector2(BossBarWidth, 72f));
-            _bossBarRoot = bossRt.gameObject;
-            _bossNameText = CreateSerifText("GuardianName", bossRt, new Vector2(0f, -2f), new Vector2(BossBarWidth, 28f),
-                20, FontStyle.Normal, TextAnchor.UpperCenter, new Color(0.94f, 0.88f, 0.76f, 0.86f),
-                anchorMin: new Vector2(0.5f, 1f), anchorMax: new Vector2(0.5f, 1f), pivot: new Vector2(0.5f, 1f));
-
-            CreateBarBg(bossRt, new Vector2(0f, 36f), new Vector2(BossBarWidth, 4f), new Color(0.16f, 0.08f, 0.14f, 0.75f));
-            _bossHpFill = CreateBarFill(bossRt, "BossHpFill", new Vector2(0f, 36f), new Vector2(BossBarWidth, 4f), new Color(0.94f, 0.78f, 0.42f, 0.90f), out _);
-
-            _bossJudgementText = CreateSerifText("RhythmJudgement", bossRt, new Vector2(0f, -44f), new Vector2(640f, 26f),
-                16, FontStyle.Italic, TextAnchor.UpperCenter, new Color(0.96f, 0.86f, 0.55f, 0.78f),
-                anchorMin: new Vector2(0.5f, 1f), anchorMax: new Vector2(0.5f, 1f), pivot: new Vector2(0.5f, 1f));
-            _bossBarRoot.SetActive(false);
+            BuildGuardianPanel(root);
 
             // --- 3. BOTTOM-CENTER: SOUL TETHER ABDUCTION WARNING, WHISPER & [HOLD Q] ---
             RectTransform abRt = CreateRect("TetherAbductionCluster", root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 102f), new Vector2(640f, 34f));
@@ -596,38 +497,7 @@ namespace OrpheusBelow
             _lookBackFill = CreateBarFill(lbRt, "LookBackFill", new Vector2(0f, 2f), new Vector2(0f, 3f), new Color(0.98f, 0.28f, 0.46f, 0.95f), out _);
             _lookBackRoot.SetActive(false);
 
-            // --- 4. FIXED BOTTOM-CENTER SUBTITLE DISPLAY (REAL-TIME VOICE ACTING) ---
-            RectTransform subRt = CreateRect("SubtitleCluster", root,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                new Vector2(0f, 72f), new Vector2(980f, 84f));
-            _subtitleRoot = subRt.gameObject;
-            _subtitleGroup = subRt.gameObject.AddComponent<CanvasGroup>();
-            _subtitleGroup.alpha = 0f;
-            _subtitleGroup.blocksRaycasts = false;
-
-            Image subBg = subRt.gameObject.AddComponent<Image>();
-            subBg.color = new Color(0.02f, 0.01f, 0.04f, 0.78f);
-            subBg.raycastTarget = false;
-
-            RectTransform subAccent = CreateRect("SubAccent", subRt,
-                new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-                Vector2.zero, new Vector2(0f, 1.5f));
-            Image subAccentImg = subAccent.gameObject.AddComponent<Image>();
-            subAccentImg.color = new Color(0.85f, 0.75f, 0.50f, 0.40f);
-            subAccentImg.raycastTarget = false;
-
-            _subtitleSpeakerText = CreateSerifText("SubSpeaker", subRt,
-                new Vector2(0f, -12f), new Vector2(940f, 20f), 14, FontStyle.Normal,
-                TextAnchor.MiddleCenter, new Color(0.95f, 0.82f, 0.44f, 1f),
-                anchorMin: new Vector2(0.5f, 1f), anchorMax: new Vector2(0.5f, 1f), pivot: new Vector2(0.5f, 1f));
-
-            _subtitleBodyText = CreateSerifText("SubBody", subRt,
-                new Vector2(0f, -44f), new Vector2(940f, 44f), 18, FontStyle.Normal,
-                TextAnchor.MiddleCenter, new Color(0.95f, 0.93f, 0.88f, 1f),
-                anchorMin: new Vector2(0.5f, 1f), anchorMax: new Vector2(0.5f, 1f), pivot: new Vector2(0.5f, 1f));
-            _subtitleBodyText.font = _bodyFont;
-            _subtitleBodyText.lineSpacing = 1.15f;
-            _subtitleRoot.SetActive(false);
+            BuildSubtitlePanel(root);
 
             // --- DEPRECATED MODAL BOX (KEPT INACTIVE SO ZERO MODAL POPUPS APPEAR) ---
             _tutorialBoxRect = CreateRect("GuideDialogueBox", root,
@@ -701,13 +571,13 @@ namespace OrpheusBelow
             cardTxt.text =
                 "WASD       Move · A / D during guardian duels\n" +
                 "Space / Shift       Dash · two charges\n" +
-                "LMB / J       Small Quaver (♪)\n" +
-                "RMB / K       Boom Fermata (𝄐)\n" +
+                "LMB / J       Small Quaver (Soft)\n" +
+                "RMB / K       Boom Fermata (Boom)\n" +
                 "F       Draw the flute\n\n" +
-                "♪ – ♪ – 𝄐       Hymn of Dawn\n" +
-                "𝄐 – ♪           Sanctuary of Eurydice\n" +
-                "♪ – 𝄐 – ♪       Siren's Convergence\n\n" +
-                "E  Drink ambrosia     R  Restart     Tab  Input";
+                "Soft – Soft – Boom       Hymn of Dawn\n" +
+                "Boom – Soft           Sanctuary of Eurydice\n" +
+                "Soft – Boom – Soft       Siren's Convergence\n\n" +
+                "R  Restart     Tab  Input     H  Close guide";
             _controlsCard = cardRt.gameObject;
             _controlsCard.SetActive(showControlsHelp);
 
@@ -854,7 +724,8 @@ namespace OrpheusBelow
             if (player != null && _hpFill != null)
             {
                 float hpPct = Mathf.Clamp01(player.CurrentHealth / Mathf.Max(1f, player.maxHealth));
-                _hpFill.sizeDelta = new Vector2(BarWidth * hpPct, 5f);
+                _hpFill.sizeDelta = new Vector2(BarWidth * hpPct, 12f);
+                if (_healthValue != null) _healthValue.text = Mathf.CeilToInt(player.CurrentHealth) + " / " + Mathf.CeilToInt(player.maxHealth);
 
                 for (int i = 0; i < _dashGems.Length; i++)
                 {
@@ -867,8 +738,9 @@ namespace OrpheusBelow
             // 2. Update Sensor / Pulse Bar & Physical Cadence Readout
             if (combat != null && _cadenceLabel != null)
             {
-                _cadenceLabel.text = combat.CurrentCadenceDisplay + "  |  Breath " + Mathf.CeilToInt(combat.Breath.Breath);
+                if (_breathValue != null) _breathValue.text = "Breath " + Mathf.CeilToInt(combat.Breath.Breath);
                 bool activePhrase = combat.CurrentCadenceDisplay.StartsWith("Cadence:");
+                _cadenceLabel.text = activePhrase ? combat.CurrentCadenceDisplay : "H for cadences";
                 _cadenceLabel.color = activePhrase
                     ? new Color(0.98f, 0.90f, 0.58f, 0.94f)
                     : new Color(0.88f, 0.82f, 0.68f, 0.62f);
@@ -901,18 +773,18 @@ namespace OrpheusBelow
                 float pulseAge = Time.unscaledTime - sensor.LastPulseTime;
                 float val = pulseAge < 0.20f ? Mathf.Max(sensor.CurrentLiveLevel, sensor.LastPulseIntensity) : sensor.CurrentLiveLevel;
                 val = Mathf.Clamp01(val);
-                _pulseFill.sizeDelta = new Vector2(BarWidth * val, 4f);
+                _pulseFill.sizeDelta = new Vector2(BarWidth * val, 6f);
                 _pulseFillImg.color = val >= sensor.hardBoomThreshold
                     ? new Color(0.96f, 0.32f, 0.26f, 0.92f)
                     : new Color(0.95f, 0.80f, 0.42f, 0.85f);
 
-                string mode = "Lyre Input [Tab]: Keyboard & Mouse";
+                string mode = "Keyboard & mouse   ·   Tab to change";
                 if (sensor.sourceMode == SensorSourceMode.KeyboardPlusPCMicrophone)
-                    mode = "Lyre Input [Tab]: Microphone Active";
+                    mode = "Microphone   ·   Tab to change";
                 else if (sensor.sourceMode == SensorSourceMode.KeyboardPlusESP32Serial)
                     mode = sensor.SerialConnected
-                        ? "Lyre Input [Tab]: ESP32 Connected (" + sensor.serialPortName + ")"
-                        : "Lyre Input [Tab]: ESP32 Waiting (" + sensor.serialPortName + ")";
+                        ? "Sensor connected   ·   Tab to change"
+                        : "Sensor disconnected   ·   Tab to change";
                 _sensorModeLabel.text = mode;
             }
 
@@ -925,7 +797,8 @@ namespace OrpheusBelow
             {
                 _bossNameText.text = boss.bossDisplayName;
                 float bpct = Mathf.Clamp01(boss.CurrentHealth / Mathf.Max(1f, boss.maxHealth));
-                _bossHpFill.sizeDelta = new Vector2(BossBarWidth * bpct, 4f);
+                _bossHpFill.sizeDelta = new Vector2(BossBarWidth * bpct, 10f);
+                if (_bossHealthValue != null) _bossHealthValue.text = Mathf.CeilToInt(boss.CurrentHealth) + " / " + Mathf.CeilToInt(boss.maxHealth);
                 _bossJudgementText.text = boss.LastJudgement;
                 if (_bannerGroup != null) _bannerGroup.alpha = 0f;
             }
@@ -960,6 +833,8 @@ namespace OrpheusBelow
                 _abductionRoot.SetActive(showAbduct);
                 if (showAbduct)
                 {
+                    var warningRect = (RectTransform)_abductionRoot.transform;
+                    warningRect.anchoredPosition = new Vector2(0f, _subtitleRoot.activeSelf ? ((RectTransform)_subtitleRoot.transform).sizeDelta.y + 76f : 102f);
                     _abductionFill.sizeDelta = new Vector2(360f * Mathf.Clamp01(_eurydice.AbductionDanger01), 3f);
                     float pulse = 0.72f + Mathf.PingPong(Time.unscaledTime * 3.5f, 0.28f);
                     _abductionWarnText.color = new Color(1.0f, 0.42f, 0.50f, pulse);
@@ -968,7 +843,7 @@ namespace OrpheusBelow
 
             if (_whisperText != null)
             {
-                bool showWhisper = escorting && _eurydice.InTemptationZone && player != null && !player.IsGameOver && !player.IsVictory;
+                bool showWhisper = escorting && _eurydice.InTemptationZone && player != null && !player.IsGameOver && !player.IsVictory && !_subtitleRoot.activeSelf;
                 if (showWhisper) _whisperText.text = _eurydice.ActiveWhisper;
                 Color wc = _whisperText.color;
                 wc.a = escorting ? Mathf.MoveTowards(wc.a, showWhisper ? 0.78f : 0f, dt * 2.5f) : 0f;

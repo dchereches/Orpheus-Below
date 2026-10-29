@@ -99,24 +99,17 @@ namespace OrpheusBelow.Tests
         }
 
         [Test]
-        public void TitanRoomRiderRoutesAroundThePhysicalHealingWell()
+        public void TitanRoomRiderCrossesFormerWellLocationOnClearFloor()
         {
             var layout = Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_06");
             var map = MakeMap(layout);
             try
             {
-                var well = AmbrosiaHealingWell.Spawn(map.transform, map.NearestWalkable(map.ToWorld(layout.well), .8f));
-                if (well.GetComponent<BoxCollider>() == null)
-                    typeof(AmbrosiaHealingWell).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(well, null);
-                var solid = well.GetComponent<BoxCollider>();
-                Assert.That(solid, Is.Not.Null, "The fixture must include the runtime well's physical collider.");
                 Vector3 start = map.ToWorld(new Vector2(368, 485));
                 Vector3 goal = map.ToWorld(new Vector2(460, 500));
-                Physics.SyncTransforms();
-                Assert.That(SegmentIsWalkable(map, start, goal, .45f), Is.True, "The authored polygons alone leave this approach clear.");
-                Assert.That(SegmentIsWalkable(map, start, goal, .45f, solid), Is.False, "The actual well blocks the rider's approach.");
-                int legs = FollowRoute(map, NewNavigation(), start, goal, .45f, solid);
-                Assert.That(legs, Is.GreaterThan(1), "Pursuit must go around the physical well before returning to its target.");
+                Assert.That(SegmentIsWalkable(map, start, goal, .45f), Is.True, "The former well approach is clear floor.");
+                Assert.That(Next(NewNavigation(), map, start, goal, .45f), Is.EqualTo(goal),
+                    "Removing the basin must also remove its invisible navigation reservation.");
             }
             finally { UnityEngine.Object.DestroyImmediate(map.gameObject); }
         }

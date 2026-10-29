@@ -27,6 +27,8 @@ namespace OrpheusBelow
         public Vector2 ToImage(Vector3 world) => definition.GroundToImage(world - transform.position);
         public bool IsWalkable(Vector3 world, float radius = .4f) => definition.IsWalkable(world - transform.position, radius);
         public Vector3 NearestWalkable(Vector3 world, float radius = .6f) => transform.position + definition.NearestWalkable(world - transform.position, radius);
+        public bool SweepMovement(Vector3 origin, Vector3 delta, float radius, out float fraction, out Vector3 normal)
+            => definition.SweepMovement(origin - transform.position, delta, radius, out fraction, out normal);
         public static int DepthOrder(float imageY) => Mathf.RoundToInt(imageY * 8f);
 
         private void OnEnable()
@@ -145,7 +147,10 @@ namespace OrpheusBelow
         private ChamberExitDoor CreatePassage(string name, Vector2 point, int target, JourneyDoorRole role)
         {
             var go = new GameObject(name); go.transform.SetParent(transform, false);
-            go.transform.position = ToWorld(point); go.transform.rotation = Quaternion.LookRotation(UnderworldCamera2D.IsoUpXZ);
+            go.transform.position = ToWorld(point);
+            Vector2 arrival = role == JourneyDoorRole.Surfaceward ? definition.entrance : definition.returnSpawn;
+            Vector3 approach = ToWorld(point) - ToWorld(arrival);
+            go.transform.rotation = Quaternion.LookRotation(approach.sqrMagnitude > .001f ? approach : UnderworldCamera2D.IsoUpXZ);
             var trigger = go.AddComponent<BoxCollider>(); trigger.isTrigger = true;
             trigger.center = new Vector3(0f, 1.5f, 0f);
             trigger.size = new Vector3(5.5f, 3.5f, 5.0f);
@@ -270,7 +275,6 @@ namespace OrpheusBelow
             rig.farAbyssSkySprite = Sprite.Create(definition.painting,
                 new Rect(0, 0, definition.painting.width, definition.painting.height), Vector2.one * .5f, 100f);
             rig.Initialize(arena, new Color(.35f, .25f, .35f), new Color(.12f, .10f, .15f), new Color(.8f, .55f, .25f, .2f));
-            AmbrosiaHealingWell.Spawn(transform, NearestWalkable(ToWorld(definition.well), .8f));
             _runtime = new HadesChamberDirector.ChamberRuntimeData
             {
                 chamberTitle = (definition.index + 1) + "  ·  " + definition.title,

@@ -220,7 +220,6 @@ namespace OrpheusBelow
             // 6. Wave Enemy Spawns (Scales with chamber depth)
             List<HadesChamberDirector.WaveSpawnSpec> w1 = GenerateWaveSpecs(chamberIndex, waveNumber: 1);
             List<HadesChamberDirector.WaveSpawnSpec> w2 = GenerateWaveSpecs(chamberIndex, waveNumber: 2);
-            AmbrosiaHealingWell.Spawn(chamberRoot, centerWorld + new Vector3(-sizeX * 0.38f + 2.8f, 0f, -sizeZ * 0.38f + 2.0f));
 
             return new HadesChamberDirector.ChamberRuntimeData
             {
@@ -359,7 +358,6 @@ namespace OrpheusBelow
             // 6. Waves
             List<HadesChamberDirector.WaveSpawnSpec> w1 = GetAsphodelWaveSpecs(1);
             List<HadesChamberDirector.WaveSpawnSpec> w2 = GetAsphodelWaveSpecs(2);
-            AmbrosiaHealingWell.Spawn(chamberRoot, centerWorld + new Vector3(2.8f, 0f, -6.5f));
 
             return new HadesChamberDirector.ChamberRuntimeData
             {

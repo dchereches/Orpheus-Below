@@ -36,6 +36,7 @@ namespace OrpheusBelow.EditorTools
                 sheets[name] = BakeSheet(name, library, false);
             sheets["WalkCycle"] = BakeSheet("WalkCycle", library, false);
             sheets["RunCycle"] = BakeSheet("RunCycle", library, false);
+            sheets["BilateralRun"] = OrpheusBilateralRunBaker.Bake(sheets["RunCycle"], library);
             var sourceFrames = new List<Sprite>();
             foreach (Sprite[] sheetFrames in sheets.Values) sourceFrames.AddRange(sheetFrames);
             library.sourceFrames = sourceFrames.ToArray();
@@ -46,7 +47,7 @@ namespace OrpheusBelow.EditorTools
             Add(clips, sheets, OrpheusAnimationState.RestlessIdle, "IdleTransitions", 2, true, 6f);
             AddCycle(clips, sheets, OrpheusAnimationState.Start, "WalkCycle", false, 40f, 0, 1, 2, 3);
             AddCycle(clips, sheets, OrpheusAnimationState.Walk, "WalkCycle", true, 8f, 0, 1, 2, 3);
-            AddCycle(clips, sheets, OrpheusAnimationState.Run, "RunCycle", true, 12f, 0, 1, 2, 3);
+            AddRun(clips, sheets["BilateralRun"]);
             AddSequence(clips, sheets, OrpheusAnimationState.Stop, "IdleTransitions", false, 45f, 5, 6, 0, 0);
             AddCycle(clips, sheets, OrpheusAnimationState.Turn, "WalkCycle", false, 40f, 1, 3, 1, 3);
 
@@ -162,6 +163,16 @@ namespace OrpheusBelow.EditorTools
                 frames[d * columns.Length + f] = sheets[sheet][sourceRows[d] * 4 + columns[f]];
             clips.Add(new OrpheusAnimationClip { state = state, frames = frames, directions = 8,
                 framesPerDirection = columns.Length, fps = fps, loop = loop, mirrorWest = true });
+        }
+
+        private static void AddRun(List<OrpheusAnimationClip> clips, Sprite[] source)
+        {
+            int[] sourceRows = { 0, 1, 2, 3, 4, 3, 2, 1 };
+            var frames = new Sprite[64];
+            for (int direction = 0; direction < 8; direction++)
+                for (int frame = 0; frame < 8; frame++) frames[direction * 8 + frame] = source[sourceRows[direction] * 8 + frame];
+            clips.Add(new OrpheusAnimationClip { state = OrpheusAnimationState.Run, frames = frames,
+                directions = 8, framesPerDirection = 8, fps = 16f, loop = true, mirrorWest = true });
         }
 
         private static void AddVocal(List<OrpheusAnimationClip> clips, Dictionary<string, Sprite[]> sheets,

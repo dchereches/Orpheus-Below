@@ -722,7 +722,9 @@ namespace OrpheusBelow
             {
                 HarmonyStreak++;
                 float dmg = isHardBoom ? 52f : 32f;
+                float healthBefore = CurrentHealth;
                 CurrentHealth = Mathf.Max(0f, CurrentHealth - dmg);
+                EnemyCombatFeedback.Damage(transform, healthBefore - CurrentHealth, isHardBoom);
 
                 LastJudgement = isHardBoom ? $"Harmonic Fermata!  x{HarmonyStreak}" : $"Quaver Deflected!  x{HarmonyStreak}";
 
@@ -802,7 +804,9 @@ namespace OrpheusBelow
             float mult = (CurrentPhase == DuelPhase.CrashedStunned) ? 2.0f : 1.0f;
             float finalDmg = damage * mult;
 
+            float healthBefore = CurrentHealth;
             CurrentHealth = Mathf.Max(0f, CurrentHealth - finalDmg);
+            EnemyCombatFeedback.Damage(transform, healthBefore - CurrentHealth, isHardBoom);
             UnderworldSoundscape.Instance?.PlayImpact(isHardBoom);
             UnderworldCamera2D.Instance?.AddShake(isHardBoom ? 0.38f : 0.14f);
 
