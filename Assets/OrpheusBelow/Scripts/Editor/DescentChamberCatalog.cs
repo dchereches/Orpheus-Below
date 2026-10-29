@@ -243,13 +243,15 @@ namespace OrpheusBelow.EditorTools
                         743,537,836,489,906,448,974,407,1006,365,1027,322,1096,282,
                         1167,248,1238,242,1300,262,1370,297,1440,325,1498,354,
                         1481,414,1410,448,1320,486,1237,525,1158,569,1080,614,1006,662,
-                        964,715,958,764,1026,815,1125,862,1186,913,1158,952,1086,943,
-                        977,883,881,839,782,787,697,747,616,724,543,745,463,787,384,837,312,869);
-                    d.returnExit = new Vector2(327,802); d.entrance = new Vector2(610,700);
+                        // The lower landing ends at its parapet. The diagonal stone wall beyond
+                        // (964,715) is foreground architecture, not another playable platform.
+                        964,715,912,749,853,795,782,763,697,727,616,724,543,745,463,787,384,837,312,869);
+                    // Arrive beyond the tall foreground jamb, with the whole actor visible on carpet.
+                    d.returnExit = new Vector2(327,802); d.entrance = new Vector2(810,610);
                     // The rescue happens on the carpet in front of the solid throne, never inside it.
                     d.exit = new Vector2(1171,351); d.returnSpawn = new Vector2(1100,388);
                     d.well = new Vector2(710,605); d.encounterCenter = new Vector2(942,533);
-                    d.enemySpawns = P(695,640,773,612,927,566,1081,473,1185,426,1322,373,1086,339);
+                    d.enemySpawns = P(760,625,855,595,975,540,1081,473,1185,426,1322,373,1086,339);
                     d.cover = new[] {
                         Pillar("ThroneArrivalLeftPier",261,827,45,454), Pillar("ThroneRearWallColumn",523,517,43,367),
                         // The tall foreground jamb is separate from the rear wall column at (523,517).
@@ -260,7 +262,13 @@ namespace OrpheusBelow.EditorTools
                                 433,899,435,607,413,571,390,538,363,515,341,516,316,538,289,574,
                                 271,611,263,650,246,638,248,599,258,561),7f),
                         Pillar("CarpetWestBrazier",739,489,31,403), Pillar("CarpetRearBrazier",917,420,34,314),
-                        Pillar("CarpetFrontColumn",650,642,38,543), Pillar("CarpetEastColumn",940,731,33,617),
+                        // This pier stands in front of the first stair. Its base is at y754;
+                        // tracing only the shaft around y642 lets actors stand on the stone plinth.
+                        Cover("CarpetFrontColumn",P(601,697,646,671,706,696,713,726,672,754,615,728),
+                            P(620,529,643,523,672,536,680,552,675,576,681,591,698,607,696,652,
+                                714,688,713,726,672,754,615,728,602,700,615,680,613,636,
+                                600,619,601,599,619,593,622,574,609,560,610,544),5f),
+                        Pillar("CarpetEastColumn",940,731,33,617),
                         Pillar("CarpetEastBrazier",1192,631,37,537), Pillar("StairEastBrazier",1291,472,33,379),
                         Pillar("ThroneWestMonument",806,409,48,181), Pillar("ThroneEastMonument",1432,383,44,177),
                         Pillar("ThroneRearBrazier",1044,287,26,216), Pillar("ThroneRightBrazier",1345,328,27,271),

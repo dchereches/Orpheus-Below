@@ -154,7 +154,7 @@ namespace OrpheusBelow
             if (IsTutorialModalActive)
             {
                 IsTutorialModalActive = false;
-                Time.timeScale = 1f;
+                Time.timeScale = UnderworldFrontEnd.BlocksGameplay ? 0f : GameplayClock.ResumeScale;
             }
         }
 
@@ -319,7 +319,7 @@ namespace OrpheusBelow
             if (_tutorialBoxRoot != null) _tutorialBoxRoot.SetActive(false);
             ReleaseCompanionTeachingPose();
             UnderworldSoundscape.Instance?.PlayMenuConfirm();
-            Time.timeScale = 1f;
+            Time.timeScale = UnderworldFrontEnd.BlocksGameplay ? 0f : GameplayClock.ResumeScale;
 
             System.Action cb = _tutorialConfirmCallback;
             _tutorialConfirmCallback = null;

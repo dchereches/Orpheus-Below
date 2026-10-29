@@ -25,7 +25,7 @@ namespace OrpheusBelow
 
         public static bool Travel(int index, bool wardenHint)
         {
-            if (VoiceDirector.BlocksGameplay) return false;
+            if (VoiceDirector.HasPendingSpeech) return false;
             if (index < 0 || index >= UnderworldJourney.ChamberCount || !Application.CanStreamedLevelBeLoaded(ScenePath(index))) return false;
             UnderworldJourney.Progress.Visit(index);
             SensorPulseInput.Instance?.SaveCalibration();
@@ -34,7 +34,7 @@ namespace OrpheusBelow
             _cadenceTier = OrpheusLyreCombat.Instance != null ? OrpheusLyreCombat.Instance.UnlockedCadenceTier : 1;
             _wardenHint = wardenHint;
             UnderworldFrontEnd.SkipTitleOnce = true;
-            Time.timeScale = 1f;
+            Time.timeScale = GameplayClock.NormalScale;
             AudioListener.pause = false;
             SceneManager.LoadSceneAsync(ScenePath(index), LoadSceneMode.Single);
             return true;
@@ -56,7 +56,7 @@ namespace OrpheusBelow
             _travelling = false;
             UnderworldJourney.Reset();
             UnderworldFrontEnd.SkipTitleOnce = skipTitle;
-            Time.timeScale = 1f; AudioListener.pause = false;
+            Time.timeScale = GameplayClock.NormalScale; AudioListener.pause = false;
             SceneManager.LoadScene(ScenePath(0));
             return true;
         }

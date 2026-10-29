@@ -118,7 +118,7 @@ namespace OrpheusBelow
             {
                 _canvasObject.SetActive(false);
                 _canvasGroup.alpha = 0f;
-                Time.timeScale = VoiceDirector.BlocksGameplay ? 0f : 1f;
+                Time.timeScale = VoiceDirector.BlocksGameplay || OrpheusHud.IsTutorialModalActive ? 0f : GameplayClock.ResumeScale;
                 AudioListener.pause = false;
             }
             else
@@ -660,7 +660,7 @@ namespace OrpheusBelow
             _blockThroughFrame = Time.frameCount + 1;
             _events.SetSelectedGameObject(null);
             _canvasObject.SetActive(false);
-            Time.timeScale = OrpheusHud.IsTutorialModalActive || VoiceDirector.BlocksGameplay ? 0f : 1f;
+            Time.timeScale = OrpheusHud.IsTutorialModalActive || VoiceDirector.BlocksGameplay ? 0f : GameplayClock.ResumeScale;
             AudioListener.pause = false;
             _menuFadeRoutine = null;
         }
@@ -915,7 +915,7 @@ namespace OrpheusBelow
             Instance = null;
             _menuBlocksGameplay = false;
             _blockThroughFrame = -1;
-            Time.timeScale = 1f;
+            Time.timeScale = OrpheusHud.IsTutorialModalActive || VoiceDirector.BlocksGameplay ? 0f : GameplayClock.ResumeScale;
             AudioListener.pause = false;
             if (_shadeTexture != null) Destroy(_shadeTexture);
             if (_ownsSerif && _serif != null) Destroy(_serif);

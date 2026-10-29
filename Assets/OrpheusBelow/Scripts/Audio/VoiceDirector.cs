@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.InputSystem;
 
 namespace OrpheusBelow
 {
@@ -62,7 +63,8 @@ namespace OrpheusBelow
     {
         public static VoiceDirector Instance { get; private set; }
         public const float VoiceGain = 1f;
-        public static bool BlocksGameplay => Instance != null && Instance._queue.IsBlocking;
+        public static bool HasPendingSpeech => Instance != null && Instance._queue.IsBlocking;
+        public static bool BlocksGameplay => HasPendingSpeech && !Instance._interactiveInstruction;
 
         private static readonly Color NarratorColor = new Color(0.95f, 0.82f, 0.44f, 1f); // Warm amber
         private static readonly Color HadesColor = new Color(0.96f, 0.32f, 0.32f, 1f);    // Regal crimson
@@ -75,11 +77,9 @@ namespace OrpheusBelow
         private Coroutine _activePlaybackRoutine;
         private readonly VoicePlaybackQueue _queue = new VoicePlaybackQueue();
         private bool _workerRunning, _ownsWorldPause;
-        private float _previousTimeScale;
-        private int _pingCycleIndex;
-        private float _lastPingTime = -10f;
-        private float _lastLookMeTime = -10f;
-        private float _lastFarTime = -10f;
+        private bool _interactiveInstruction;
+        private bool _skipRequested;
+        public VoiceLineId CurrentLine { get; private set; }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticSession()
@@ -274,7 +274,7 @@ namespace OrpheusBelow
         /// </summary>
         public void Play(VoiceLineId id, Action onComplete = null)
         {
-            if (id == VoiceLineId.None || !_lineRegistry.TryGetValue(id, out VoiceLineData data))
+            if (id == VoiceLineId.None || VoiceLinePolicy.IsRecognitionChatter(id) || !_lineRegistry.TryGetValue(id, out VoiceLineData data))
             {
                 onComplete?.Invoke();
                 return;
@@ -288,6 +288,11 @@ namespace OrpheusBelow
             // Startup dialogue waits behind the title and narrated introduction.
             // Keep listener-pause bypass for voiced tutorial modals during a run.
             while (UnderworldFrontEnd.BlocksMenusOrTransitions) yield return null;
+            CurrentLine = data.id;
+            _skipRequested = false;
+            _interactiveInstruction = VoiceLinePolicy.IsInteractiveInstruction(data.id);
+            if (_interactiveInstruction) ReleaseWorldPause();
+            else AcquireWorldPause();
             AudioClip clip = GetOrLoadClip(data);
             float duration = clip != null ? clip.length : data.duration;
 
@@ -305,7 +310,7 @@ namespace OrpheusBelow
             // Real audio must finish; world simulation is frozen while this request owns the lock.
             float timer = duration;
             bool pausedForMenu = false;
-            while (timer > 0f || (_voiceSource != null && _voiceSource.isPlaying))
+            while (!_skipRequested && (timer > 0f || (_voiceSource != null && _voiceSource.isPlaying)))
             {
                 if (UnderworldFrontEnd.BlocksMenusOrTransitions)
                 {
@@ -319,6 +324,9 @@ namespace OrpheusBelow
                 timer -= Time.unscaledDeltaTime;
                 yield return null;
             }
+            if (_voiceSource != null) _voiceSource.Stop();
+            OrpheusHud.Instance?.HideSubtitle();
+            CurrentLine = VoiceLineId.None;
         }
 
         /// <summary>
@@ -332,7 +340,7 @@ namespace OrpheusBelow
                 return;
             }
 
-            Enqueue(Array.FindAll(ids, id => id != VoiceLineId.None && _lineRegistry.ContainsKey(id)), onComplete);
+            Enqueue(Array.FindAll(ids, id => id != VoiceLineId.None && !VoiceLinePolicy.IsRecognitionChatter(id) && _lineRegistry.ContainsKey(id)), onComplete);
         }
 
         private void Enqueue(VoiceLineId[] ids, Action onComplete)
@@ -350,12 +358,6 @@ namespace OrpheusBelow
                 while (_queue.TryBegin(out var request))
                 {
                     while (UnderworldFrontEnd.BlocksMenusOrTransitions) yield return null;
-                    if (!_ownsWorldPause)
-                    {
-                        _previousTimeScale = Time.timeScale;
-                        _ownsWorldPause = true;
-                        Time.timeScale = 0;
-                    }
                     for (int i=0; i<request.lines.Length; i++)
                     {
                         yield return PlayRoutine(_lineRegistry[request.lines[i]]);
@@ -370,17 +372,45 @@ namespace OrpheusBelow
             finally
             {
                 _queue.Clear(); _workerRunning = false; _activePlaybackRoutine = null;
+                CurrentLine = VoiceLineId.None; _interactiveInstruction = false;
                 ReleaseWorldPause();
             }
         }
 
-        private void Update() { if (_ownsWorldPause) Time.timeScale=0; }
+        public bool SkipCurrentLine()
+        {
+            if (CurrentLine == VoiceLineId.None || UnderworldFrontEnd.BlocksMenusOrTransitions) return false;
+            _skipRequested = true;
+            if (_voiceSource != null) _voiceSource.Stop();
+            OrpheusHud.Instance?.HideSubtitle();
+            return true;
+        }
+
+        public void CompleteTutorialInstruction(AsphodelTutorialStep completedStep)
+        {
+            if (CurrentLine == VoiceLinePolicy.InstructionFor(completedStep)) SkipCurrentLine();
+        }
+
+        private void Update()
+        {
+            var keyboard = Keyboard.current;
+            if (keyboard != null && (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame))
+                SkipCurrentLine();
+            if (_ownsWorldPause) Time.timeScale = 0;
+        }
+
+        private void AcquireWorldPause()
+        {
+            if (_ownsWorldPause) return;
+            _ownsWorldPause = true;
+            Time.timeScale = 0;
+        }
         private void ReleaseWorldPause()
         {
             if (!_ownsWorldPause) return;
             _ownsWorldPause = false;
             if (!UnderworldFrontEnd.BlocksMenusOrTransitions && !OrpheusHud.IsTutorialModalActive)
-                Time.timeScale = _previousTimeScale > 0 ? _previousTimeScale : 1;
+                Time.timeScale = GameplayClock.ResumeScale;
         }
         private void OnDisable()
         {
@@ -394,45 +424,11 @@ namespace OrpheusBelow
         /// <summary>
         /// Cycles through Eurydice's acoustic ping replies on lyre plucks.
         /// </summary>
-        public void PlayNextPingReply()
-        {
-            if (UnderworldFrontEnd.BlocksGameplay) return;
-            if (Time.unscaledTime - _lastPingTime < 2.0f) return;
-            _lastPingTime = Time.unscaledTime;
+        public void PlayNextPingReply() { }
 
-            VoiceLineId[] pingLines = new VoiceLineId[]
-            {
-                VoiceLineId.Eurydice_IamHere,
-                VoiceLineId.Eurydice_HearTheNote,
-                VoiceLineId.Eurydice_RightHere
-            };
+        public void PlayLookBackTemptation() { }
 
-            VoiceLineId chosen = pingLines[_pingCycleIndex % pingLines.Length];
-            _pingCycleIndex++;
-            Play(chosen);
-        }
-
-        /// <summary>
-        /// Plays the Look-Back temptation whisper from Eurydice.
-        /// </summary>
-        public void PlayLookBackTemptation()
-        {
-            if (UnderworldFrontEnd.BlocksGameplay) return;
-            if (Time.unscaledTime - _lastLookMeTime < 6.0f) return;
-            _lastLookMeTime = Time.unscaledTime;
-            Play(VoiceLineId.Eurydice_LookAtMe);
-        }
-
-        /// <summary>
-        /// Plays Eurydice asking if Orpheus is still there when separated during the ascent.
-        /// </summary>
-        public void PlaySeparationCallout()
-        {
-            if (UnderworldFrontEnd.BlocksGameplay) return;
-            if (Time.unscaledTime - _lastFarTime < 12.0f) return;
-            _lastFarTime = Time.unscaledTime;
-            Play(VoiceLineId.Eurydice_AreYouStillThere);
-        }
+        public void PlaySeparationCallout() { }
 
         /// <summary>
         /// Plays the full Chamber 7 divine reunion sequence in real-time.

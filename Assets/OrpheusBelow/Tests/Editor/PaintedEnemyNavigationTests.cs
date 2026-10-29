@@ -28,6 +28,24 @@ namespace OrpheusBelow.Tests
         }
 
         [Test]
+        public void ThroneEncounterAndReturnRouteRemainConnectedAroundTheRealStoneBases()
+        {
+            var layout = Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_07");
+            var map = MakeMap(layout);
+            try
+            {
+                Vector3 arrival = map.ToWorld(layout.entrance);
+                foreach (var spawn in layout.enemySpawns)
+                {
+                    Assert.That(map.IsWalkable(map.ToWorld(spawn), .8f), Is.True, "An authored enemy spawn needs no repair: " + spawn);
+                    FollowRoute(map, NewNavigation(), map.ToWorld(spawn), arrival, .45f);
+                }
+                FollowRoute(map, NewNavigation(), map.ToWorld(layout.exit), map.ToWorld(layout.returnExit), .65f);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(map.gameObject); }
+        }
+
+        [Test]
         public void ClearPursuitReturnsTheGoalAndPreservesActorHeightOnTranslatedMaps()
         {
             var layout = MakeOpenLayout();

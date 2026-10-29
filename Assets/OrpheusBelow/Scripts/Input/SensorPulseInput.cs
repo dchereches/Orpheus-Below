@@ -40,6 +40,7 @@ namespace OrpheusBelow
             {
                 GlobalSourceMode = SensorSourceMode.KeyboardAndMouseOnly;
             }
+            GameplayClock.RefreshGameplayScale();
         }
 
         [Header("Input Source ([Tab] cycles in-game)")]
@@ -121,6 +122,7 @@ namespace OrpheusBelow
         {
             GlobalSourceMode = mode;
             sourceMode = mode;
+            GameplayClock.RefreshGameplayScale();
             ApplySourceMode();
             SaveCalibration();
         }
@@ -143,6 +145,7 @@ namespace OrpheusBelow
             }
             sourceMode = GlobalSourceMode;
 
+            GameplayClock.RefreshGameplayScale();
             if (PlayerPrefs.HasKey("OrpheusBelow.MicSensitivity"))
                 micSensitivity = Mathf.Clamp(PlayerPrefs.GetFloat("OrpheusBelow.MicSensitivity", 3.2f), 1f, 8f);
             if (PlayerPrefs.HasKey("OrpheusBelow.SoftThreshold"))

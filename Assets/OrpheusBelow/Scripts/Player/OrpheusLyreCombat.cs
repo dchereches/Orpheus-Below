@@ -50,6 +50,7 @@ namespace OrpheusBelow
         private int _comboStep;
         private float _comboResetTimer;
         private bool _inHitstop;
+        public bool IsHitstopActive => _inHitstop;
 
         private readonly List<char> _cadenceBuffer = new List<char>(4);
         private float _cadenceTimer;
@@ -83,6 +84,13 @@ namespace OrpheusBelow
             {
                 SensorPulseInput.Instance.OnAttackPulse -= HandleAttackPulse;
             }
+        }
+
+        private void OnDisable()
+        {
+            if (!_inHitstop) return;
+            _inHitstop = false;
+            GameplayClock.RefreshGameplayScale();
         }
 
         private void Update()
@@ -562,13 +570,10 @@ namespace OrpheusBelow
         private IEnumerator HitstopRoutine(float realSeconds)
         {
             _inHitstop = true;
-            if (Time.timeScale > 0.2f) Time.timeScale = 0.05f;
+            GameplayClock.RefreshGameplayScale();
             yield return new WaitForSecondsRealtime(realSeconds);
-            if (!UnderworldFrontEnd.BlocksGameplay && _player != null && !_player.IsGameOver && _player.LookBackProgress01 <= 0.01f)
-            {
-                Time.timeScale = 1f;
-            }
             _inHitstop = false;
+            GameplayClock.RefreshGameplayScale();
         }
     }
 

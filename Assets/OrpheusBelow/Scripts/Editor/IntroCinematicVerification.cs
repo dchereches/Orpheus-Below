@@ -21,7 +21,7 @@ namespace OrpheusBelow.EditorTools
         private static int _phase, _errors;
         private static double _next;
         private static float _pausedClock;
-        private static int _sequenceDone, _tailDone, _pausedSamples;
+        private static int _sequenceDone, _tailDone, _pausedSamples, _skipped;
         private static float _pausedSubtitle;
         private static readonly HashSet<string> SeenVoices=new HashSet<string>();
         private static AudioSource VoiceSource => (AudioSource)typeof(VoiceDirector).GetField("_voiceSource",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(VoiceDirector.Instance);
@@ -47,6 +47,8 @@ namespace OrpheusBelow.EditorTools
             InputSystem.settings.backgroundBehavior=InputSettings.BackgroundBehavior.IgnoreFocus;
             InputSystem.settings.editorInputBehaviorInPlayMode=InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
             Directory.CreateDirectory(Path.GetFullPath(Path.Combine(Application.dataPath,"../Logs/PaintedChambers")));
+            SessionState.SetInt(Key+"Mode",PlayerPrefs.GetInt("OrpheusBelow.SensorSourceMode",-1));
+            PlayerPrefs.SetInt("OrpheusBelow.SensorSourceMode",0);
             SessionState.SetInt(Key+"Viewed",PlayerPrefs.GetInt(IntroCinematicPlayer.ViewedKey,-1));
             EditorSceneManager.OpenScene(PaintedChamberScene.ScenePath(0));
             SessionState.SetBool(Key,true);
@@ -63,6 +65,8 @@ namespace OrpheusBelow.EditorTools
             InputSystem.settings.backgroundBehavior=(InputSettings.BackgroundBehavior)SessionState.GetInt(Key+"InputBackground",0);
             InputSystem.settings.editorInputBehaviorInPlayMode=(InputSettings.EditorInputBehaviorInPlayMode)SessionState.GetInt(Key+"InputEditor",0);
             if (old<0) PlayerPrefs.DeleteKey(IntroCinematicPlayer.ViewedKey); else PlayerPrefs.SetInt(IntroCinematicPlayer.ViewedKey,old);
+            int oldMode=SessionState.GetInt(Key+"Mode",-1);
+            if (oldMode<0) PlayerPrefs.DeleteKey("OrpheusBelow.SensorSourceMode"); else PlayerPrefs.SetInt("OrpheusBelow.SensorSourceMode",oldMode);
             PlayerPrefs.Save(); SessionState.SetBool(Key,false); EditorApplication.Exit(code);
         }
         private static void Tick()
@@ -125,7 +129,73 @@ namespace OrpheusBelow.EditorTools
                         Require(!UnderworldSoundscape.Instance.CinematicActive,"Music mute leaked");
                         Step(12,.2); break;
                     case 12:
-                        if (VoiceDirector.BlocksGameplay) return;
+                        if (VoiceDirector.Instance.CurrentLine != VoiceLineId.Narrator_ClearChambers) return;
+                        Require(!VoiceDirector.BlocksGameplay && Time.timeScale > 0, "Tutorial is not interactive");
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(UnityEngine.InputSystem.Key.D));
+                        Step(50,.65); break;
+                    case 50:
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
+                        Require(VoiceDirector.Instance.CurrentLine == VoiceLineId.Narrator_DefendYourself, "Moving did not skip the movement instruction");
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(UnityEngine.InputSystem.Key.J));
+                        Step(51,.06); break;
+                    case 51:
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
+                        Step(52,.45); break;
+                    case 52:
+                        Require(VoiceDirector.Instance.CurrentLine == VoiceLineId.Narrator_RepellingMove, "Soft note did not skip its instruction");
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(UnityEngine.InputSystem.Key.K));
+                        Step(53,.25); break;
+                    case 53:
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(UnityEngine.InputSystem.Key.F));
+                        Require(VoiceDirector.Instance.CurrentLine == VoiceLineId.Narrator_CombosFlee, "Boom did not skip its instruction: "+VoiceDirector.Instance.CurrentLine+" count="+OrpheusLyreCombat.Instance.HardBoomCount);
+                        Step(54,.25); break;
+                    case 54:
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
+                        Require(VoiceDirector.Instance.CurrentLine == VoiceLineId.Narrator_PressF, "Flute did not skip its instruction");
+                        Step(55,.1); break;
+                    case 55:
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(UnityEngine.InputSystem.Key.F));
+                        Step(555,.2); break;
+                    case 555:
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(UnityEngine.InputSystem.Key.Space));
+                        Step(56,.3); break;
+                    case 56:
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(UnityEngine.InputSystem.Key.J));
+                        Require(VoiceDirector.Instance.CurrentLine == VoiceLineId.Narrator_PluckCadences, "Dash did not skip its instruction");
+                        Step(57,.06); break;
+                    case 57:
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
+                        Step(58,.3); break;
+                    case 58:
+                        Require(UnderworldJourney.Progress.TutorialComplete && !VoiceDirector.HasPendingSpeech, "Final tutorial action did not finish narration");
+                        var cache=(Dictionary<VoiceLineId,AudioClip>)typeof(VoiceDirector).GetField("_clipCache",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(VoiceDirector.Instance);
+                        cache[VoiceLineId.Hades_ABreath]=AudioClip.Create("EnterSkipProbe",441000,1,44100,false);
+                        _skipped=0;
+                        VoiceDirector.Instance.Play(VoiceLineId.Hades_ABreath,()=>_skipped++);
+                        Step(59,.2); break;
+                    case 59:
+                        Require(VoiceDirector.BlocksGameplay && Time.timeScale==0,"Story does not pause");
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(UnityEngine.InputSystem.Key.Enter));
+                        Step(60,.2); break;
+                    case 60:
+                        InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
+                        Require(_skipped==1 && !VoiceDirector.HasPendingSpeech && !VoiceSource.isPlaying,"Enter did not stop speech/complete exactly once");
+                        int silent=0;
+                        VoiceDirector.Instance.Play(VoiceLineId.Eurydice_AreYouStillThere,()=>silent++);
+                        VoiceDirector.Instance.PlayNextPingReply(); VoiceDirector.Instance.PlaySeparationCallout(); VoiceDirector.Instance.PlayLookBackTemptation();
+                        Require(silent==1 && !VoiceDirector.HasPendingSpeech,"Recognition chatter remains queued");
+                        SensorPulseInput.Instance.SetSourceMode(SensorSourceMode.KeyboardPlusPCMicrophone);
+                        Require(Mathf.Abs(Time.timeScale-.8f)<.001f,"Mic mode is not .8 speed");
+                        menu.TogglePause();
+                        Require(Time.timeScale==0,"Mic mode defeated menu pause");
+                        Call(menu,"BeginOrResume"); Step(61,.2); break;
+                    case 61:
+                        Require(Mathf.Abs(Time.timeScale-.8f)<.001f,"Mic resume lost .8 speed");
+                        SensorPulseInput.Instance.SetSourceMode(SensorSourceMode.KeyboardAndMouseOnly);
+                        Require(Mathf.Abs(Time.timeScale-1f)<.001f,"Keyboard mode failed to restore speed");
+                        Step(62,.2); break;
+                    case 62:
+                        if (VoiceDirector.HasPendingSpeech) return;
                         Require(Time.timeScale>0,"Startup voice did not release simulation");
                         CaptureChamber("first-chamber-clean");
                         InstallShortVoices();
@@ -134,8 +204,8 @@ namespace OrpheusBelow.EditorTools
                         shadeRoot.transform.position=player.transform.position + UnderworldCamera2D.IsoRightXZ*3f;
                         var shade=shadeRoot.AddComponent<ShadeEnemy>(); shade.SetupArchetype(ShadeArchetype.ArmoredWarden); shade.enabled=false;
                         shade.OnOrphicHit(80f,.6f,false,player.transform.position);
-                        VoiceDirector.Instance.PlaySequence(new[]{VoiceLineId.Eurydice_IamHere,VoiceLineId.Eurydice_HearTheNote},()=>_sequenceDone++);
-                        VoiceDirector.Instance.Play(VoiceLineId.Eurydice_RightHere,()=>_tailDone++);
+                        VoiceDirector.Instance.PlaySequence(new[]{VoiceLineId.Hades_ABreath,VoiceLineId.Hades_YourStrings},()=>_sequenceDone++);
+                        VoiceDirector.Instance.Play(VoiceLineId.Hades_YouDare,()=>_tailDone++);
                         Step(13,.2); break;
                     case 13:
                         Require(VoiceDirector.BlocksGameplay && UnderworldFrontEnd.BlocksGameplay && Time.timeScale==0,"Speech did not lock simulation/input");
@@ -188,10 +258,31 @@ namespace OrpheusBelow.EditorTools
                         foreach (Text text in Object.FindObjectsByType<Text>(FindObjectsSortMode.None)) text.font=publicFont;
                         OrpheusHud.Instance.ShowSubtitle("Narrator",GameTypography.Gold,"Even in the deepest dark, a song can guide the way.",3f);
                         CaptureChamber("gui-public-font");
-                        VoiceDirector.Instance.Play(VoiceLineId.Eurydice_IamHere);
+                        VoiceDirector.Instance.Play(VoiceLineId.Hades_ABreath);
                         VoiceDirector.Instance.enabled=false;
                         Require(!VoiceDirector.BlocksGameplay && Time.timeScale>0,"Disabled voice leaked lock");
                         VoiceDirector.Instance.enabled=true;
+                        Require(PaintedChamberScene.Travel(7,false),"Could not enter final chamber for runtime verification");
+                        Step(70,2); break;
+                    case 70:
+                        Require(PaintedChamberMap.Active.definition.index==7,"Final chamber did not load");
+                        if (VoiceDirector.HasPendingSpeech) { VoiceDirector.Instance.SkipCurrentLine(); return; }
+                        foreach(var enemy in Object.FindObjectsByType<ShadeEnemy>(FindObjectsSortMode.None)) enemy.enabled=false;
+                        var finalMap=PaintedChamberMap.Active;
+                        var finalPlayer=OrpheusPlayerController.Instance;
+                        Require(finalMap.IsWalkable(finalPlayer.transform.position,finalPlayer.bodyRadius),"Final arrival outside real floor");
+                        CaptureChamber("final-chamber-arrival");
+                        finalPlayer.enabled=false;
+                        foreach (var blocked in new[]{new Vector2(675,725),new Vector2(1080,840),new Vector2(1130,900)})
+                        {
+                            finalPlayer.transform.position=finalMap.ToWorld(finalMap.definition.entrance);
+                            Physics.SyncTransforms();
+                            typeof(OrpheusPlayerController).GetMethod("MoveSweepXZ",BindingFlags.Instance|BindingFlags.NonPublic)
+                                .Invoke(finalPlayer,new object[]{finalMap.ToWorld(blocked)-finalPlayer.transform.position,true});
+                            Require(finalMap.IsWalkable(finalPlayer.transform.position,finalPlayer.bodyRadius),"Dash escaped final chamber at "+blocked);
+                            Require(Vector2.Distance(finalMap.ToImage(finalPlayer.transform.position),blocked)>12,"Dash stood on final chamber stone at "+blocked);
+                        }
+                        finalPlayer.transform.position=finalMap.ToWorld(finalMap.definition.entrance); finalPlayer.enabled=true;
                         menu.TogglePause(); Call(menu,"BeginOrResume"); Step(6,.6); break;
                     case 6:
                         Require(intro==null && !Field(menu,"_open"),"Resume replayed intro");
@@ -214,7 +305,7 @@ namespace OrpheusBelow.EditorTools
                         Require(intro==null && Field(menu,"_open") && !Field(menu,"_inRun"),"Replay completion did not return to title");
                         Require(PlayerPrefs.GetInt(IntroCinematicPlayer.ViewedKey)==1,"Natural completion not recorded");
                         Require(_errors==0,"Unexpected runtime errors: "+_errors);
-                        File.WriteAllText(Path.Combine(Output,"result.json"),"{\"passed\":true,\"checks\":[\"boot auto intro\",\"navigation overlay hidden\",\"duplicate activation\",\"pause deduplication\",\"pause clock\",\"no intro buttons\",\"bottom-right caption\",\"seek and strike painting\",\"Backspace input skip\",\"handoff fade\",\"pause during handoff\",\"voice simulation lock\",\"voice full gain\",\"ambient ducking\",\"visible synchronized subtitles\",\"locked trigger and direct travel\",\"locked attack\",\"voice and subtitle menu pause\",\"queued voice order\",\"sequence gaps locked\",\"callback exactly once\",\"disabled voice cleanup\",\"resume bypass\",\"replay\",\"audio failure\",\"natural ending\",\"cleanup\"]}");
+                        File.WriteAllText(Path.Combine(Output,"result.json"),"{\"passed\":true,\"checks\":[\"boot auto intro\",\"navigation overlay hidden\",\"duplicate activation\",\"pause deduplication\",\"pause clock\",\"no intro buttons\",\"bottom-right caption\",\"seek and strike painting\",\"Backspace input skip\",\"handoff fade\",\"pause during handoff\",\"voice simulation lock\",\"voice full gain\",\"ambient ducking\",\"visible synchronized subtitles\",\"locked trigger and direct travel\",\"locked attack\",\"voice and subtitle menu pause\",\"queued voice order\",\"sequence gaps locked\",\"callback exactly once\",\"disabled voice cleanup\",\"resume bypass\",\"replay\",\"audio failure\",\"natural ending\",\"cleanup\",\"six tutorial actions skip speech\",\"Enter skips speech exactly once\",\"recognition chatter removed\",\"mic .8 speed and menu resume\",\"final chamber arrival and wall dash sweeps\"]}");
                         Finish(0); break;
                 }
             }
@@ -224,9 +315,9 @@ namespace OrpheusBelow.EditorTools
         private static void InstallShortVoices()
         {
             var cache=(Dictionary<VoiceLineId,AudioClip>)typeof(VoiceDirector).GetField("_clipCache",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(VoiceDirector.Instance);
-            cache[VoiceLineId.Eurydice_IamHere]=AudioClip.Create("VerifyFirst",66150,1,44100,false);
-            cache[VoiceLineId.Eurydice_HearTheNote]=AudioClip.Create("VerifySecond",26460,1,44100,false);
-            cache[VoiceLineId.Eurydice_RightHere]=AudioClip.Create("VerifyTail",26460,1,44100,false);
+            cache[VoiceLineId.Hades_ABreath]=AudioClip.Create("VerifyFirst",66150,1,44100,false);
+            cache[VoiceLineId.Hades_YourStrings]=AudioClip.Create("VerifySecond",26460,1,44100,false);
+            cache[VoiceLineId.Hades_YouDare]=AudioClip.Create("VerifyTail",26460,1,44100,false);
         }
         private static void CaptureChamber(string name)
         {
