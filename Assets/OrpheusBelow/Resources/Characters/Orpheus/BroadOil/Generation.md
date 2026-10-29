@@ -38,10 +38,18 @@ The generated `RunCycle.png` is **not a complete anatomical cycle**: columns zer
 
 Deforming limbs use a conforming two-pixel grid with shared GPU vertices. The affine torso keeps horizontal runs. Original pelvis/cape paint is retained through the hip seam, and limb roots are pinned to the torso before blending into the bent leg. This prevents curved-strip T-junction cracks and transparent waist cutouts; native GPU screenshots are required in addition to contact sheets.
 
-Running has eight baked phases over a 3.2-world-unit distance cycle. Near and far legs are offset by half a cycle. During support the ankle counters ground travel; during recovery the other knee and boot pass forward with clearance, then the opposite foot takes contact. The body has only a small vertical running bob. Animation time does not advance the running feet while the player stands still.
+That eight-phase,3.2-unit leg-only repair is superseded by the full-body athletic cycle below. It solved anatomical leg alternation but left the original crouched torso and arms frozen, which the user correctly identified as sneaking.
 
 `OrpheusRunCycleTests` projects actual visible boot texels through sprite triangles. It requires opposite near/far motion across half a stride in every source facing, alternate boot lift at passing poses, and a planted east-facing boot after accounting for the body's ground displacement. Contact sheets must interpolate sprite UVs through triangles; masking the original atlas rectangle does not display skinned geometry correctly.
 
 Additional regressions compare rendered material edges at intermediate UV vertices around the knee and sample actual opaque coverage at the retained waist/cape junction throughout the cycle.
 
 Exact prompts are recorded in `GenerationPrompts.json`; cell semantics are in `AtlasLayout.json`.
+
+## Current full-body athletic run
+
+Five new upright canonical paintings (`AthleticSouth`, `AthleticSouthEast`, `AthleticEast`, `AthleticNorthEast`, `AthleticNorth`) supply complete anatomical paint. `AthleticRunLayout.json` records their native-pixel masks/joints. `OrpheusAthleticRunBaker` poses far arm, far leg, retained torso/cape/head, near leg and near arm on a welded2px lattice. The retained body keeps its largest connected island to remove remnants of the source limbs.
+
+`OrpheusRunMotion` defines a5.8-unit cycle with .34 support duty, two flight intervals, high heel recovery and knee drive. Constant-length legs fit each reference so the pelvis remains upright. Elbows counter the legs at90degrees with a waist-to-chest arm pump. Sixteen phases per direction create80 distinct poses and128 mirrored direction slots. The animator advances by actual ground distance and compensates visual scale, including the .70 boss billboard. Exact posed renderer bounds prevent extended feet/hands being culled outside the original painting's rectangle.
+
+`OrpheusAthleticRunMotionTests` checks support, flight, heel recovery, elbow opposition/angle, bone lengths, upright pelvis and loop closure. `OrpheusRunCycleTests` projects actual painted boot/fist/hair texels to check the production art's motion, scaled support contact, torso rise and culling coverage. Native GPU motion review remains required; frame-count or contact-sheet checks alone do not establish animation quality. Source generation prompts and discarded-sheet rationale are recorded in `AthleticRunGeneration.md`.

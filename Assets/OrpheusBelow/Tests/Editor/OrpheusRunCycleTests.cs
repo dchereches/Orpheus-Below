@@ -1,144 +1,161 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace OrpheusBelow.Tests
 {
     public class OrpheusRunCycleTests
     {
-        [TestCase(EurydiceFacing.South, 154f, 263f, 0f, -1f)]
-        [TestCase(EurydiceFacing.SouthEast, 221f, 546f, 1f, -.45f)]
-        [TestCase(EurydiceFacing.East, 234f, 848f, 1f, 0f)]
-        [TestCase(EurydiceFacing.NorthEast, 90f, 1150f, 1f, .45f)]
-        [TestCase(EurydiceFacing.North, 140f, 1470f, 0f, 1f)]
-        public void RunningAlternatesBothPaintedBootsAcrossHalfStride(EurydiceFacing facing,
-            float pixelX, float pixelYFromTop, float travelX, float travelY)
+        [Serializable] private sealed class Layout { public Rig[] rigs; }
+        [Serializable] private sealed class Rig { public Vector2 hip, knee, ankle, shoulder, elbow, wrist; public int sourceWidth, sourceHeight; }
+        private static OrpheusAnimationLibrary Library => Resources.Load<OrpheusAnimationLibrary>(OrpheusAnimationLibrary.ResourcePath);
+        private static Rig Source(int row) => JsonUtility.FromJson<Layout>(Resources.Load<TextAsset>("Characters/Orpheus/BroadOil/AthleticRunLayout").text).rigs[row];
+        private static Vector2 Uv(Rig r, Vector2 pixel) => new Vector2(pixel.x / r.sourceWidth, 1f - pixel.y / r.sourceHeight);
+
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)]
+        public void FullBodyRunAlternatesPaintedBootsAndCounterSwingsBothFists(int row)
         {
-            var library = Resources.Load<OrpheusAnimationLibrary>(OrpheusAnimationLibrary.ResourcePath);
-            OrpheusAnimationClip run = library.FindClip(OrpheusAnimationState.Run);
-            Sprite contact = library.Frame(OrpheusAnimationState.Run, facing, 0);
-            Sprite opposite = library.Frame(OrpheusAnimationState.Run, facing, run.framesPerDirection / 2);
-            Vector2 texel = new Vector2((pixelX + .37f) / 1024f, (1536f - pixelYFromTop - .41f) / 1536f);
-            List<Vector2> first = PaintedPoints(contact, texel);
-            List<Vector2> half = PaintedPoints(opposite, texel);
-            Assert.That(first.Count, Is.EqualTo(2), "Both anatomical legs must contain painted boot geometry; a single repeated leading leg cannot pass.");
-            Assert.That(half.Count, Is.EqualTo(2));
-            Vector2 travel = new Vector2(travelX, travelY).normalized;
-            Assert.That(Vector2.Dot(half[0] - first[0], travel), Is.GreaterThan(.3f), "The far painted boot must advance during the opposite half-stride.");
-            Assert.That(Vector2.Dot(half[1] - first[1], travel), Is.LessThan(-.3f), "The near painted boot must sweep back as the far boot advances.");
-            Assert.That(Vector2.Distance(first[0], first[1]), Is.GreaterThan(.4f));
-            Assert.That(Vector2.Distance(half[0], half[1]), Is.GreaterThan(.4f));
+            Rig r = Source(row); var facing = (EurydiceFacing)row;
+            var clip = Library.FindClip(OrpheusAnimationState.Run);
+            Assert.That(clip.framesPerDirection, Is.EqualTo(16));
+            Sprite first = Library.Frame(OrpheusAnimationState.Run, facing, 0);
+            Sprite half = Library.Frame(OrpheusAnimationState.Run, facing, 8);
+            Assert.That(first.texture.name, Does.StartWith("Athletic"), "The former frozen crouching torso must not be reused.");
+            Vector2 travel = new Vector2(Mathf.Sin(row * Mathf.PI * .25f), -Mathf.Cos(row * Mathf.PI * .25f) * Mathf.Sin(36f * Mathf.Deg2Rad)).normalized;
+            List<Vector2> boots = PaintedPoints(first, Uv(r, r.ankle)), bootsHalf = PaintedPoints(half, Uv(r, r.ankle));
+            List<Vector2> fists = PaintedPoints(first, Uv(r, r.wrist)), fistsHalf = PaintedPoints(half, Uv(r, r.wrist));
+            Assert.That(boots.Count, Is.EqualTo(2), "Each anatomical leg needs its own painted boot.");
+            Assert.That(bootsHalf.Count, Is.EqualTo(2)); Assert.That(fists.Count, Is.EqualTo(2)); Assert.That(fistsHalf.Count, Is.EqualTo(2));
+            Sprite canonical = Library.sourceFrames.Single(x => x.name == "AthleticSource_" + row.ToString("D2"));
+            Vector2 pixelScale = new Vector2(canonical.texture.width / (float)r.sourceWidth, canonical.texture.height / (float)r.sourceHeight) / canonical.pixelsPerUnit;
+            Vector2 upper = Vector2.Scale(r.knee - r.hip, pixelScale), lower = Vector2.Scale(r.ankle - r.knee, pixelScale);
+            Vector2 fitted = OrpheusRunMotion.FitLegLengths(upper.magnitude, lower.magnitude, (r.ankle.y - r.hip.y) * pixelScale.y);
+            float upperArm = Vector2.Scale(r.elbow - r.shoulder, pixelScale).magnitude;
+            float lowerArm = Vector2.Scale(r.wrist - r.elbow, pixelScale).magnitude;
+            var startPose = OrpheusRunMotion.Evaluate(0f, fitted.x, fitted.y, upperArm, lowerArm);
+            var halfPose = OrpheusRunMotion.Evaluate(.5f, fitted.x, fitted.y, upperArm, lowerArm);
+            Vector2 footDelta = halfPose.nearLeg.end - startPose.nearLeg.end;
+            Vector2 projected = new Vector2(Mathf.Sin(row * Mathf.PI * .25f), -Mathf.Cos(row * Mathf.PI * .25f) * Mathf.Sin(36f * Mathf.Deg2Rad)) * footDelta.x + Vector2.up * footDelta.y;
+            Assert.That(Vector2.Distance(bootsHalf[1] - boots[1], projected), Is.LessThan(.04f));
+            Assert.That(Vector2.Distance(bootsHalf[0] - boots[0], -projected), Is.LessThan(.04f));
+            Vector2 armDelta = halfPose.nearArm.end - startPose.nearArm.end;
+            Vector2 projectedArm = new Vector2(Mathf.Sin(row * Mathf.PI * .25f), -Mathf.Cos(row * Mathf.PI * .25f) * Mathf.Sin(36f * Mathf.Deg2Rad)) * armDelta.x + Vector2.up * armDelta.y;
+            Assert.That(Vector2.Distance(fistsHalf[1] - fists[1], projectedArm), Is.LessThan(.04f), "The actual fist paint must follow the counter-swinging skeleton, including depth projection.");
+            Assert.That(Vector2.Distance(fistsHalf[0] - fists[0], -projectedArm), Is.LessThan(.04f));
         }
 
         [Test]
-        public void RunningPlantKeepsTheContactBootInPlaceAsTheBodyAdvances()
+        public void PaintedSupportBootCountersOneFrameOfRootTravel()
         {
-            var library = Resources.Load<OrpheusAnimationLibrary>(OrpheusAnimationLibrary.ResourcePath);
-            Vector2 texel = new Vector2(234.37f / 1024f, (1536f - 848.41f) / 1536f);
-            List<Vector2> contact = PaintedPoints(library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East, 0), texel);
-            List<Vector2> afterTravel = PaintedPoints(library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East, 1), texel);
-            Assert.That(contact.Count, Is.EqualTo(2));
-            Assert.That(afterTravel.Count, Is.EqualTo(2));
-            Vector2 worldFoot = afterTravel[1] + Vector2.right * .4f;
-            Assert.That(Vector2.Distance(worldFoot, contact[1]), Is.LessThan(.075f),
-                "During support, the boot must counter the body's real ground displacement.");
+            Rig r = Source(2);
+            Vector2 a = PaintedPoints(Library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East, 0), Uv(r, r.ankle))[1];
+            Vector2 b = PaintedPoints(Library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East, 1), Uv(r, r.ankle))[1];
+            Assert.That(Vector2.Distance(b + Vector2.right * (OrpheusRunMotion.CycleDistance / 16f), a), Is.LessThan(.025f));
         }
 
         [Test]
-        public void PassingPoseLiftsTheOppositeBootOnEachHalfStride()
+        public void PaintedTorsoRisesDuringFlightInsteadOfRemainingFrozenInACrouch()
         {
-            var library = Resources.Load<OrpheusAnimationLibrary>(OrpheusAnimationLibrary.ResourcePath);
-            OrpheusAnimationClip run = library.FindClip(OrpheusAnimationState.Run);
-            Vector2 texel = new Vector2(234.37f / 1024f, (1536f - 848.41f) / 1536f);
-            List<Vector2> firstPass = PaintedPoints(library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East,
-                run.framesPerDirection / 4), texel);
-            List<Vector2> secondPass = PaintedPoints(library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East,
-                run.framesPerDirection * 3 / 4), texel);
-            Assert.That(firstPass.Count, Is.EqualTo(2));
-            Assert.That(secondPass.Count, Is.EqualTo(2));
-            Assert.That(firstPass[0].y - firstPass[1].y, Is.GreaterThan(.3f));
-            Assert.That(secondPass[1].y - secondPass[0].y, Is.GreaterThan(.3f));
+            Rig r = Source(2); Vector2 hair = Uv(r, new Vector2(r.hip.x, 200));
+            var contact = PaintedPoints(Library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East, 0), hair);
+            var flight = PaintedPoints(Library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East, 6), hair);
+            Assert.That(contact.Count, Is.EqualTo(1)); Assert.That(flight.Count, Is.EqualTo(1));
+            Assert.That(flight[0].y - contact[0].y, Is.GreaterThan(.10f));
         }
 
         [Test]
-        public void RunningKneeMaterialHasNoOpenTJunctions()
+        public void RuntimeRunningBoundsContainEveryRenderedVertexInEveryDirection()
         {
-            var library = Resources.Load<OrpheusAnimationLibrary>(OrpheusAnimationLibrary.ResourcePath);
-            OrpheusAnimationClip run = library.FindClip(OrpheusAnimationState.Run);
-            for (int frame = 0; frame < run.framesPerDirection; frame++)
+            var root = new GameObject("RunningCullingContract");
+            try
             {
-                Sprite sprite = library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East, frame);
-                Vector2[] uv = sprite.uv, positions = sprite.vertices;
-                ushort[] triangles = sprite.triangles;
-                var rows = new Dictionary<int, Dictionary<int, List<Vector2>>>();
-                for (int i = 0; i < uv.Length; i++)
+                SpriteRenderer body = root.AddComponent<SpriteRenderer>();
+                var animator = root.AddComponent<OrpheusSpriteAnimator>(); animator.Initialize(body, null, null, Library);
+                for (int direction = 0; direction < 8; direction++)
                 {
-                    int x = Mathf.RoundToInt(uv[i].x * sprite.texture.width);
-                    int y = Mathf.RoundToInt(uv[i].y * sprite.texture.height);
-                    if (!rows.TryGetValue(y, out var row)) rows[y] = row = new Dictionary<int, List<Vector2>>();
-                    if (!row.TryGetValue(x, out var points)) row[x] = points = new List<Vector2>();
-                    points.Add(positions[i]);
-                }
-                for (int t = 0; t < triangles.Length; t += 3) for (int edge = 0; edge < 3; edge++)
-                {
-                    int a = triangles[t + edge], b = triangles[t + (edge + 1) % 3];
-                    int ax = Mathf.RoundToInt(uv[a].x * sprite.texture.width), bx = Mathf.RoundToInt(uv[b].x * sprite.texture.width);
-                    int ay = Mathf.RoundToInt(uv[a].y * sprite.texture.height), by = Mathf.RoundToInt(uv[b].y * sprite.texture.height);
-                    int fromTop = sprite.texture.height - ay;
-                    if (ay != by || fromTop < 775 || fromTop > 815 || ax == bx) continue;
-                    foreach (var point in rows[ay])
+                    float angle = direction * Mathf.PI * .25f;
+                    Vector3 ground = (UnderworldCamera2D.IsoRightXZ * Mathf.Sin(angle) - UnderworldCamera2D.IsoUpXZ * Mathf.Cos(angle)) * .82f;
+                    for (int i = 0; i < 4; i++) animator.Drive(new OrpheusAnimationInput { groundDelta = ground, deltaTime = .1f, movementRequested = true });
+                    Assert.That(animator.CurrentState, Is.EqualTo(OrpheusAnimationState.Run));
+                    for (int frame = 0; frame < 16; frame++)
                     {
-                        if (point.Key <= Mathf.Min(ax, bx) || point.Key >= Mathf.Max(ax, bx) || point.Key < 180 || point.Key > 235) continue;
-                        Vector2 onEdge = Vector2.Lerp(positions[a], positions[b], (point.Key - ax) / (float)(bx - ax));
-                        Assert.That(point.Value.Min(p => Vector2.Distance(p, onEdge)), Is.LessThan(.00001f),
-                            sprite.name + ": adjacent triangles must share the same rendered material edge, including intermediate UV vertices.");
+                        typeof(OrpheusSpriteAnimator).GetField("_frame", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(animator, frame);
+                        typeof(OrpheusSpriteAnimator).GetMethod("ApplyFrame", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(animator, null);
+                        Bounds bounds = body.localBounds; bounds.Expand(.002f);
+                        foreach (Vector2 vertex in body.sprite.vertices)
+                            Assert.That(bounds.Contains(new Vector3(body.flipX ? -vertex.x : vertex.x, vertex.y, 0)), Is.True, body.sprite.name + " exceeds runtime culling bounds.");
                     }
                 }
             }
+            finally { Object.DestroyImmediate(root); }
         }
 
         [Test]
-        public void RunningKeepsOpaqueWaistAndCapePaintJoinedToTheTorso()
+        public void FastStartsAndTurnsUseTheSameFullBodyRun()
         {
-            var library = Resources.Load<OrpheusAnimationLibrary>(OrpheusAnimationLibrary.ResourcePath);
-            Sprite source = library.sourceFrames.Single(s => s.name == "RunCycle_02_00");
-            OrpheusAnimationClip run = library.FindClip(OrpheusAnimationState.Run);
-            Vector2 marker = new Vector2(110.37f, 710.41f);
-            Vector2 markerUv = new Vector2(marker.x / source.texture.width, 1f - marker.y / source.texture.height);
-            for (int frame = 0; frame < run.framesPerDirection; frame++)
+            WithAnimator((animator, body) =>
             {
-                Sprite sprite = library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East, frame);
-                Vector2 shift = PaintedPoints(sprite, markerUv).Single() - SourcePosition(source, marker);
-                foreach (float y in new[] { 738.41f, 746.41f }) foreach (float x in new[] { 125.37f, 135.37f, 145.37f })
-                    Assert.That(OpaqueAt(sprite, SourcePosition(source, new Vector2(x, y)) + shift), Is.True,
-                        sprite.name + ": the original solid waist/cape junction must not become a transparent cutout.");
-            }
+                animator.Drive(new OrpheusAnimationInput { groundDelta = UnderworldCamera2D.IsoRightXZ * .82f, deltaTime = .1f, movementRequested = true });
+                Assert.That(animator.CurrentState, Is.EqualTo(OrpheusAnimationState.Start));
+                Assert.That(body.sprite.texture.name, Does.StartWith("Athletic"));
+                animator.Drive(new OrpheusAnimationInput { groundDelta = -UnderworldCamera2D.IsoRightXZ * .82f, deltaTime = .1f, movementRequested = true });
+                Assert.That(body.sprite.texture.name, Does.StartWith("Athletic"));
+            });
         }
 
-        private static Vector2 SourcePosition(Sprite sprite, Vector2 topLeftPixel)
-            => (new Vector2(topLeftPixel.x, sprite.texture.height - topLeftPixel.y) - sprite.rect.position - sprite.pivot) / sprite.pixelsPerUnit;
-
-        private static bool OpaqueAt(Sprite sprite, Vector2 point)
+        [TestCase(true)] [TestCase(false)]
+        public void FastStairsKeepTheirStairStateAndShowTheFullBodyRun(bool ascending)
         {
-            Vector2[] positions = sprite.vertices, uv = sprite.uv;
-            ushort[] indices = sprite.triangles;
-            for (int t = 0; t < indices.Length; t += 3)
+            WithAnimator((animator, body) =>
             {
-                int a = indices[t], b = indices[t + 1], c = indices[t + 2];
-                float determinant = Cross(positions[b] - positions[a], positions[c] - positions[a]);
-                if (Mathf.Abs(determinant) < 1e-12f) continue;
-                float u = Cross(point - positions[a], positions[c] - positions[a]) / determinant;
-                float v = Cross(positions[b] - positions[a], point - positions[a]) / determinant;
-                if (u < 0f || v < 0f || u + v > 1f) continue;
-                Vector2 sample = uv[a] + (uv[b] - uv[a]) * u + (uv[c] - uv[a]) * v;
-                if (sprite.texture.GetPixelBilinear(sample.x, sample.y).a > .8f) return true;
-            }
-            return false;
+                animator.Drive(new OrpheusAnimationInput { groundDelta = UnderworldCamera2D.IsoRightXZ * .82f, deltaTime = .1f,
+                    movementRequested = true, onStairs = true, ascending = ascending });
+                Assert.That(animator.CurrentState, Is.EqualTo(ascending ? OrpheusAnimationState.StairAscent : OrpheusAnimationState.StairDescent));
+                Assert.That(body.sprite.texture.name, Does.StartWith("Athletic"), "Full-speed stairs must not retain the former walking/crouching art.");
+            });
         }
 
-        // Project the same real boot texel through the rendered triangles. Separate projections
-        // identify the far and near painted limbs in draw order, rather than trusting pose labels.
+        private static void WithAnimator(Action<OrpheusSpriteAnimator, SpriteRenderer> action)
+        {
+            var root = new GameObject("FastLocomotionArtContract");
+            try
+            {
+                var body = root.AddComponent<SpriteRenderer>(); var animator = root.AddComponent<OrpheusSpriteAnimator>();
+                animator.Initialize(body, null, null, Library); action(animator, body);
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+
+        [Test]
+        public void BossScaleKeepsTheRenderedSupportBootPlanted()
+        {
+            var root = new GameObject("ScaledRunningContract");
+            try
+            {
+                var art = new GameObject("ScaledBillboard"); art.transform.SetParent(root.transform, false);
+                art.transform.localScale = Vector3.one * .70f; art.transform.localRotation = UnderworldCamera2D.CurrentBillboardRotation;
+                SpriteRenderer body = art.AddComponent<SpriteRenderer>();
+                var animator = root.AddComponent<OrpheusSpriteAnimator>(); animator.Initialize(body, null, null, Library);
+                for (int i = 0; i < 3; i++) animator.Drive(new OrpheusAnimationInput { groundDelta = UnderworldCamera2D.IsoRightXZ * .82f, deltaTime = .1f, movementRequested = true });
+                Assert.That(animator.CurrentState, Is.EqualTo(OrpheusAnimationState.Run));
+                typeof(OrpheusSpriteAnimator).GetField("_gaitPhase", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(animator, 0f);
+                typeof(OrpheusSpriteAnimator).GetField("_frame", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(animator, 0);
+                typeof(OrpheusSpriteAnimator).GetMethod("ApplyFrame", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(animator, null);
+                Rig r = Source(2); Vector2 uv = Uv(r, r.ankle);
+                Vector3 before = body.transform.TransformPoint(PaintedPoints(body.sprite, uv)[1]);
+                float distance = OrpheusRunMotion.CycleDistance * .7f / 16f;
+                root.transform.position += UnderworldCamera2D.IsoRightXZ * distance;
+                animator.Drive(new OrpheusAnimationInput { groundDelta = UnderworldCamera2D.IsoRightXZ * distance, deltaTime = .02f, movementRequested = true });
+                Vector3 after = body.transform.TransformPoint(PaintedPoints(body.sprite, uv)[1]);
+                Assert.That(Vector3.Distance(before, after), Is.LessThan(.025f), "The 0.70 boss billboard must compensate its stride for scale.");
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+
         private static List<Vector2> PaintedPoints(Sprite sprite, Vector2 sample)
         {
             var result = new List<Vector2>();
