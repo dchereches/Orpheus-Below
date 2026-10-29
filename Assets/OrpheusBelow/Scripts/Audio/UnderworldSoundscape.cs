@@ -75,10 +75,13 @@ namespace OrpheusBelow
             float desiredTension = director != null && !menu ? Mathf.Clamp01(director.ActiveEnemyCount / 10f) : 0f;
             _tension = Mathf.MoveTowards(_tension, desiredTension, Time.unscaledDeltaTime * 0.15f);
             float depth = director == null ? 0f : Mathf.Clamp01(director.CurrentChamberIndex / (float)(ProceduralChamberGenerator.TotalChambers - 1));
-            _wind.volume = Mathf.Lerp(0.23f, 0.34f, depth) + _tension * 0.06f;
-            _drone.volume = (menu ? 0.29f : 0.21f) + _tension * 0.17f;
-            _dialogueMix = Mathf.MoveTowards(_dialogueMix, VoiceDirector.BlocksGameplay ? DialogueAmbientGain : 1f,
-                Time.unscaledDeltaTime * (VoiceDirector.BlocksGameplay ? 20f : 2f));
+            // Ambient baseline volumes balanced so voices always dominate the mix
+            _wind.volume = Mathf.Lerp(0.08f, 0.13f, depth) + _tension * 0.03f;
+            _drone.volume = (menu ? 0.10f : 0.07f) + _tension * 0.04f;
+            // Duck ambient sound whenever ANY voice is playing or blocking
+            bool isDucked = VoiceDirector.IsVoicePlaying || VoiceDirector.BlocksGameplay;
+            _dialogueMix = Mathf.MoveTowards(_dialogueMix, isDucked ? DialogueAmbientGain : 1f,
+                Time.unscaledDeltaTime * (isDucked ? 20f : 2.5f));
             _wind.volume *= _dialogueMix;
             _drone.volume *= _dialogueMix;
             if (CinematicActive) { _wind.volume = 0f; _drone.volume = 0f; }

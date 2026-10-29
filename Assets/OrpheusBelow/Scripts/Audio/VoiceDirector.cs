@@ -65,6 +65,7 @@ namespace OrpheusBelow
         public const float VoiceGain = 1f;
         public static bool HasPendingSpeech => Instance != null && Instance._queue.IsBlocking;
         public static bool BlocksGameplay => HasPendingSpeech && !Instance._interactiveInstruction;
+        public static bool IsVoicePlaying => Instance != null && (Instance.CurrentLine != VoiceLineId.None || HasPendingSpeech || (Instance._voiceSource != null && Instance._voiceSource.isPlaying));
 
         private static readonly Color NarratorColor = new Color(0.95f, 0.82f, 0.44f, 1f); // Warm amber
         private static readonly Color HadesColor = new Color(0.96f, 0.32f, 0.32f, 1f);    // Regal crimson
