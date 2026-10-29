@@ -70,8 +70,8 @@ namespace OrpheusBelow
         private Text _inputModeLabel;
 
         // 2. World lighting
-        private Slider _brightnessSlider, _contrastSlider, _bloomSlider;
-        private Text _brightnessLabel, _contrastLabel, _bloomLabel;
+        private Slider _brightnessSlider, _contrastSlider, _bloomSlider, _grainSlider;
+        private Text _brightnessLabel, _contrastLabel, _bloomLabel, _grainLabel;
         private Button _resetLighting;
 
         // 3. Difficulty
@@ -363,13 +363,20 @@ namespace OrpheusBelow
                 UpdateLightingLabels();
             });
             _contrastSlider.gameObject.name = "LightingContrastSlider";
-            _bloomLabel = Label(body, "Bloom   20%", 660, 298, 500, 22, 14, Ivory, false);
-            _bloomSlider = MakeGenericSlider(body, 660, 322, 500, 0f, 1f, false, val =>
+            _bloomLabel = Label(body, "Bloom   20%", 660, 298, 240, 22, 14, Ivory, false);
+            _bloomSlider = MakeGenericSlider(body, 660, 322, 240, 0f, 1f, false, val =>
             {
                 WorldLightingSettings.SetBloom(val);
                 UpdateLightingLabels();
             });
             _bloomSlider.gameObject.name = "LightingBloomSlider";
+            _grainLabel = Label(body, "Film grain   8%", 920, 298, 240, 22, 14, Ivory, false);
+            _grainSlider = MakeGenericSlider(body, 920, 322, 240, 0f, 1f, false, val =>
+            {
+                WorldLightingSettings.SetGrain(val);
+                UpdateLightingLabels();
+            });
+            _grainSlider.gameObject.name = "LightingGrainSlider";
             _resetLighting = MakeGreekButton(body, "ResetLightingBtn", "Reset lighting", 660, 360, 240, 38, () =>
             {
                 WorldLightingSettings.ResetDefaults();
@@ -380,7 +387,7 @@ namespace OrpheusBelow
 
             // 3. Difficulty Setting
             Label(body, "Difficulty", 660, 442, 500, 28, 20, Ivory);
-            _diffBtn = MakeGreekButton(body, "DiffBtn", "Heroic", 660, 480, 500, 44, CycleDifficulty, out _diffLabel);
+            _diffBtn = MakeGreekButton(body, "DiffBtn", DifficultySettings.GetName(DifficultySettings.CurrentDifficulty), 660, 480, 500, 44, CycleDifficulty, out _diffLabel);
             _diffDesc = Label(body, DifficultySettings.GetDescription(DifficultySettings.CurrentDifficulty), 660, 532, 500, 54, 14, Muted, false);
 
             // 4. Audio Controls
@@ -398,7 +405,7 @@ namespace OrpheusBelow
             _settingsBack = MakeGreekButton(body, "SettingsBack", "Back to menu", 72, 654, 260, 48, HideSettings, out _, true);
             Label(body, "Esc to go back", 960, 666, 200, 24, 13, Muted, false).alignment = TextAnchor.MiddleRight;
             LinkVertical(_sensitivitySlider, _softThresholdSlider, _boomThresholdSlider, _inputModeBtn,
-                _volume, _mute, _brightnessSlider, _contrastSlider, _bloomSlider, _resetLighting, _diffBtn, _settingsBack);
+                _volume, _mute, _brightnessSlider, _contrastSlider, _bloomSlider, _grainSlider, _resetLighting, _diffBtn, _settingsBack);
 
             SyncLightingControls();
 
@@ -450,6 +457,7 @@ namespace OrpheusBelow
             _brightnessSlider?.SetValueWithoutNotify(WorldLightingSettings.Exposure);
             _contrastSlider?.SetValueWithoutNotify(WorldLightingSettings.Contrast);
             _bloomSlider?.SetValueWithoutNotify(WorldLightingSettings.Bloom);
+            _grainSlider?.SetValueWithoutNotify(WorldLightingSettings.Grain);
             UpdateLightingLabels();
         }
 
@@ -458,6 +466,7 @@ namespace OrpheusBelow
             if (_brightnessLabel != null) _brightnessLabel.text = "Brightness / exposure   " + WorldLightingSettings.Exposure.ToString("+0.00;-0.00;+0.00") + " EV";
             if (_contrastLabel != null) _contrastLabel.text = "Contrast   " + WorldLightingSettings.Contrast.ToString("+0;-0;0");
             if (_bloomLabel != null) _bloomLabel.text = "Bloom   " + Mathf.RoundToInt(WorldLightingSettings.Bloom * 100f) + "%";
+            if (_grainLabel != null) _grainLabel.text = "Film grain   " + (WorldLightingSettings.Grain == 0f ? "Off" : Mathf.RoundToInt(WorldLightingSettings.Grain * 100f) + "%");
         }
 
         private Slider MakeGenericSlider(RectTransform parent, float x, float y, float width, float min, float max, bool whole, UnityEngine.Events.UnityAction<float> onVal)

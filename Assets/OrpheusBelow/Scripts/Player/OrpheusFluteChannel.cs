@@ -91,7 +91,7 @@ namespace OrpheusBelow
             GameObject staveBacking = new GameObject("FluteMiniStaffBacking");
             staveBacking.transform.SetParent(_noteDisplayRoot, false);
             staveBacking.transform.localPosition = new Vector3(0f, 0f, 0.05f);
-            staveBacking.transform.localScale = new Vector3(1.82f, 0.34f, 1f);
+            staveBacking.transform.localScale = new Vector3(1.82f, 0.38f, 1f);
             RenderPipeline2DSetup.AttachSprite(staveBacking, RenderPipeline2DSetup.SquareSprite, new Color(0.96f, 0.94f, 0.88f, 0.20f), 19);
 
             // Mini golden staff baseline behind the 4 notes (clean, subtle hairline)

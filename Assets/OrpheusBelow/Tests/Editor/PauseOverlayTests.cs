@@ -15,6 +15,7 @@ namespace OrpheusBelow.Tests
         private GameObject _root;
         private UnderworldFrontEnd _menu;
         private float _previousScale;
+        private UnderworldDifficulty _previousDifficulty;
         private bool _previousAudioPause;
         private bool _hadBrightness;
         private float _previousBrightness;
@@ -24,6 +25,8 @@ namespace OrpheusBelow.Tests
         public void SetUp()
         {
             _previousScale = Time.timeScale;
+            _previousDifficulty = DifficultySettings.CurrentDifficulty;
+            typeof(DifficultySettings).GetProperty("CurrentDifficulty").SetValue(null, UnderworldDifficulty.Mortal);
             _previousAudioPause = AudioListener.pause;
             _hadBrightness = PlayerPrefs.HasKey("Orpheus_Brightness");
             _previousBrightness = PlayerPrefs.GetFloat("Orpheus_Brightness", 1f);
@@ -45,6 +48,7 @@ namespace OrpheusBelow.Tests
             if (shade != null) Object.DestroyImmediate(shade);
             typeof(UnderworldCamera2D).GetProperty("Instance").SetValue(null, _previousCamera);
             Time.timeScale = _previousScale;
+            typeof(DifficultySettings).GetProperty("CurrentDifficulty").SetValue(null, _previousDifficulty);
             AudioListener.pause = _previousAudioPause;
             if (_hadBrightness) PlayerPrefs.SetFloat("Orpheus_Brightness", _previousBrightness);
             else PlayerPrefs.DeleteKey("Orpheus_Brightness");
@@ -126,9 +130,9 @@ namespace OrpheusBelow.Tests
             Assert.That(MenuEvents.currentSelectedGameObject, Is.SameAs(Get<Button>("_settingsBtn").gameObject));
         }
 
-        [TestCase(SensorSourceMode.KeyboardPlusPCMicrophone, .8f)]
-        [TestCase(SensorSourceMode.KeyboardAndMouseOnly, 1f)]
-        public void ResumingPreservesSelectedInputSpeedAndReleasesMenuPause(SensorSourceMode mode, float expected)
+        [TestCase(SensorSourceMode.KeyboardPlusPCMicrophone, .7f)]
+        [TestCase(SensorSourceMode.KeyboardAndMouseOnly, .7f)]
+        public void ResumingUsesDefaultSpeedAndReleasesMenuPause(SensorSourceMode mode, float expected)
         {
             SensorSourceMode previous = SensorPulseInput.GlobalSourceMode;
             try

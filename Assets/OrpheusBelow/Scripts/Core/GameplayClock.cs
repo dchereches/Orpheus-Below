@@ -2,10 +2,10 @@ using UnityEngine;
 
 namespace OrpheusBelow
 {
-    /// <summary>Shared input-mode speed and the gameplay modifiers to restore after a pause.</summary>
+    /// <summary>Shared gameplay speed and the modifiers to restore after a pause.</summary>
     public static class GameplayClock
     {
-        public static float NormalScale => SensorPulseInput.GlobalSourceMode == SensorSourceMode.KeyboardPlusPCMicrophone ? .8f : 1f;
+        public static float NormalScale => DifficultySettings.CurrentDifficulty == UnderworldDifficulty.Mortal ? .7f : 1f;
 
         public static float ResumeScale
         {

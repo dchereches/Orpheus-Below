@@ -11,7 +11,7 @@ namespace OrpheusBelow.Tests
 {
     public sealed class WorldLightingSettingsTests : CombatGameplayTestContext
     {
-        private readonly string[] _keys = { "Orpheus_LightingExposure", "Orpheus_LightingContrast", "Orpheus_LightingBloom", "Orpheus_Brightness" };
+        private readonly string[] _keys = { "Orpheus_LightingExposure", "Orpheus_LightingContrast", "Orpheus_LightingBloom", "Orpheus_FilmGrain", "Orpheus_Brightness" };
         private bool[] _had;
         private float[] _saved;
 
@@ -42,6 +42,7 @@ namespace OrpheusBelow.Tests
             Assert.That(WorldLightingSettings.Exposure, Is.Zero);
             Assert.That(WorldLightingSettings.Contrast, Is.Zero);
             Assert.That(WorldLightingSettings.Bloom, Is.EqualTo(.2f));
+            Assert.That(WorldLightingSettings.Grain, Is.EqualTo(.08f));
         }
 
         [Test]
@@ -50,15 +51,18 @@ namespace OrpheusBelow.Tests
             WorldLightingSettings.SetExposure(9f);
             WorldLightingSettings.SetContrast(-90f);
             WorldLightingSettings.SetBloom(9f);
+            WorldLightingSettings.SetGrain(9f);
             Reload();
             Assert.That(WorldLightingSettings.Exposure, Is.EqualTo(1f));
             Assert.That(WorldLightingSettings.Contrast, Is.EqualTo(-40f));
             Assert.That(WorldLightingSettings.Bloom, Is.EqualTo(1f));
+            Assert.That(WorldLightingSettings.Grain, Is.EqualTo(1f));
             WorldLightingSettings.ResetDefaults();
             Reload();
             Assert.That(WorldLightingSettings.Exposure, Is.Zero);
             Assert.That(WorldLightingSettings.Contrast, Is.Zero);
             Assert.That(WorldLightingSettings.Bloom, Is.EqualTo(.2f));
+            Assert.That(WorldLightingSettings.Grain, Is.EqualTo(.08f));
         }
 
         [Test]
@@ -73,10 +77,12 @@ namespace OrpheusBelow.Tests
             PlayerPrefs.SetFloat("Orpheus_LightingExposure", float.NaN);
             PlayerPrefs.SetFloat("Orpheus_LightingContrast", float.PositiveInfinity);
             PlayerPrefs.SetFloat("Orpheus_LightingBloom", float.NegativeInfinity);
+            PlayerPrefs.SetFloat("Orpheus_FilmGrain", float.NaN);
             Reload();
             Assert.That(WorldLightingSettings.Exposure, Is.Zero);
             Assert.That(WorldLightingSettings.Contrast, Is.Zero);
             Assert.That(WorldLightingSettings.Bloom, Is.EqualTo(.2f));
+            Assert.That(WorldLightingSettings.Grain, Is.EqualTo(.08f));
         }
 
         [Test]
@@ -94,11 +100,19 @@ namespace OrpheusBelow.Tests
             AssertParameter(volume, "ColorAdjustments", "postExposure", .65f);
             AssertParameter(volume, "ColorAdjustments", "contrast", 23f);
             AssertParameter(volume, "Bloom", "intensity", .42f);
+            AssertParameter(volume, "FilmGrain", "intensity", .08f);
             Assert.That(volume.sharedProfile.components.Any(c => c.GetType().Name == "LensDistortion"), Is.False);
             WorldLightingSettings.EnsureApplied();
             Assert.That(GameObject.Find(WorldLightingSettings.VolumeName).GetComponent<Volume>(), Is.SameAs(volume));
             WorldLightingSettings.SetExposure(-.5f);
             AssertParameter(volume, "ColorAdjustments", "postExposure", -.5f);
+            WorldLightingSettings.SetGrain(0f);
+            Reload();
+            Assert.That(WorldLightingSettings.Grain, Is.Zero, "Turning grain off must persist across sessions.");
+            WorldLightingSettings.EnsureApplied();
+            AssertParameter(volume, "FilmGrain", "intensity", 0f);
+            var grainEffect = volume.sharedProfile.components.Single(c => c.GetType().Name == "FilmGrain");
+            Assert.That((bool)grainEffect.GetType().GetMethod("IsActive").Invoke(grainEffect, null), Is.False);
         }
 
         [Test]
@@ -120,20 +134,27 @@ namespace OrpheusBelow.Tests
                 Slider exposure = settings.Find("LightingExposureSlider").GetComponent<Slider>();
                 Slider contrast = settings.Find("LightingContrastSlider").GetComponent<Slider>();
                 Slider bloom = settings.Find("LightingBloomSlider").GetComponent<Slider>();
+                Slider grain = settings.Find("LightingGrainSlider").GetComponent<Slider>();
                 Button reset = settings.Find("ResetLightingBtn").GetComponent<Button>();
                 exposure.value = .5f;
                 contrast.value = 12f;
                 bloom.value = .7f;
+                grain.value = .12f;
                 Assert.That(WorldLightingSettings.Exposure, Is.EqualTo(.5f));
                 Assert.That(WorldLightingSettings.Contrast, Is.EqualTo(12f));
                 Assert.That(WorldLightingSettings.Bloom, Is.EqualTo(.7f));
+                Assert.That(WorldLightingSettings.Grain, Is.EqualTo(.12f));
                 Assert.That(exposure.navigation.selectOnDown, Is.SameAs(contrast));
                 Assert.That(contrast.navigation.selectOnDown, Is.SameAs(bloom));
-                Assert.That(bloom.navigation.selectOnDown, Is.SameAs(reset));
+                Assert.That(bloom.navigation.selectOnDown, Is.SameAs(grain));
+                Assert.That(grain.navigation.selectOnDown, Is.SameAs(reset));
+                grain.value = 0f;
+                Assert.That(WorldLightingSettings.Grain, Is.Zero);
                 reset.onClick.Invoke();
                 Assert.That(exposure.value, Is.Zero);
                 Assert.That(contrast.value, Is.Zero);
                 Assert.That(bloom.value, Is.EqualTo(.2f));
+                Assert.That(grain.value, Is.EqualTo(.08f));
                 Assert.That(settings.GetComponentsInChildren<Text>(true).All(t => t.font == GameTypography.Font), Is.True);
                 Assert.That(root.GetComponentsInChildren<Transform>(true).Any(t => t.name == "BrightnessVeil"), Is.False);
 
