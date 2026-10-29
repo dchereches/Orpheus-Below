@@ -705,6 +705,7 @@ namespace OrpheusBelow
 
         private IEnumerator BootIntroduction()
         {
+            yield return ShowInputSelectionMenu();
             yield return PlayIntroduction();
             if (!_introSucceeded)
             {
@@ -724,6 +725,26 @@ namespace OrpheusBelow
             _menuFadeRoutine = null;
             OpenMenu();
             if (!_introSucceeded) _premise.text = "The introduction could not be loaded.\nPlease try again.";
+        }
+
+        private IEnumerator ShowInputSelectionMenu()
+        {
+            var go = new GameObject("InputSelectionMenu", typeof(RectTransform));
+            go.transform.SetParent(transform, false);
+            var modal = go.AddComponent<InputSelectionModal>();
+            modal.Begin();
+            while (modal != null && !modal.IsConfirmed)
+            {
+                yield return null;
+            }
+            if (modal != null)
+            {
+                yield return modal.FadeAway(0.35f);
+            }
+            if (go != null)
+            {
+                Destroy(go);
+            }
         }
 
         private IEnumerator PlayIntroduction()
