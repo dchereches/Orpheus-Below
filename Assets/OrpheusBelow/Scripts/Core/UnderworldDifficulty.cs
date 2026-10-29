@@ -18,12 +18,12 @@ namespace OrpheusBelow
     {
         private const string PrefKey = "Orpheus_Difficulty";
 
-        public static UnderworldDifficulty CurrentDifficulty { get; private set; } = UnderworldDifficulty.Heroic;
+        public static UnderworldDifficulty CurrentDifficulty { get; private set; } = UnderworldDifficulty.Mortal;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         public static void Initialize()
         {
-            CurrentDifficulty = (UnderworldDifficulty)PlayerPrefs.GetInt(PrefKey, (int)UnderworldDifficulty.Heroic);
+            CurrentDifficulty = (UnderworldDifficulty)PlayerPrefs.GetInt(PrefKey, (int)UnderworldDifficulty.Mortal);
         }
 
         public static float DamageMultiplier => CurrentDifficulty switch
@@ -52,9 +52,9 @@ namespace OrpheusBelow
 
         public static string GetDescription(UnderworldDifficulty diff) => diff switch
         {
-            UnderworldDifficulty.Mortal => "Gentle descent. Incoming damage reduced (0.7x), breath recovers swifter (+30%).",
-            UnderworldDifficulty.Heroic => "Balanced trial of the Underworld. Intended classical challenge.",
-            UnderworldDifficulty.Tartarus => "Wrath of Hades. Incoming damage increased (1.4x), shades strike with ruthless fury.",
+            UnderworldDifficulty.Mortal => "Gentle descent at 0.7x speed. Incoming damage reduced (0.7x), breath recovery +30%.",
+            UnderworldDifficulty.Heroic => "Balanced trial at 1x speed. Intended classical challenge.",
+            UnderworldDifficulty.Tartarus => "Wrath of Hades at 1x speed. Incoming damage increased (1.4x), breath recovery -15%.",
             _ => ""
         };
 
@@ -63,6 +63,7 @@ namespace OrpheusBelow
             CurrentDifficulty = diff;
             PlayerPrefs.SetInt(PrefKey, (int)diff);
             PlayerPrefs.Save();
+            GameplayClock.RefreshGameplayScale();
         }
 
         public static void CycleNext()

@@ -12,20 +12,23 @@ namespace OrpheusBelow
         public const string ExposureKey = "Orpheus_LightingExposure";
         public const string ContrastKey = "Orpheus_LightingContrast";
         public const string BloomKey = "Orpheus_LightingBloom";
+        public const string GrainKey = "Orpheus_FilmGrain";
         public const float DefaultExposure = 0f;
         public const float DefaultContrast = 0f;
         // Match the existing HDRP default profile, so installing the controls preserves the look.
         public const float DefaultBloom = .2f;
+        public const float DefaultGrain = .08f;
 
         private const string HdrpAssembly = ", Unity.RenderPipelines.HighDefinition.Runtime";
         private static bool _loaded;
-        private static float _exposure, _contrast, _bloom;
+        private static float _exposure, _contrast, _bloom, _grain;
         private static Volume _volume;
         private VolumeProfile _ownedProfile;
 
         public static float Exposure { get { Load(); return _exposure; } }
         public static float Contrast { get { Load(); return _contrast; } }
         public static float Bloom { get { Load(); return _bloom; } }
+        public static float Grain { get { Load(); return _grain; } }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetSession()
@@ -50,6 +53,7 @@ namespace OrpheusBelow
             _exposure = Sanitize(exposure, -1f, 1f, DefaultExposure);
             _contrast = Sanitize(PlayerPrefs.GetFloat(ContrastKey, DefaultContrast), -40f, 40f, DefaultContrast);
             _bloom = Sanitize(PlayerPrefs.GetFloat(BloomKey, DefaultBloom), 0f, 1f, DefaultBloom);
+            _grain = Sanitize(PlayerPrefs.GetFloat(GrainKey, DefaultGrain), 0f, 1f, DefaultGrain);
         }
 
         public static void SetExposure(float value)
@@ -73,15 +77,24 @@ namespace OrpheusBelow
             Save(BloomKey, _bloom);
         }
 
+        public static void SetGrain(float value)
+        {
+            Load();
+            _grain = Sanitize(value, 0f, 1f, DefaultGrain);
+            Save(GrainKey, _grain);
+        }
+
         public static void ResetDefaults()
         {
             _loaded = true;
             _exposure = DefaultExposure;
             _contrast = DefaultContrast;
             _bloom = DefaultBloom;
+            _grain = DefaultGrain;
             PlayerPrefs.SetFloat(ExposureKey, _exposure);
             PlayerPrefs.SetFloat(ContrastKey, _contrast);
             PlayerPrefs.SetFloat(BloomKey, _bloom);
+            PlayerPrefs.SetFloat(GrainKey, _grain);
             PlayerPrefs.Save();
             EnsureApplied();
         }
@@ -126,6 +139,9 @@ namespace OrpheusBelow
             SetParameter("ColorAdjustments", "postExposure", _exposure);
             SetParameter("ColorAdjustments", "contrast", _contrast);
             SetParameter("Bloom", "intensity", _bloom);
+            SetParameter("FilmGrain", "type", 0); // HDRP Thin1: fine texture rather than large speckles.
+            SetParameter("FilmGrain", "intensity", _grain);
+            SetParameter("FilmGrain", "response", .8f);
         }
 
         private static Type HdrpType(string name)
