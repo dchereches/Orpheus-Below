@@ -10,7 +10,9 @@ namespace OrpheusBelow
     /// <summary>
     /// Classical painted oil modal dialog for selecting player input method:
     ///   - Keyboard & Mouse vs. Microphone (Breath/Acoustic).
-    ///   - Buttons smoothly size up on hover with gilded metallic feedback.
+    ///   - Enclosed in an ornate museum-grade classical gilded golden frame.
+    ///   - Gilded golden card borders that bloom with radiant gold on hover and selection.
+    ///   - Buttons smoothly size up on hover.
     ///   - Displays before the introductory cinematic on boot.
     /// </summary>
     public sealed class InputSelectionModal : MonoBehaviour
@@ -112,6 +114,17 @@ namespace OrpheusBelow
             bgImg.color = Color.white;
             bgImg.raycastTarget = false;
 
+            // Classical Museum Gilded Golden Frame encasing the modal dialog
+            var frameGo = new GameObject("ModalGoldenFrame", typeof(RectTransform), typeof(Image));
+            frameGo.transform.SetParent(_modalBox, false);
+            var frameRt = frameGo.GetComponent<RectTransform>();
+            frameRt.anchoredPosition = Vector2.zero;
+            frameRt.sizeDelta = new Vector2(1116f, 668f);
+            var frameImg = frameGo.GetComponent<Image>();
+            frameImg.sprite = LoadSprite("UI/InputSelection/frame_modal_golden", "frame_modal_golden.png");
+            frameImg.color = Color.white;
+            frameImg.raycastTarget = false;
+
             // 1. Keyboard Card
             // In 1024x576 coordinates (center is 512, 288):
             // Center is (-183, 3), Size: (314, 208)
@@ -130,7 +143,7 @@ namespace OrpheusBelow
             _keyboardCard.hoverScale = 1.07f;
             _keyboardCard.onClick = () => SelectMode(SensorSourceMode.KeyboardAndMouseOnly);
 
-            // Keyboard selection glow frame (size: 330 x 224)
+            // Gilded antique gold border for Keyboard card (size: 330 x 224)
             var kbGlowGo = new GameObject("KeyboardGlow", typeof(RectTransform), typeof(Image));
             kbGlowGo.transform.SetParent(kbGo.transform, false);
             var kbGlowRt = kbGlowGo.GetComponent<RectTransform>();
@@ -138,7 +151,7 @@ namespace OrpheusBelow
             kbGlowRt.sizeDelta = new Vector2(330f, 224f);
             _kbGlow = kbGlowGo.GetComponent<Image>();
             _kbGlow.sprite = LoadSprite("UI/InputSelection/glow_keyboard", "glow_keyboard.png");
-            _kbGlow.color = Color.white;
+            _kbGlow.color = new Color(1f, 1f, 1f, 1f);
             _kbGlow.raycastTarget = false;
 
             // 2. Microphone Card
@@ -158,7 +171,7 @@ namespace OrpheusBelow
             _micCard.hoverScale = 1.07f;
             _micCard.onClick = () => SelectMode(SensorSourceMode.KeyboardPlusPCMicrophone);
 
-            // Microphone selection glow frame (size: 335 x 224)
+            // Gilded antique gold border for Microphone card (size: 335 x 224)
             var micGlowGo = new GameObject("MicrophoneGlow", typeof(RectTransform), typeof(Image));
             micGlowGo.transform.SetParent(micGo.transform, false);
             var micGlowRt = micGlowGo.GetComponent<RectTransform>();
@@ -166,7 +179,7 @@ namespace OrpheusBelow
             micGlowRt.sizeDelta = new Vector2(335f, 224f);
             _micGlow = micGlowGo.GetComponent<Image>();
             _micGlow.sprite = LoadSprite("UI/InputSelection/glow_mic", "glow_mic.png");
-            _micGlow.color = Color.white;
+            _micGlow.color = new Color(1f, 1f, 1f, 0.40f);
             _micGlow.raycastTarget = false;
 
             // 3. Confirm Button
@@ -186,7 +199,7 @@ namespace OrpheusBelow
             _confirmButton.hoverScale = 1.08f;
             _confirmButton.onClick = Confirm;
 
-            // Confirm hover glow (size: 246 x 61)
+            // Gilded antique gold border for Confirm Button (size: 246 x 61)
             var confirmGlowGo = new GameObject("ConfirmGlow", typeof(RectTransform), typeof(Image));
             confirmGlowGo.transform.SetParent(confirmGo.transform, false);
             var confirmGlowRt = confirmGlowGo.GetComponent<RectTransform>();
@@ -194,7 +207,7 @@ namespace OrpheusBelow
             confirmGlowRt.sizeDelta = new Vector2(246f, 61f);
             _confirmGlow = confirmGlowGo.GetComponent<Image>();
             _confirmGlow.sprite = LoadSprite("UI/InputSelection/glow_confirm", "glow_confirm.png");
-            _confirmGlow.color = new Color(1f, 1f, 1f, 0f); // Hidden until hovered
+            _confirmGlow.color = new Color(1f, 1f, 1f, 0.65f);
             _confirmGlow.raycastTarget = false;
         }
 
@@ -210,9 +223,6 @@ namespace OrpheusBelow
         {
             bool isKb = (SelectedMode == SensorSourceMode.KeyboardAndMouseOnly);
             bool isMic = (SelectedMode == SensorSourceMode.KeyboardPlusPCMicrophone);
-
-            if (_kbGlow != null) _kbGlow.gameObject.SetActive(isKb);
-            if (_micGlow != null) _micGlow.gameObject.SetActive(isMic);
 
             if (_keyboardCard != null) _keyboardCard.normalScale = isKb ? 1.025f : 1.0f;
             if (_micCard != null) _micCard.normalScale = isMic ? 1.025f : 1.0f;
@@ -273,12 +283,32 @@ namespace OrpheusBelow
                 }
             }
 
-            // Confirm button glow fade on hover
+            // Smoothly interpolate golden border alpha for Keyboard card
+            if (_kbGlow != null && _keyboardCard != null)
+            {
+                bool isKb = (SelectedMode == SensorSourceMode.KeyboardAndMouseOnly);
+                float targetAlpha = (isKb || _keyboardCard.isHovered) ? 1.0f : 0.40f;
+                Color c = _kbGlow.color;
+                c.a = Mathf.MoveTowards(c.a, targetAlpha, Time.unscaledDeltaTime * 7f);
+                _kbGlow.color = c;
+            }
+
+            // Smoothly interpolate golden border alpha for Microphone card
+            if (_micGlow != null && _micCard != null)
+            {
+                bool isMic = (SelectedMode == SensorSourceMode.KeyboardPlusPCMicrophone);
+                float targetAlpha = (isMic || _micCard.isHovered) ? 1.0f : 0.40f;
+                Color c = _micGlow.color;
+                c.a = Mathf.MoveTowards(c.a, targetAlpha, Time.unscaledDeltaTime * 7f);
+                _micGlow.color = c;
+            }
+
+            // Smoothly interpolate golden border alpha for Confirm button on hover
             if (_confirmGlow != null && _confirmButton != null)
             {
-                float targetAlpha = _confirmButton.isHovered ? 1f : 0f;
+                float targetAlpha = _confirmButton.isHovered ? 1.0f : 0.65f;
                 Color c = _confirmGlow.color;
-                c.a = Mathf.MoveTowards(c.a, targetAlpha, Time.unscaledDeltaTime * 6f);
+                c.a = Mathf.MoveTowards(c.a, targetAlpha, Time.unscaledDeltaTime * 7f);
                 _confirmGlow.color = c;
             }
         }
