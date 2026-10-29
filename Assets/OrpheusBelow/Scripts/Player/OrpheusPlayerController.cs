@@ -505,9 +505,18 @@ namespace OrpheusBelow
         private void MoveSweepXZ(Vector3 deltaXZ, bool ignoreChasms)
         {
             deltaXZ.y = 0f;
-            Vector3 pos = transform.position;
+            var map = IsIn2DBossStage ? null : PaintedChamberMap.Active;
+            Vector3 pos = SweepPositionXZ(transform.position, deltaXZ, ignoreChasms, map, true);
+            Vector3 correction = DepenetrateXZ(pos, ignoreChasms) - pos;
+            // Recovery must obey the same constraints, without a second independent sliding projection.
+            pos = SweepPositionXZ(pos, correction, ignoreChasms, map, false);
+            pos.y = 0f;
+            transform.position = pos;
+        }
 
-            for (int iter = 0; iter < 3; iter++)
+        private Vector3 SweepPositionXZ(Vector3 pos, Vector3 deltaXZ, bool ignoreChasms, PaintedChamberMap map, bool slide)
+        {
+            for (int iter = 0; iter < 4; iter++)
             {
                 float dist = deltaXZ.magnitude;
                 if (dist < 0.0001f) break;
@@ -525,8 +534,11 @@ namespace OrpheusBelow
                     IsoObstacle obs = hits[i].collider.GetComponent<IsoObstacle>();
                     if (obs == null) continue;
                     if (ignoreChasms && obs.kind == IsoObstacleKind.DashableChasm) continue;
+                    // SphereCastAll reports existing overlaps at distance zero with a synthetic opposing normal.
+                    // Let this specific overlap decrease; every new obstacle still participates in the sweep.
+                    if (hits[i].distance <= .0001f && ReducesInitialPenetration(hits[i].collider, pos, deltaXZ)) continue;
 
-                    float moveAllowed = Mathf.Max(0f, hits[i].distance - 0.015f);
+                    float moveAllowed = Mathf.Clamp(hits[i].distance - 0.015f, 0f, dist);
                     if (!blocked || moveAllowed < bestDist)
                     {
                         Vector3 n = hits[i].normal;
@@ -540,6 +552,19 @@ namespace OrpheusBelow
                     }
                 }
 
+                // Physical gates and authored floor/cover participate in the same earliest-contact sweep.
+                // Resolving either complete slide first can redirect the actor through the other constraint.
+                if (map != null && map.SweepMovement(pos, deltaXZ, bodyRadius, out float fraction, out Vector3 paintedNormal))
+                {
+                    float moveAllowed = Mathf.Max(0f, fraction * dist - .01f);
+                    if (!blocked || moveAllowed < bestDist)
+                    {
+                        blocked = true;
+                        bestDist = moveAllowed;
+                        hitNormalXZ = paintedNormal;
+                    }
+                }
+
                 if (!blocked)
                 {
                     pos += deltaXZ;
@@ -547,13 +572,24 @@ namespace OrpheusBelow
                 }
 
                 pos += dir * bestDist;
+                if (!slide) break;
                 float remaining = dist - bestDist;
                 deltaXZ = Vector3.ProjectOnPlane(dir, hitNormalXZ) * remaining;
             }
+            return pos;
+        }
 
-            pos = DepenetrateXZ(pos, ignoreChasms);
-            pos.y = 0f;
-            transform.position = pos;
+        private bool ReducesInitialPenetration(Collider obstacle, Vector3 pos, Vector3 delta)
+        {
+            var body = GetComponent<SphereCollider>();
+            if (body == null || !Physics.ComputePenetration(body, pos, Quaternion.identity,
+                obstacle, obstacle.transform.position, obstacle.transform.rotation, out Vector3 escape, out float before))
+                return false;
+            // Reducing depth alone could otherwise permit crossing the entire obstacle to its opposite face.
+            if (Vector3.Dot(delta, escape) <= .000001f) return false;
+            return !Physics.ComputePenetration(body, pos + delta, Quaternion.identity,
+                obstacle, obstacle.transform.position, obstacle.transform.rotation, out _, out float after)
+                || after < before - .00001f;
         }
 
         private Vector3 DepenetrateXZ(Vector3 pos, bool ignoreChasms)

@@ -265,24 +265,33 @@ namespace OrpheusBelow.Tests
         // Rasterize the actual sprite mesh, not just its rectangle: excluded atlas fragments must be invisible.
         private static int[] VisibleComponents(Sprite sprite)
         {
-            int w = Mathf.RoundToInt(sprite.rect.width), h = Mathf.RoundToInt(sprite.rect.height);
-            var mask = new bool[w * h];
             var pixels = sprite.texture.GetPixels32();
             Vector2[] vertices = sprite.vertices.Select(v => v * sprite.pixelsPerUnit + sprite.pivot).ToArray();
+            Vector2[] uv = sprite.uv;
+            int left = Mathf.FloorToInt(vertices.Min(v => v.x)), bottom = Mathf.FloorToInt(vertices.Min(v => v.y));
+            int w = Mathf.CeilToInt(vertices.Max(v => v.x)) - left + 1;
+            int h = Mathf.CeilToInt(vertices.Max(v => v.y)) - bottom + 1;
+            var mask = new bool[w * h];
+            for (int i = 0; i < vertices.Length; i++) vertices[i] -= new Vector2(left, bottom);
             ushort[] triangles = sprite.triangles;
             for (int t = 0; t < triangles.Length; t += 3)
             {
-                Vector2 a = vertices[triangles[t]], b = vertices[triangles[t + 1]], c = vertices[triangles[t + 2]];
+                int ia = triangles[t], ib = triangles[t + 1], ic = triangles[t + 2];
+                Vector2 a = vertices[ia], b = vertices[ib], c = vertices[ic];
+                float determinant = Cross(b - a, c - a);
+                if (Mathf.Abs(determinant) < .000001f) continue;
                 int minX = Mathf.Max(0, Mathf.FloorToInt(Mathf.Min(a.x, Mathf.Min(b.x, c.x))));
                 int maxX = Mathf.Min(w - 1, Mathf.CeilToInt(Mathf.Max(a.x, Mathf.Max(b.x, c.x))));
                 int minY = Mathf.Max(0, Mathf.FloorToInt(Mathf.Min(a.y, Mathf.Min(b.y, c.y))));
                 int maxY = Mathf.Min(h - 1, Mathf.CeilToInt(Mathf.Max(a.y, Mathf.Max(b.y, c.y))));
                 for (int y = minY; y <= maxY; y++) for (int x = minX; x <= maxX; x++)
                 {
-                    Vector2 p = new Vector2(x + .5f, y + .5f);
-                    float ab = Cross(b - a, p - a), bc = Cross(c - b, p - b), ca = Cross(a - c, p - c);
-                    if (!((ab >= 0 && bc >= 0 && ca >= 0) || (ab <= 0 && bc <= 0 && ca <= 0))) continue;
-                    int sx = x + Mathf.RoundToInt(sprite.rect.x), sy = y + Mathf.RoundToInt(sprite.rect.y);
+                    Vector2 p = new Vector2(x + .5f, y + .5f) - a;
+                    float u = Cross(p, c - a) / determinant, v = Cross(b - a, p) / determinant;
+                    if (u < 0f || v < 0f || u + v > 1f) continue;
+                    Vector2 sample = uv[ia] + (uv[ib] - uv[ia]) * u + (uv[ic] - uv[ia]) * v;
+                    int sx = Mathf.Clamp(Mathf.FloorToInt(sample.x * sprite.texture.width), 0, sprite.texture.width - 1);
+                    int sy = Mathf.Clamp(Mathf.FloorToInt(sample.y * sprite.texture.height), 0, sprite.texture.height - 1);
                     if (pixels[sy * sprite.texture.width + sx].a >= 40) mask[y * w + x] = true;
                 }
             }

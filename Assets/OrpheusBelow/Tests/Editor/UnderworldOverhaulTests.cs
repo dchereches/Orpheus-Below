@@ -46,7 +46,7 @@ namespace OrpheusBelow.Tests
                     if (expected[i].HasValue)
                         Assert.That(room.guardianBoss.identity, Is.EqualTo(expected[i].Value));
                     else Assert.That(room.guardianBoss, Is.Null);
-                    Assert.That(room.roomRoot.GetComponentInChildren<AmbrosiaHealingWell>(), Is.Not.Null);
+                    Assert.That(room.roomRoot.GetComponentInChildren<AmbrosiaHealingWell>(), Is.Null);
                     Assert.That(room.roomRoot.transform.Find("StygianBrazier"), Is.Null);
                     if (i == 7) StringAssert.Contains("Throne", room.roomRoot.name);
                     if (i == 0)

@@ -20,12 +20,12 @@ namespace OrpheusBelow
         private RawImage _back, _front;
         private Image _black;
         private RectTransform _viewport;
-        private Text _pauseLabel, _status;
+        private Text _status;
         private readonly Dictionary<int,Texture2D> _textures = new Dictionary<int,Texture2D>();
         private readonly Dictionary<int,ResourceRequest> _requests = new Dictionary<int,ResourceRequest>();
         private bool _paused, _skipping, _waiting;
         private ResourceRequest _narrationRequest;
-        private float _clock, _skipHeld, _beganAt;
+        private float _clock, _beganAt;
         private int _lastToggleFrame = -1;
 
         public void Begin()
@@ -172,7 +172,6 @@ namespace OrpheusBelow
                 }
                 else if (!_waiting) _audio.UnPause();
             }
-            if (_pauseLabel!=null) _pauseLabel.text=paused ? "Resume" : "Pause";
             if (_status!=null) _status.text=paused ? "Paused" : "";
         }
         public void Seek(float seconds)
@@ -200,9 +199,8 @@ namespace OrpheusBelow
             if (!IsPlaying) return;
             var keyboard=Keyboard.current; var pad=Gamepad.current;
             if ((keyboard!=null && (keyboard.escapeKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame)) || (pad!=null && pad.startButton.wasPressedThisFrame)) TogglePaused();
-            bool held=(keyboard!=null && keyboard.enterKey.isPressed) || (pad!=null && pad.buttonEast.isPressed);
-            _skipHeld=held && Time.unscaledTime-_beganAt>1 ? _skipHeld+Time.unscaledDeltaTime : 0;
-            if (_skipHeld>.8f) Skip();
+            if ((keyboard!=null && keyboard.backspaceKey.wasPressedThisFrame) ||
+                (pad!=null && pad.buttonEast.wasPressedThisFrame)) Skip();
         }
         private void OnApplicationPause(bool paused) { if (paused) SetPaused(true); }
         private void Fail(string message) { Debug.LogError(message); Finish(false); }
@@ -252,7 +250,6 @@ namespace OrpheusBelow
         private void BuildView()
         {
             var canvas=gameObject.AddComponent<Canvas>(); canvas.renderMode=RenderMode.ScreenSpaceOverlay; canvas.sortingOrder=32760;
-            gameObject.AddComponent<GraphicRaycaster>();
             var background=Rect("Letterbox",transform).gameObject.AddComponent<Image>(); background.color=Color.black;
             background.rectTransform.anchorMin=Vector2.zero; background.rectTransform.anchorMax=Vector2.one; background.rectTransform.sizeDelta=Vector2.zero;
             _viewport=Rect("PaintingViewport",transform); _viewport.gameObject.AddComponent<RectMask2D>();
@@ -261,28 +258,19 @@ namespace OrpheusBelow
             _black=Rect("Fade",transform).gameObject.AddComponent<Image>(); _black.color=Color.black;
             _black.rectTransform.anchorMin=Vector2.zero; _black.rectTransform.anchorMax=Vector2.one; _black.rectTransform.sizeDelta=Vector2.zero; _black.raycastTarget=false;
             _status=Label("Loading introduction…",new Vector2(0,85),new Vector2(420,32));
-            var pause=Button("Pause",new Vector2(-120,35),TogglePaused,out _pauseLabel);
-            var skip=Button("Skip intro",new Vector2(120,35),Skip,out var skipLabel);
-            var pauseNavigation=new Navigation { mode=Navigation.Mode.Explicit, selectOnLeft=skip, selectOnRight=skip, selectOnUp=skip, selectOnDown=skip };
-            var skipNavigation=new Navigation { mode=Navigation.Mode.Explicit, selectOnLeft=pause, selectOnRight=pause, selectOnUp=pause, selectOnDown=pause };
-            pause.navigation=pauseNavigation; skip.navigation=skipNavigation;
-            Label("Esc / Space: pause     Hold Enter / B: skip",new Vector2(0,65),new Vector2(500,22));
-            if (UnityEngine.EventSystems.EventSystem.current!=null) UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(pause.gameObject);
+            Text skip=Label("Backspace to skip",new Vector2(-36,24),new Vector2(250,30));
+            skip.name="IntroSkipCaption";
+            skip.rectTransform.anchorMin=skip.rectTransform.anchorMax=skip.rectTransform.pivot=Vector2.right;
+            skip.alignment=TextAnchor.MiddleRight; skip.fontSize=20;
+            skip.color=new Color(.96f,.92f,.81f,.78f);
         }
         private Text Label(string text,Vector2 position,Vector2 size)
         {
             var label=Rect(text,transform).gameObject.AddComponent<Text>();
             label.rectTransform.anchorMin=label.rectTransform.anchorMax=new Vector2(.5f,0); label.rectTransform.anchoredPosition=position; label.rectTransform.sizeDelta=size;
-            label.text=text; label.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); label.fontSize=16; label.alignment=TextAnchor.MiddleCenter; label.color=new Color(.95f,.9f,.78f); label.raycastTarget=false;
+            label.text=text; GameTypography.Apply(label,18); label.alignment=TextAnchor.MiddleCenter;
+            GameTypography.Shadow(label);
             return label;
-        }
-        private Button Button(string text,Vector2 position,UnityEngine.Events.UnityAction action,out Text label)
-        {
-            var rect=Rect(text,transform); rect.anchorMin=rect.anchorMax=new Vector2(.5f,0); rect.anchoredPosition=position; rect.sizeDelta=new Vector2(200,36);
-            rect.gameObject.AddComponent<Image>().color=new Color(.09f,.07f,.05f,.9f);
-            var button=rect.gameObject.AddComponent<Button>(); button.onClick.AddListener(action);
-            label=Label(text,position,new Vector2(190,32));
-            return button;
         }
     }
 }

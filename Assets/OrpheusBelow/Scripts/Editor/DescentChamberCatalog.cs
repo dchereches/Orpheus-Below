@@ -245,13 +245,20 @@ namespace OrpheusBelow.EditorTools
                         1481,414,1410,448,1320,486,1237,525,1158,569,1080,614,1006,662,
                         964,715,958,764,1026,815,1125,862,1186,913,1158,952,1086,943,
                         977,883,881,839,782,787,697,747,616,724,543,745,463,787,384,837,312,869);
-                    d.returnExit = new Vector2(327,802); d.entrance = new Vector2(502,733);
+                    d.returnExit = new Vector2(327,802); d.entrance = new Vector2(610,700);
                     // The rescue happens on the carpet in front of the solid throne, never inside it.
                     d.exit = new Vector2(1171,351); d.returnSpawn = new Vector2(1100,388);
                     d.well = new Vector2(710,605); d.encounterCenter = new Vector2(942,533);
                     d.enemySpawns = P(695,640,773,612,927,566,1081,473,1185,426,1322,373,1086,339);
                     d.cover = new[] {
-                        Pillar("ThroneArrivalLeftPier",261,827,45,454), Pillar("ThroneArrivalRightPier",523,517,43,367),
+                        Pillar("ThroneArrivalLeftPier",261,827,45,454), Pillar("ThroneRearWallColumn",523,517,43,367),
+                        // The tall foreground jamb is separate from the rear wall column at (523,517).
+                        // Its base is below the arrival floor; its crown/banner must occlude actors behind the arch.
+                        Cover("ThroneForegroundGateFrame",P(416,942,474,910,552,945,564,975,503,1006,440,983),
+                            P(214,526,244,495,287,457,335,424,383,410,421,415,462,442,507,483,
+                                548,519,576,552,568,594,566,940,548,980,502,1006,440,984,418,946,
+                                433,899,435,607,413,571,390,538,363,515,341,516,316,538,289,574,
+                                271,611,263,650,246,638,248,599,258,561),7f),
                         Pillar("CarpetWestBrazier",739,489,31,403), Pillar("CarpetRearBrazier",917,420,34,314),
                         Pillar("CarpetFrontColumn",650,642,38,543), Pillar("CarpetEastColumn",940,731,33,617),
                         Pillar("CarpetEastBrazier",1192,631,37,537), Pillar("StairEastBrazier",1291,472,33,379),

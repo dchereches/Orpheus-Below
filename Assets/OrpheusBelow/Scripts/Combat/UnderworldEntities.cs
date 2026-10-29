@@ -247,8 +247,8 @@ namespace OrpheusBelow
             RenderPipeline2DSetup.AttachSprite(barFill, RenderPipeline2DSetup.SquareSprite,
                 hasBronzeShield ? new Color(2.4f, 1.95f, 0.30f, 1f) : new Color(2.2f, 0.25f, 0.35f, 1f), 15);
             _hpFillBar = barFill.transform;
-            // These designs now recur as ordinary threats, without boss or overhead health displays.
-            barBg.SetActive(!IsMiniBoss); barFill.SetActive(!IsMiniBoss);
+            // Screen-space bars keep a consistent size above the painted silhouette.
+            barBg.SetActive(false); barFill.SetActive(false);
             var kind = ChamberEncounterPlan.ArtFor(type);
             _paintedActor = gameObject.AddComponent<PaintedEnemyActor>();
             _paintedActor.Configure(kind, shade: this, createPattern: type != ShadeArchetype.WretchLunger && type != ShadeArchetype.ArmoredWarden);
@@ -260,6 +260,7 @@ namespace OrpheusBelow
                 barBg.transform.localPosition = new Vector3(0, top, -.02f);
                 barFill.transform.localPosition = new Vector3(0, top, -.03f);
             }
+            EnemyCombatFeedback.Track(this);
         }
 
         /// <summary>
@@ -373,7 +374,9 @@ namespace OrpheusBelow
             {
                 if (!isHardBoom)
                 {
-                    _hp -= damage * 0.25f;
+                    float before = _hp;
+                    _hp = Mathf.Max(0f, _hp - damage * 0.25f);
+                    EnemyCombatFeedback.Damage(transform, before - _hp, shielded: true);
                     _flashTimer = 0.08f;
                     if (_armorAuraSr != null) _armorAuraSr.color = new Color(3f, 3f, 3f, 1f);
                     UpdateHpBar();
@@ -384,7 +387,9 @@ namespace OrpheusBelow
                 BreakBronzeGriefShield();
             }
 
-            _hp -= damage;
+            float healthBefore = _hp;
+            _hp = Mathf.Max(0f, _hp - damage);
+            EnemyCombatFeedback.Damage(transform, healthBefore - _hp, isHardBoom);
             _flashTimer = 0.10f;
             if (_bodySr != null) _bodySr.color = new Color(2.9f, 2.9f, 2.9f, 1f);
             UpdateHpBar();
@@ -641,7 +646,9 @@ namespace OrpheusBelow
                     {
                         _flyingForWallSlam = false;
                         _knockbackVelXZ = Vector3.zero;
-                        _hp -= 32f;
+                        float before = _hp;
+                        _hp = Mathf.Max(0f, _hp - 32f);
+                        EnemyCombatFeedback.Damage(transform, before - _hp, true);
                         UpdateHpBar();
                         GroundShockwaveRing.Spawn(new Vector3(hit.point.x, 0.06f, hit.point.z), 2.6f, new Color(2.8f, 0.85f, 0.20f, 1f), 0.26f);
                         UnderworldCamera2D.Instance?.AddShake(0.28f);
@@ -652,6 +659,7 @@ namespace OrpheusBelow
 
                     if (checkWallSlam && obs.kind == IsoObstacleKind.DashableChasm)
                     {
+                        EnemyCombatFeedback.Damage(transform, Mathf.Max(0f, _hp), true);
                         _hp = 0f;
                         GroundShockwaveRing.Spawn(transform.position + new Vector3(0f, 0.05f, 0f), 2.4f, new Color(0.3f, 2.2f, 1.3f, 1f), 0.3f);
                         Pacify();

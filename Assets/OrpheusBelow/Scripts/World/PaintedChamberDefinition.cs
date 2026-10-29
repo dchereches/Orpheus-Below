@@ -94,6 +94,7 @@ namespace OrpheusBelow
 
         public bool IsWalkable(Vector3 point, float radius = 0f)
         {
+            point.y = 0f;
             Vector2 pixel = GroundToImage(point);
             if (!PaintedPolygon.Contains(walkableBoundary, pixel)) return false;
             if (DistanceToEdge(walkableBoundary, point) < radius) return false;
@@ -101,6 +102,64 @@ namespace OrpheusBelow
                 if (PaintedPolygon.Contains(obstacle.footprint, pixel) || DistanceToEdge(obstacle.footprint, point) < radius)
                     return false;
             return true;
+        }
+
+        // Sweep the complete actor footprint, including the rounded ends of every edge.
+        // Checking only the destination misses thin cover and concave boundary corners during dashes.
+        public bool SweepMovement(Vector3 origin, Vector3 delta, float radius, out float fraction, out Vector3 normal)
+        {
+            origin.y = delta.y = 0f;
+            radius = Mathf.Max(0f, radius);
+            fraction = 1f;
+            normal = Vector3.zero;
+            SweepPolygon(walkableBoundary, origin, delta, radius, ref fraction, ref normal);
+            foreach (var obstacle in cover)
+                SweepPolygon(obstacle.footprint, origin, delta, radius, ref fraction, ref normal);
+            return normal != Vector3.zero;
+        }
+
+        private void SweepPolygon(Vector2[] polygon, Vector3 origin, Vector3 delta, float radius,
+            ref float fraction, ref Vector3 normal)
+        {
+            for (int i = 0; i < polygon.Length; i++)
+            {
+                Vector3 a = ImageToGround(polygon[i]), b = ImageToGround(polygon[(i + 1) % polygon.Length]);
+                Vector3 edge = b - a;
+                float length = edge.magnitude;
+                if (length < .00001f) continue;
+                edge /= length;
+                Vector3 perpendicular = new Vector3(-edge.z, 0f, edge.x);
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    Vector3 inward = perpendicular * side;
+                    float closingSpeed = Vector3.Dot(delta, inward);
+                    float separation = Vector3.Dot(origin - a, inward);
+                    if (closingSpeed >= -.000001f || separation < radius - .00001f) continue;
+                    float t = (radius - separation) / closingSpeed;
+                    if (t < 0f || t > fraction) continue;
+                    float along = Vector3.Dot(origin + delta * t - a, edge);
+                    if (along < 0f || along > length) continue;
+                    fraction = t; normal = inward;
+                }
+                SweepEndpoint(origin, delta, a, radius, ref fraction, ref normal);
+            }
+        }
+
+        private static void SweepEndpoint(Vector3 origin, Vector3 delta, Vector3 endpoint, float radius,
+            ref float fraction, ref Vector3 normal)
+        {
+            Vector3 offset = origin - endpoint;
+            float approach = Vector3.Dot(offset, delta);
+            if (approach >= 0f) return;
+            float speedSquared = delta.sqrMagnitude;
+            float separation = offset.sqrMagnitude - radius * radius;
+            float discriminant = approach * approach - speedSquared * separation;
+            if (discriminant < 0f) return;
+            float t = Mathf.Max(0f, (-approach - Mathf.Sqrt(discriminant)) / speedSquared);
+            if (t > fraction) return;
+            Vector3 contactNormal = (offset + delta * t).normalized;
+            if (Vector3.Dot(delta, contactNormal) >= -.000001f) return;
+            fraction = t; normal = contactNormal;
         }
 
         private float DistanceToEdge(Vector2[] polygon, Vector3 point)

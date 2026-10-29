@@ -74,6 +74,20 @@ namespace OrpheusBelow.EditorTools
             foreach (var actor in UnityEngine.Object.FindObjectsByType<PaintedActorDepth>(FindObjectsSortMode.None))
                 Invoke(actor, "LateUpdate");
             Canvas.ForceUpdateCanvases();
+            // Moving an overlay to a larger render target changes its rasterization scale.
+            // Refresh the legacy font atlas and meshes before reading the first high-resolution frame.
+            if (hud)
+            {
+                foreach (var text in UnityEngine.Object.FindObjectsByType<UnityEngine.UI.Text>(FindObjectsSortMode.None))
+                {
+                    if (text.font == null || text.canvas == null) continue;
+                    text.font.RequestCharactersInTexture(text.text, Mathf.Max(1, Mathf.CeilToInt(text.fontSize * text.canvas.scaleFactor)), text.fontStyle);
+                    text.SetAllDirty();
+                }
+                Canvas.ForceUpdateCanvases();
+            }
+            var feedback = UnityEngine.Object.FindFirstObjectByType<EnemyCombatFeedback>();
+            if (hud && feedback != null) Invoke(feedback, "LateUpdate");
             RenderPipeline.SubmitRenderRequest(camera, new RenderPipeline.StandardRequest { destination = target });
             RenderTexture.active = target;
             var pixels = new Texture2D(width, height, TextureFormat.RGBA32, false);
@@ -94,6 +108,8 @@ namespace OrpheusBelow.EditorTools
                 canvases[i].sortingOrder = orders[i];
             }
             camera.targetTexture = originalTarget; camera.aspect = aspect;
+            Canvas.ForceUpdateCanvases();
+            if (hud && feedback != null) Invoke(feedback, "LateUpdate");
             RenderTexture.active = active; RenderTexture.ReleaseTemporary(target);
             Debug.Log("[Painted verification] Captured " + name);
             return probeColor;

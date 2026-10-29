@@ -30,6 +30,18 @@ The original PNGs above remain unchanged. On 2026-10-29 two additional native RG
 | `RunCycle.png` | `2900F95275DE164A3970B6E6FF89229B79ECBDA70AD20026BBEA593B81CF9872` |
 | `WalkCycle.png` | `D2654AEF623AA7BD7770B4B3C6FBC72C47671F09548A813795AC3B65C5F05F9B` |
 
-`OrpheusBroadOilAssetBuilder` uses `OrpheusAtlasSlicer` to isolate connected figures, exclude neighboring alpha islands with sprite geometry, and anchor each figure on its boots. Locomotion uses four poses in five source directions plus explicit western mirroring. The singing source has seven rows, not eight; its five consistent directions supply vocal clips. The installed library contains 48 named motions, 1,296 body-frame references, 672 body source poses, 64 effect frames, 736 referenced source/effect sprites in total, and a 3.9-world-unit standing height.
+`OrpheusBroadOilAssetBuilder` uses `OrpheusAtlasSlicer` to isolate connected figures, exclude neighboring alpha islands with sprite geometry, and anchor each figure on its boots. The singing source has seven rows, not eight; its five consistent directions supply vocal clips. The library preserves 48 named motions, eight controlled directions, explicit western mirroring, and the 3.9-world-unit standing height.
+
+The generated `RunCycle.png` is **not a complete anatomical cycle**: columns zero/two repeat the same leading leg, and columns one/three lift the same knee. Playback speed and frame-count assertions cannot repair or detect this. The PNG is retained unchanged as a paint source.
+
+`OrpheusBilateralRunBaker` extracts the intact trouser/boot paint from source column zero in each of the five facings. It removes both original leg silhouettes from the isolated torso/cape geometry, constructs separate far and near painted limbs, and skins each with a hip, knee, and ankle. Far leg, torso/cape, and near leg are drawn in that order. The original face, upper body, lyre, cloak, alpha edges, and oil texture remain the source artwork; no bitmap is repainted or resampled by the baker.
+
+Deforming limbs use a conforming two-pixel grid with shared GPU vertices. The affine torso keeps horizontal runs. Original pelvis/cape paint is retained through the hip seam, and limb roots are pinned to the torso before blending into the bent leg. This prevents curved-strip T-junction cracks and transparent waist cutouts; native GPU screenshots are required in addition to contact sheets.
+
+Running has eight baked phases over a 3.2-world-unit distance cycle. Near and far legs are offset by half a cycle. During support the ankle counters ground travel; during recovery the other knee and boot pass forward with clearance, then the opposite foot takes contact. The body has only a small vertical running bob. Animation time does not advance the running feet while the player stands still.
+
+`OrpheusRunCycleTests` projects actual visible boot texels through sprite triangles. It requires opposite near/far motion across half a stride in every source facing, alternate boot lift at passing poses, and a planted east-facing boot after accounting for the body's ground displacement. Contact sheets must interpolate sprite UVs through triangles; masking the original atlas rectangle does not display skinned geometry correctly.
+
+Additional regressions compare rendered material edges at intermediate UV vertices around the knee and sample actual opaque coverage at the retained waist/cape junction throughout the cycle.
 
 Exact prompts are recorded in `GenerationPrompts.json`; cell semantics are in `AtlasLayout.json`.

@@ -143,8 +143,6 @@ namespace OrpheusBelow
             public readonly float Clearance;
             private readonly List<Vector2> _edgeStarts = new List<Vector2>();
             private readonly List<Vector2> _edgeEnds = new List<Vector2>();
-            private readonly Vector2 _wellMin;
-            private readonly Vector2 _wellMax;
             private Vector3[] _nodes;
             private bool[] _walkable;
             private byte[] _connections;
@@ -197,18 +195,6 @@ namespace OrpheusBelow
                 AddEdges(layout.walkableBoundary);
                 if (layout.cover != null)
                     foreach (var cover in layout.cover) AddEdges(cover.footprint);
-                // RuntimeData places a world-aligned 1.2 x 1.2 solid basin outside the painted cover list.
-                Vector3 well = layout.ImageToGround(layout.well);
-                if (layout.walkableBoundary != null && layout.walkableBoundary.Length >= 3)
-                    well = layout.NearestWalkable(well, .8f);
-                _wellMin = XZ(well) - Vector2.one * .6f;
-                _wellMax = XZ(well) + Vector2.one * .6f;
-                var corners = new[] { _wellMin, new Vector2(_wellMax.x, _wellMin.y), _wellMax, new Vector2(_wellMin.x, _wellMax.y) };
-                for (int i = 0; i < corners.Length; i++)
-                {
-                    _edgeStarts.Add(corners[i]);
-                    _edgeEnds.Add(corners[(i + 1) % corners.Length]);
-                }
             }
 
             private void AddEdges(Vector2[] polygon)
@@ -232,12 +218,7 @@ namespace OrpheusBelow
             }
 
             private bool IsWalkable(Vector3 point)
-            {
-                if (Layout.walkableBoundary == null || Layout.walkableBoundary.Length < 3 || !Layout.IsWalkable(point, Clearance)) return false;
-                Vector2 ground = XZ(point);
-                var nearest = new Vector2(Mathf.Clamp(ground.x, _wellMin.x, _wellMax.x), Mathf.Clamp(ground.y, _wellMin.y, _wellMax.y));
-                return (ground - nearest).sqrMagnitude > Clearance * Clearance + .000001f;
-            }
+                => Layout.walkableBoundary != null && Layout.walkableBoundary.Length >= 3 && Layout.IsWalkable(point, Clearance);
 
             private void EnsureNodes()
             {

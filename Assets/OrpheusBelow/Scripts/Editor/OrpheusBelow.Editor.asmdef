@@ -4,7 +4,8 @@
   "references": [
     "OrpheusBelow.Runtime",
     "Unity.RenderPipelines.Core.Runtime",
-    "Unity.Collections"
+    "Unity.Collections",
+    "Unity.InputSystem"
   ],
   "includePlatforms": [
     "Editor"

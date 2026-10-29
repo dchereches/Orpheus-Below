@@ -104,12 +104,8 @@ namespace OrpheusBelow
             _menuBlocksGameplay = !skip;
             _blockThroughFrame = Time.frameCount + 1;
 
-            _serif = Font.CreateDynamicFontFromOSFont(new[] { "Palatino Linotype", "Georgia", "Times New Roman" }, 32);
-            _sans = Font.CreateDynamicFontFromOSFont(new[] { "Segoe UI", "Arial" }, 20);
-            _ownsSerif = _serif != null;
-            _ownsSans = _sans != null;
-            if (_serif == null) _serif = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (_sans == null) _sans = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            _serif = _sans = GameTypography.Font;
+            _ownsSerif = _ownsSans = false;
 
             _currentBrightness = PlayerPrefs.GetFloat("Orpheus_Brightness", 1.0f);
             DifficultySettings.Initialize();
@@ -311,8 +307,8 @@ namespace OrpheusBelow
                 _sensitivityLabel.text = "Sensitivity   " + val.ToString("F1") + "×";
             });
 
-            // Small Quaver (♪) Threshold Slider (0.05 to 0.40)
-            _softThresholdLabel = Label(body, "Small Quaver (♪) threshold   14%", 72, 338, 500, 22, 14, Ivory, false);
+            // Small Quaver (Soft) Threshold Slider (0.05 to 0.40)
+            _softThresholdLabel = Label(body, "Small Quaver (Soft) threshold   14%", 72, 338, 500, 22, 14, Ivory, false);
             _softThresholdSlider = MakeGenericSlider(body, 72, 362, 500, 0.05f, 0.40f, false, val =>
             {
                 SensorPulseInput sensor = SensorPulseInput.Instance;
@@ -321,10 +317,10 @@ namespace OrpheusBelow
                     sensor.softMinThreshold = val;
                     sensor.SaveCalibration();
                 }
-                _softThresholdLabel.text = "Small Quaver (♪) threshold   " + Mathf.RoundToInt(val * 100f) + "%";
+                _softThresholdLabel.text = "Small Quaver (Soft) threshold   " + Mathf.RoundToInt(val * 100f) + "%";
             });
 
-            // Boom Fermata (𝄐) Threshold Slider (0.45 to 0.85)
+            // Boom Fermata (Boom) Threshold Slider (0.45 to 0.85)
             _boomThresholdLabel = Label(body, "Boom Fermata threshold   60%", 72, 402, 500, 22, 14, Ivory, false);
             _boomThresholdSlider = MakeGenericSlider(body, 72, 426, 500, 0.45f, 0.85f, false, val =>
             {
@@ -564,7 +560,7 @@ namespace OrpheusBelow
                 }
                 else if (live >= sensor.softMinThreshold)
                 {
-                    _micStatusText.text = "Small Quaver (♪)   " + Mathf.RoundToInt(live * 100f) + "%";
+                    _micStatusText.text = "Small Quaver (Soft)   " + Mathf.RoundToInt(live * 100f) + "%";
                     _micStatusText.color = Gold;
                 }
                 else
@@ -579,7 +575,7 @@ namespace OrpheusBelow
             if (_boomThresholdMarker != null)
                 _boomThresholdMarker.anchoredPosition = new Vector2(500f * sensor.hardBoomThreshold, 0f);
             if (_softThresholdLabel != null)
-                _softThresholdLabel.text = $"Small Quaver (♪) threshold   {sensor.softMinThreshold:P0}";
+                _softThresholdLabel.text = $"Small Quaver (Soft) threshold   {sensor.softMinThreshold:P0}";
             if (_boomThresholdLabel != null)
                 _boomThresholdLabel.text = $"Boom Fermata threshold   {sensor.hardBoomThreshold:P0}";
         }
