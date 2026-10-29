@@ -216,6 +216,17 @@ namespace OrpheusBelow
             }
         }
 
+        private static string FormatSubtitleText(string rawText)
+        {
+            if (string.IsNullOrEmpty(rawText)) return rawText;
+            bool micActive = SensorPulseInput.GlobalSourceMode == SensorSourceMode.KeyboardPlusPCMicrophone;
+            if (!micActive && rawText.Contains("mic"))
+            {
+                rawText = System.Text.RegularExpressions.Regex.Replace(rawText, @"\s*\([^)]*mic[^)]*\)", "");
+            }
+            return rawText;
+        }
+
         public AudioClip GetOrLoadClip(VoiceLineData data)
         {
             if (data == null) return null;
@@ -306,7 +317,8 @@ namespace OrpheusBelow
             }
 
             // Display literary subtitle at screen bottom
-            OrpheusHud.Instance?.ShowSubtitle(data.speaker, data.speakerColor, data.subtitleText, duration + 0.45f);
+            string formattedText = FormatSubtitleText(data.subtitleText);
+            OrpheusHud.Instance?.ShowSubtitle(data.speaker, data.speakerColor, formattedText, duration + 0.45f, data.id);
 
             // Real audio must finish; world simulation is frozen while this request owns the lock.
             float timer = duration;
@@ -482,7 +494,7 @@ namespace OrpheusBelow
             else
             {
                 // Fallback: show subtitle for unvoiced tutorial text without pausing
-                OrpheusHud.Instance?.ShowSubtitle("NARRATOR", NarratorColor, text, 4.5f);
+                OrpheusHud.Instance?.ShowSubtitle("NARRATOR", NarratorColor, text, 4.5f, id);
                 onComplete?.Invoke();
             }
         }
@@ -530,7 +542,7 @@ namespace OrpheusBelow
             }
             else
             {
-                OrpheusHud.Instance?.ShowSubtitle("HADES", HadesColor, text, 5.0f);
+                OrpheusHud.Instance?.ShowSubtitle("HADES", HadesColor, text, 5.0f, id);
                 onComplete?.Invoke();
             }
         }
@@ -568,7 +580,7 @@ namespace OrpheusBelow
             }
             else
             {
-                OrpheusHud.Instance?.ShowSubtitle("EURYDICE", EurydiceColor, text, 4.5f);
+                OrpheusHud.Instance?.ShowSubtitle("EURYDICE", EurydiceColor, text, 4.5f, id);
                 onComplete?.Invoke();
             }
         }

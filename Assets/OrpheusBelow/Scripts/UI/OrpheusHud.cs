@@ -83,6 +83,18 @@ namespace OrpheusBelow
         private Text _subtitleBodyText;
         private float _subtitleTimer;
 
+        // Subtitle musical symbol tray for Aulos & Note Tutorials
+        private GameObject _subtitleSymbolsRoot;
+        private Image _subQuaverIcon;
+        private Text _subQuaverLabel;
+        private Image _subFermataIcon;
+        private Text _subFermataLabel;
+        private GameObject _subStaveRow;
+        private Text _subStavePrefix;
+        private Image[] _subStaveSlotImages;
+        private Text _subStaveSuffix;
+        private VoiceLineId _activeSubtitleLine = VoiceLineId.None;
+
         // Bottom-anchored dialogue; Artemis teaches, Eurydice speaks after the rescue.
         private RectTransform _canvasRoot;
         private GameObject _tutorialBoxRoot;
@@ -185,10 +197,22 @@ namespace OrpheusBelow
             _calloutTimer = duration;
         }
 
-        public void ShowSubtitle(string speaker, Color speakerColor, string text, float duration)
+        public void ShowSubtitle(string speaker, Color speakerColor, string text, float duration, VoiceLineId lineId = VoiceLineId.None)
         {
             if (_subtitleRoot == null) return;
             _subtitleRoot.SetActive(true);
+
+            _activeSubtitleLine = lineId;
+            if (_activeSubtitleLine == VoiceLineId.None)
+            {
+                if (text.Contains("Aulos") || text.Contains("combo") || text.Contains("Requiem") || text.Contains("flute"))
+                    _activeSubtitleLine = VoiceLineId.Narrator_CombosFlee;
+                else if (text.Contains("Quaver") || text.Contains("defend yourself"))
+                    _activeSubtitleLine = VoiceLineId.Narrator_DefendYourself;
+                else if (text.Contains("Fermata") || text.Contains("Boom") || text.Contains("repelling"))
+                    _activeSubtitleLine = VoiceLineId.Narrator_RepellingMove;
+            }
+
             if (_subtitleSpeakerText != null)
             {
                 _subtitleSpeakerText.text = speaker.ToUpperInvariant();
@@ -197,12 +221,59 @@ namespace OrpheusBelow
             if (_subtitleBodyText != null)
             {
                 _subtitleBodyText.text = text;
-                float h = Mathf.Max(40f, _subtitleBodyText.preferredHeight + 8f);
+                float h = Mathf.Max(36f, _subtitleBodyText.preferredHeight + 8f);
                 _subtitleBodyText.rectTransform.sizeDelta = new Vector2(1000f, h);
+
+                ConfigureSubtitleSymbols();
+
                 RectTransform rt = _subtitleRoot.GetComponent<RectTransform>();
-                if (rt != null) rt.sizeDelta = new Vector2(1040f, Mathf.Max(138f, h + 68f));
+                if (rt != null)
+                {
+                    bool showTray = (_subtitleSymbolsRoot != null && _subtitleSymbolsRoot.activeSelf);
+                    float totalH = h + (showTray ? 50f : 0f) + 68f;
+                    rt.sizeDelta = new Vector2(1040f, Mathf.Max(138f, totalH));
+                }
             }
             _subtitleTimer = duration;
+        }
+
+        private void ConfigureSubtitleSymbols()
+        {
+            if (_subtitleSymbolsRoot == null) return;
+            bool isCombos = (_activeSubtitleLine == VoiceLineId.Narrator_CombosFlee);
+            bool isSoft = (_activeSubtitleLine == VoiceLineId.Narrator_DefendYourself);
+            bool isBoom = (_activeSubtitleLine == VoiceLineId.Narrator_RepellingMove);
+            bool showTray = isCombos || isSoft || isBoom;
+
+            _subtitleSymbolsRoot.SetActive(showTray);
+            if (!showTray) return;
+
+            bool isMic = SensorPulseInput.GlobalSourceMode == SensorSourceMode.KeyboardPlusPCMicrophone;
+            if (_subQuaverIcon != null) _subQuaverIcon.gameObject.SetActive(isCombos || isSoft);
+            if (_subQuaverLabel != null)
+            {
+                _subQuaverLabel.gameObject.SetActive(isCombos || isSoft);
+                _subQuaverLabel.text = isMic ? "Soft Quaver  [J / LMB / Mic]" : "Soft Quaver  [J / LMB]";
+            }
+            if (_subFermataIcon != null) _subFermataIcon.gameObject.SetActive(isCombos || isBoom);
+            if (_subFermataLabel != null)
+            {
+                _subFermataLabel.gameObject.SetActive(isCombos || isBoom);
+                _subFermataLabel.text = isMic ? "Boom Fermata  [K / RMB / Mic]" : "Boom Fermata  [K / RMB]";
+            }
+            if (_subStaveRow != null) _subStaveRow.SetActive(isCombos);
+
+            if (isCombos && _subStaveSlotImages != null)
+            {
+                char[] example = new[] { 'S', 'S', 'B', 'S' };
+                for (int i = 0; i < 4 && i < _subStaveSlotImages.Length; i++)
+                {
+                    bool boom = example[i] == 'B';
+                    _subStaveSlotImages[i].sprite = boom ? _fermataSprite : _quaverSprite;
+                    _subStaveSlotImages[i].color = new Color(1f, 0.88f, 0.25f, 0.95f);
+                }
+                if (_subStavePrefix != null) _subStavePrefix.text = "·  Aulos Stave:";
+            }
         }
 
         public void HideSubtitle()
@@ -676,6 +747,42 @@ namespace OrpheusBelow
             {
                 if (!UnderworldFrontEnd.BlocksMenusOrTransitions) _subtitleTimer-=dt;
                 _subtitleGroup.alpha=Mathf.MoveTowards(_subtitleGroup.alpha,1,dt*6);
+
+                // Real-time animation and tracking of in-game Aulos combo stave in subtitles
+                if (_subtitleSymbolsRoot != null && _subtitleSymbolsRoot.activeSelf && _activeSubtitleLine == VoiceLineId.Narrator_CombosFlee)
+                {
+                    OrpheusFluteChannel flute = OrpheusFluteChannel.Instance;
+                    if (flute != null && flute.IsFluteActive)
+                    {
+                        var target = flute.TargetSequence;
+                        int noteIdx = flute.CurrentNoteIndex;
+                        for (int i = 0; i < 4 && i < _subStaveSlotImages.Length; i++)
+                        {
+                            if (i < target.Count)
+                            {
+                                bool boom = target[i] == 'B';
+                                _subStaveSlotImages[i].sprite = boom ? _fermataSprite : _quaverSprite;
+                                if (i < noteIdx)
+                                {
+                                    // Solved note: radiant solid gold
+                                    _subStaveSlotImages[i].color = new Color(1f, 0.88f, 0.25f, 1f);
+                                }
+                                else if (i == noteIdx)
+                                {
+                                    // Active target note: pulsing highlight
+                                    float p = 0.80f + 0.20f * Mathf.Sin(Time.unscaledTime * 12f);
+                                    _subStaveSlotImages[i].color = new Color(1f, 1f, 1f, p);
+                                }
+                                else
+                                {
+                                    // Upcoming note: soft amber
+                                    _subStaveSlotImages[i].color = new Color(0.75f, 0.70f, 0.60f, 0.60f);
+                                }
+                            }
+                        }
+                        if (_subStavePrefix != null) _subStavePrefix.text = "·  Playing Stave:";
+                    }
+                }
             }
             else if (_subtitleGroup.alpha>0)
             {

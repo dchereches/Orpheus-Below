@@ -107,17 +107,119 @@ namespace OrpheusBelow
         private void BuildSubtitlePanel(RectTransform root)
         {
             var panel = CreateRect("SubtitleCluster", root, new Vector2(.5f, 0), new Vector2(.5f, 0), new Vector2(.5f, 0),
-                new Vector2(0, 56), new Vector2(1040, 138));
+                new Vector2(0, 56), new Vector2(1040, 150));
             _subtitleRoot = panel.gameObject; Frame(panel, .90f);
             _subtitleGroup = panel.gameObject.AddComponent<CanvasGroup>(); _subtitleGroup.alpha = 0; _subtitleGroup.blocksRaycasts = false;
             _subtitleSpeakerText = CreateSerifText("SubSpeaker", panel, new Vector2(0, -14), new Vector2(1000, 26), 18,
                 FontStyle.Normal, TextAnchor.MiddleCenter, GameTypography.Gold,
                 new Vector2(.5f, 1), new Vector2(.5f, 1), new Vector2(.5f, 1));
-            _subtitleBodyText = CreateSerifText("SubBody", panel, new Vector2(0, -50), new Vector2(1000, 68), 28,
+            _subtitleBodyText = CreateSerifText("SubBody", panel, new Vector2(0, -44), new Vector2(1000, 56), 24,
                 FontStyle.Normal, TextAnchor.UpperCenter, GameTypography.Ivory,
                 new Vector2(.5f, 1), new Vector2(.5f, 1), new Vector2(.5f, 1));
             _subtitleBodyText.lineSpacing = 1.15f;
+
+            BuildSubtitleSymbolsTray(panel);
+
             _subtitleRoot.SetActive(false);
+        }
+
+        private void BuildSubtitleSymbolsTray(RectTransform panel)
+        {
+            var trayGo = new GameObject("SubtitleSymbolsTray");
+            var trayRt = trayGo.AddComponent<RectTransform>();
+            trayRt.SetParent(panel, false);
+            trayRt.anchorMin = new Vector2(0.5f, 0f);
+            trayRt.anchorMax = new Vector2(0.5f, 0f);
+            trayRt.pivot = new Vector2(0.5f, 0f);
+            trayRt.anchoredPosition = new Vector2(0f, 12f);
+            trayRt.sizeDelta = new Vector2(1000f, 40f);
+            _subtitleSymbolsRoot = trayGo;
+
+            var bgImg = trayGo.AddComponent<Image>();
+            bgImg.color = new Color(0.04f, 0.03f, 0.05f, 0.70f);
+            bgImg.raycastTarget = false;
+
+            // Soft note badge: Quaver icon + label
+            var quaverIconGo = new GameObject("SubQuaverIcon");
+            var qIconRt = quaverIconGo.AddComponent<RectTransform>();
+            qIconRt.SetParent(trayRt, false);
+            qIconRt.anchorMin = new Vector2(0.5f, 0.5f);
+            qIconRt.anchorMax = new Vector2(0.5f, 0.5f);
+            qIconRt.pivot = new Vector2(0.5f, 0.5f);
+            qIconRt.anchoredPosition = new Vector2(-410f, 0f);
+            qIconRt.sizeDelta = new Vector2(26f, 26f);
+            _subQuaverIcon = quaverIconGo.AddComponent<Image>();
+            _subQuaverIcon.sprite = _quaverSprite;
+            _subQuaverIcon.color = new Color(1f, 0.94f, 0.52f, 1f);
+            _subQuaverIcon.preserveAspect = true;
+            _subQuaverIcon.raycastTarget = false;
+
+            _subQuaverLabel = CreateSerifText("SubQuaverLabel", trayRt, new Vector2(-310f, 0f), new Vector2(170f, 26f),
+                15, FontStyle.Normal, TextAnchor.MiddleLeft, new Color(0.96f, 0.92f, 0.82f, 0.95f),
+                anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
+            _subQuaverLabel.text = "Soft Quaver  [J / LMB]";
+
+            // Boom note badge: Fermata icon + label
+            var fermataIconGo = new GameObject("SubFermataIcon");
+            var fIconRt = fermataIconGo.AddComponent<RectTransform>();
+            fIconRt.SetParent(trayRt, false);
+            fIconRt.anchorMin = new Vector2(0.5f, 0.5f);
+            fIconRt.anchorMax = new Vector2(0.5f, 0.5f);
+            fIconRt.pivot = new Vector2(0.5f, 0.5f);
+            fIconRt.anchoredPosition = new Vector2(-190f, 0f);
+            fIconRt.sizeDelta = new Vector2(30f, 20f);
+            _subFermataIcon = fermataIconGo.AddComponent<Image>();
+            _subFermataIcon.sprite = _fermataSprite;
+            _subFermataIcon.color = new Color(1f, 0.84f, 0.22f, 1f);
+            _subFermataIcon.preserveAspect = true;
+            _subFermataIcon.raycastTarget = false;
+
+            _subFermataLabel = CreateSerifText("SubFermataLabel", trayRt, new Vector2(-85f, 0f), new Vector2(180f, 26f),
+                15, FontStyle.Normal, TextAnchor.MiddleLeft, new Color(0.96f, 0.92f, 0.82f, 0.95f),
+                anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
+            _subFermataLabel.text = "Boom Fermata  [K / RMB]";
+
+            // Aulos Stave container
+            var staveGo = new GameObject("SubStaveContainer");
+            var staveRt = staveGo.AddComponent<RectTransform>();
+            staveRt.SetParent(trayRt, false);
+            staveRt.anchorMin = new Vector2(0.5f, 0.5f);
+            staveRt.anchorMax = new Vector2(0.5f, 0.5f);
+            staveRt.pivot = new Vector2(0.5f, 0.5f);
+            staveRt.anchoredPosition = new Vector2(230f, 0f);
+            staveRt.sizeDelta = new Vector2(480f, 36f);
+            _subStaveRow = staveGo;
+
+            _subStavePrefix = CreateSerifText("SubStavePrefix", staveRt, new Vector2(-160f, 0f), new Vector2(130f, 26f),
+                15, FontStyle.Italic, TextAnchor.MiddleRight, new Color(0.85f, 0.78f, 0.60f, 0.85f),
+                anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
+            _subStavePrefix.text = "·  Aulos Stave:";
+
+            _subStaveSlotImages = new Image[4];
+            for (int i = 0; i < 4; i++)
+            {
+                var slotGo = new GameObject("SubStaveSlot_" + i);
+                var slotRt = slotGo.AddComponent<RectTransform>();
+                slotRt.SetParent(staveRt, false);
+                slotRt.anchorMin = new Vector2(0.5f, 0.5f);
+                slotRt.anchorMax = new Vector2(0.5f, 0.5f);
+                slotRt.pivot = new Vector2(0.5f, 0.5f);
+                slotRt.anchoredPosition = new Vector2(-75f + i * 28f, 0f);
+                slotRt.sizeDelta = new Vector2(24f, 24f);
+
+                _subStaveSlotImages[i] = slotGo.AddComponent<Image>();
+                _subStaveSlotImages[i].sprite = _quaverSprite;
+                _subStaveSlotImages[i].color = new Color(1f, 0.88f, 0.25f, 0.95f);
+                _subStaveSlotImages[i].preserveAspect = true;
+                _subStaveSlotImages[i].raycastTarget = false;
+            }
+
+            _subStaveSuffix = CreateSerifText("SubStaveSuffix", staveRt, new Vector2(110f, 0f), new Vector2(190f, 26f),
+                15, FontStyle.Normal, TextAnchor.MiddleLeft, new Color(0.95f, 0.85f, 0.55f, 0.95f),
+                anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f), pivot: new Vector2(0.5f, 0.5f));
+            _subStaveSuffix.text = "→  Cataclysmic Requiem!";
+
+            _subtitleSymbolsRoot.SetActive(false);
         }
     }
 }

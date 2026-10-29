@@ -59,6 +59,7 @@ namespace OrpheusBelow
         private readonly AsphodelTutorialSession _asphodelTutorial = new AsphodelTutorialSession();
         private AsphodelTutorialStep _shownTutorialStep = AsphodelTutorialStep.Complete;
         private bool _firstTutorialTriggered;
+        private float _tutorialIdleTimer;
         private bool _shownWardenHint;
         private bool _devChordWasHeld;
         private bool _spokenHadesChamber2;
@@ -140,8 +141,27 @@ namespace OrpheusBelow
 
             AsphodelTutorialStep completedStep = _asphodelTutorial.CurrentStep;
             bool advanced = _asphodelTutorial.Observe(CaptureTutorialSnapshot(), player.transform.position);
-            if (!advanced) return;
+            if (!advanced)
+            {
+                // Replay tutorial line after 7 seconds if the player doesn't perform the required action
+                if (VoiceDirector.IsVoicePlaying)
+                {
+                    _tutorialIdleTimer = 0f;
+                }
+                else if (Time.timeScale > 0f)
+                {
+                    _tutorialIdleTimer += Time.deltaTime;
+                    if (_tutorialIdleTimer >= 7.0f)
+                    {
+                        _tutorialIdleTimer = 0f;
+                        ShowCurrentTutorialStep(forceReplay: true);
+                    }
+                }
+                return;
+            }
+
             VoiceDirector.Instance?.CompleteTutorialInstruction(completedStep);
+            _tutorialIdleTimer = 0f;
 
             if (_asphodelTutorial.HasCompleted)
             {
@@ -543,11 +563,12 @@ namespace OrpheusBelow
                 combat != null ? combat.CadenceCount : 0);
         }
 
-        private void ShowCurrentTutorialStep()
+        private void ShowCurrentTutorialStep(bool forceReplay = false)
         {
             AsphodelTutorialStep step = _asphodelTutorial.CurrentStep;
-            if (step == _shownTutorialStep) return;
+            if (step == _shownTutorialStep && !forceReplay) return;
             _shownTutorialStep = step;
+            _tutorialIdleTimer = 0f;
 
             switch (step)
             {
