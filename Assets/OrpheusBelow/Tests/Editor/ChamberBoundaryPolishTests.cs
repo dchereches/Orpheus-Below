@@ -182,6 +182,35 @@ namespace OrpheusBelow.Tests
         }
 
         [Test]
+        public void ThroneArrivalIsVisibleOnTheCarpetAndNeverOnTheForegroundArchitecture()
+        {
+            var layout = Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_07");
+            Assert.That(layout.entrance.x, Is.InRange(750f, 900f), "Enter on the open lower carpet beyond the foreground arch.");
+            Assert.That(layout.entrance.y, Is.InRange(560f, 660f));
+            Assert.That(layout.IsWalkable(layout.ImageToGround(layout.entrance), .8f), Is.True);
+            foreach (var obstacle in layout.cover)
+            {
+                if (obstacle.silhouette == null) continue;
+                foreach (var offset in new[] { Vector2.zero, new Vector2(0, -40), new Vector2(-16, -20), new Vector2(16, -20) })
+                    Assert.That(PaintedPolygon.Contains(obstacle.silhouette, layout.entrance + offset), Is.False,
+                        "Arrival body is hidden by " + obstacle.name);
+            }
+        }
+
+        // These are architectural stone bases/wall tops in the supplied painting, not arbitrary
+        // outside coordinates. The previous broad polygon allowed pursuit onto all of them.
+        [TestCase(610f, 700f)]
+        [TestCase(650f, 720f)]
+        [TestCase(1010f, 810f)]
+        [TestCase(1100f, 880f)]
+        public void ThroneStoneArchitectureRejectsActorFeet(float x, float y)
+        {
+            var layout = Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_07");
+            Assert.That(layout.IsWalkable(layout.ImageToGround(new Vector2(x, y)), .45f), Is.False,
+                "Actor feet must not stand on painted architecture at " + new Vector2(x, y));
+        }
+
+        [Test]
         public void EveryPaintedPassageBlocksWhileLockedAndOpensItsThresholdOnUnlock()
         {
             UnderworldJourney.Reset();

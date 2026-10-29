@@ -138,8 +138,10 @@ namespace OrpheusBelow
                 return;
             }
 
+            AsphodelTutorialStep completedStep = _asphodelTutorial.CurrentStep;
             bool advanced = _asphodelTutorial.Observe(CaptureTutorialSnapshot(), player.transform.position);
             if (!advanced) return;
+            VoiceDirector.Instance?.CompleteTutorialInstruction(completedStep);
 
             if (_asphodelTutorial.HasCompleted)
             {
@@ -157,7 +159,8 @@ namespace OrpheusBelow
         {
             if (IsDevMenuOpen == open) return;
             IsDevMenuOpen = open;
-            if (!open) Time.timeScale = _devPreviousTimeScale;
+            if (!open) Time.timeScale = _devPreviousTimeScale <= 0f || UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive
+                ? 0f : GameplayClock.ResumeScale;
         }
 
         private void DevTravelToChamber(int index)
@@ -209,7 +212,7 @@ namespace OrpheusBelow
 
         public void TransitionToChamber(int nextIndex)
         {
-            if (VoiceDirector.BlocksGameplay) return;
+            if (VoiceDirector.HasPendingSpeech) return;
             if (_transitioning || nextIndex < 0 || nextIndex >= chambers.Count) return;
             StartCoroutine(TransitionRoutine(nextIndex));
         }
@@ -218,7 +221,7 @@ namespace OrpheusBelow
 
         public bool TryJourneyPassage(ChamberExitDoor door)
         {
-            if (VoiceDirector.BlocksGameplay) return false;
+            if (VoiceDirector.HasPendingSpeech) return false;
             if (_transitioning || door == null || !door.IsUnlocked) return false;
             var map = PaintedChamberMap.Active;
             if (map == null || map.definition.index != CurrentChamberIndex || door.GetComponentInParent<PaintedChamberMap>() != map) return false;
@@ -651,7 +654,7 @@ namespace OrpheusBelow
             UnderworldJourney.Reset();
             if (PaintedChamberScene.Restart(skipTitle)) return;
             UnderworldFrontEnd.SkipTitleOnce = skipTitle;
-            Time.timeScale = 1f;
+            Time.timeScale = GameplayClock.NormalScale;
             AudioListener.pause = false;
             var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
             if (!string.IsNullOrEmpty(scene.path) && scene.buildIndex >= 0)

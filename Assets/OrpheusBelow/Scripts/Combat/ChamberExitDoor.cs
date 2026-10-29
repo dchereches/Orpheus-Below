@@ -85,7 +85,7 @@ namespace OrpheusBelow
             if (!IsUnlocked || _used) return;
             var player = OrpheusPlayerController.Instance;
             if (player == null || player.IsGameOver) return;
-            if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive || VoiceDirector.BlocksGameplay) return;
+            if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive || VoiceDirector.HasPendingSpeech) return;
 
             // Proximity failsafe: walking anywhere within 3.5m of the gate threshold activates it seamlessly
             float dx = transform.position.x - player.transform.position.x;
@@ -107,7 +107,7 @@ namespace OrpheusBelow
             if (!IsUnlocked || _used) return;
             var player = other != null ? other.GetComponent<OrpheusPlayerController>() : OrpheusPlayerController.Instance;
             if (player == null || player.IsGameOver) return;
-            if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive || VoiceDirector.BlocksGameplay) return;
+            if (UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive || VoiceDirector.HasPendingSpeech) return;
             if (journeyRole != JourneyDoorRole.Legacy)
             {
                 _used = HadesChamberDirector.Instance != null && HadesChamberDirector.Instance.TryJourneyPassage(this);

@@ -234,7 +234,7 @@ namespace OrpheusBelow
             if (holdingLookBack && _eurydice != null && !_eurydice.IsVanished)
             {
                 LookBackProgress01 = Mathf.MoveTowards(LookBackProgress01, 1f, Time.unscaledDeltaTime / Mathf.Max(0.25f, lookBackHoldSeconds));
-                Time.timeScale = Mathf.Lerp(1f, 0.28f, LookBackProgress01);
+                GameplayClock.RefreshGameplayScale();
                 UnderworldCamera2D.Instance?.SetLookBackBlend(LookBackProgress01);
                 _eurydice.SetLookBackFocus(LookBackProgress01);
 
@@ -247,7 +247,7 @@ namespace OrpheusBelow
             else if (LookBackProgress01 > 0f)
             {
                 LookBackProgress01 = Mathf.MoveTowards(LookBackProgress01, 0f, Time.unscaledDeltaTime * 2.8f);
-                Time.timeScale = Mathf.Lerp(1f, 0.28f, LookBackProgress01);
+                GameplayClock.RefreshGameplayScale();
                 UnderworldCamera2D.Instance?.SetLookBackBlend(LookBackProgress01);
                 _eurydice?.SetLookBackFocus(LookBackProgress01);
             }
@@ -784,7 +784,7 @@ namespace OrpheusBelow
             if (CurrentHealth <= 0f)
             {
                 IsGameOver = true;
-                Time.timeScale = 1f;
+                GameplayClock.RefreshGameplayScale();
                 GameOverReason = "Overwhelmed by the Discord of Tartarus.";
             }
         }
@@ -799,7 +799,7 @@ namespace OrpheusBelow
             if (CurrentHealth <= 0f)
             {
                 IsGameOver = true;
-                Time.timeScale = 1f;
+                GameplayClock.RefreshGameplayScale();
                 GameOverReason = "Fell into the bottomless Stygian abyss.";
                 return;
             }
@@ -818,7 +818,7 @@ namespace OrpheusBelow
             _lookedBackFatally = true;
             _spriteAnimator?.TriggerLookBack(true);
             IsGameOver = true;
-            Time.timeScale = 1f;
+            GameplayClock.RefreshGameplayScale();
             ProceduralLyreAudio.Instance?.PlayLookBackTragedy();
             VoiceDirector.Instance?.Play(VoiceLineId.Hades_AMortals);
             _eurydice?.ShatterIntoAsh();
@@ -830,7 +830,7 @@ namespace OrpheusBelow
             if (IsGameOver || IsVictory) return;
             IsGameOver = true;
             _spriteAnimator?.TriggerGrief();
-            Time.timeScale = 1f;
+            GameplayClock.RefreshGameplayScale();
             ProceduralLyreAudio.Instance?.PlayLookBackTragedy();
             GameOverReason = "Mourning Shades dragged Eurydice back into the Stygian dark while you pressed ahead.";
         }
@@ -845,7 +845,7 @@ namespace OrpheusBelow
             _lungeTimer = _dashBufferTimer = 0f;
             _spriteAnimator?.TriggerVictory();
             _eurydice?.Celebrate(3f);
-            Time.timeScale = 1f;
+            GameplayClock.RefreshGameplayScale();
 
         }
 
