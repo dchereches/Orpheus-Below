@@ -75,16 +75,16 @@ namespace OrpheusBelow.EditorTools
             _start = _player.transform.position + UnderworldCamera2D.IsoRightXZ * 2f;
             _player.TeleportToChamberSpawn(_start);
             Camera camera = Camera.main;
-            camera.orthographicSize = 6.5f;
+            camera.orthographicSize = 8.5f;
             camera.transform.position = _start + Vector3.up * 1.7f - camera.transform.forward * 30f;
             Time.timeScale = 1f; Time.captureDeltaTime = 1f / 30f;
             _segment = _step = _frame = _errors = 0; Seen.Clear();
             _segments = new[]
             {
                 new Segment("idle", 6),
-                new Segment("run-east", 18, Vector2.right),
+                new Segment("run-east", 36, Vector2.right),
                 new Segment("planted-stop", 4),
-                new Segment("reverse-west", 18, Vector2.left),
+                new Segment("reverse-west", 36, Vector2.left),
                 new Segment("stop-west", 4),
                 new Segment("dash-east", 8, begin: () => Dash(UnderworldCamera2D.IsoRightXZ)),
                 new Segment("dash-west", 8, begin: () => Dash(-UnderworldCamera2D.IsoRightXZ)),
@@ -168,11 +168,16 @@ namespace OrpheusBelow.EditorTools
                 Call(_player, "Update25DIsometricMovement", dt, segment.movement, null, null);
                 if (segment.name.StartsWith("planted-stop")) Require(Vector3.Distance(before, _player.transform.position) < .001f, "Released movement drifted.");
                 _animator.Advance(dt);
+                bool ascending = false;
+                var map = PaintedChamberMap.Active;
+                bool onStairs = map != null && map.definition.StairMotion(_player.transform.position - map.transform.position,
+                    _player.transform.position - before, out ascending);
                 _animator.Drive(new OrpheusAnimationInput
                 {
                     groundDelta = _player.transform.position - before, deltaTime = dt,
                     aimDirection = _player.AimDirectionXZ, dashing = _player.IsDashing,
                     movementRequested = segment.movement.sqrMagnitude > .0025f,
+                    onStairs = onStairs, ascending = ascending,
                     defeated = segment.name == "defeat-hold"
                 });
                 _player.GetComponent<OrpheusGroundShadow>().ApplyState(_player.IsDashing,

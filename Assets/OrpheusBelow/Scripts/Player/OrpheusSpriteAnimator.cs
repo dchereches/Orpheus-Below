@@ -5,7 +5,7 @@ namespace OrpheusBelow
 {
     public sealed class OrpheusSpriteAnimator : MonoBehaviour
     {
-        public const float RunCycleDistance = 3.2f;
+        public const float RunCycleDistance = OrpheusRunMotion.CycleDistance;
         private readonly OrpheusAnimationBrain _brain = new OrpheusAnimationBrain();
         private SpriteRenderer _body;
         private SpriteRenderer _effects;
@@ -22,6 +22,7 @@ namespace OrpheusBelow
         private float _gaitPhase;
         private bool _singing;
         private bool _aulos;
+        private readonly Dictionary<Sprite, Bounds> _runningBounds = new Dictionary<Sprite, Bounds>();
         private readonly Queue<QueuedAnimation> _queued = new Queue<QueuedAnimation>();
 
         private struct QueuedAnimation
@@ -40,6 +41,10 @@ namespace OrpheusBelow
         public int StateVersion => _stateVersion;
         public SpriteRenderer BodyRenderer => _body;
         public SpriteRenderer EffectsRenderer => _effects;
+        private OrpheusAnimationState VisualState => _brain.GroundSpeed >= 4.5f &&
+            (_state == OrpheusAnimationState.Start || _state == OrpheusAnimationState.Turn ||
+             _state == OrpheusAnimationState.StairAscent || _state == OrpheusAnimationState.StairDescent)
+            ? OrpheusAnimationState.Run : _state;
 
         private void Update()
         {
@@ -82,9 +87,10 @@ namespace OrpheusBelow
             SetState(_brain.State);
             if (IsGait(_state))
             {
-                _gaitPhase = Mathf.Repeat(_gaitPhase + distance / (_brain.GroundSpeed >= 4.5f ? RunCycleDistance : 2.5f), 1f);
-                OrpheusAnimationClip clip = _library?.FindClip(_state);
-                if (clip != null) _frame = Mathf.Min((int)(_gaitPhase * clip.framesPerDirection), clip.framesPerDirection - 1);
+                float visualScale = _body == null ? 1f : Mathf.Max(.001f, _body.transform.TransformVector(Vector3.right).magnitude);
+                _gaitPhase = Mathf.Repeat(_gaitPhase + distance / (visualScale * (_brain.GroundSpeed >= 4.5f ? RunCycleDistance : 2.5f)), 1f);
+                OrpheusAnimationClip clip = _library?.FindClip(VisualState);
+                if (clip != null) _frame = Mathf.Min(Mathf.FloorToInt(_gaitPhase * clip.framesPerDirection + .00001f), clip.framesPerDirection - 1);
             }
             else if (!moving && _overrideState == OrpheusAnimationState.None) _gaitPhase = 0f;
             ApplyFrame();
@@ -94,7 +100,7 @@ namespace OrpheusBelow
         {
             if (paused || deltaTime <= 0f) return;
             _elapsed += deltaTime;
-            OrpheusAnimationClip clip = _library?.FindClip(_state);
+            OrpheusAnimationClip clip = _library?.FindClip(VisualState);
             if (clip != null && clip.IsComplete && !IsGait(_state))
             {
                 int raw = Mathf.FloorToInt(_elapsed * clip.fps);
@@ -348,9 +354,25 @@ namespace OrpheusBelow
         private void ApplyFrame()
         {
             if (!UsesProductionArt || _body == null) return;
-            Sprite frame = _library.Frame(_state, _brain.Facing, _frame);
+            OrpheusAnimationState visual = VisualState;
+            Sprite frame = _library.Frame(visual, _brain.Facing, _frame);
             if (frame != null) _body.sprite = frame;
-            _body.flipX = _library.FindClip(_state).mirrorWest && (int)_brain.Facing >= (int)EurydiceFacing.NorthWest;
+            _body.flipX = _library.FindClip(visual).mirrorWest && (int)_brain.Facing >= (int)EurydiceFacing.NorthWest;
+            if (visual == OrpheusAnimationState.Run && frame != null)
+            {
+                // The projected reach can exceed the source rectangle. Sprite's low-level vertex
+                // API retains its source bounds, so cull against the actual posed geometry.
+                if (!_runningBounds.TryGetValue(frame, out Bounds bounds))
+                {
+                    Vector2[] vertices = frame.vertices;
+                    bounds = new Bounds(vertices[0], Vector3.zero);
+                    foreach (Vector2 vertex in vertices) bounds.Encapsulate(vertex);
+                    bounds.Expand(.06f); _runningBounds.Add(frame, bounds);
+                }
+                if (_body.flipX) { Vector3 centre = bounds.center; centre.x = -centre.x; bounds.center = centre; }
+                _body.localBounds = bounds;
+            }
+            else _body.ResetLocalBounds();
             ApplyEffectFrame();
             OrpheusOilSurface.Apply(_body, PaintedChamberMap.Active?.definition);
         }

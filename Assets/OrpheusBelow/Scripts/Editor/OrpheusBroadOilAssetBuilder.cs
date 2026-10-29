@@ -36,7 +36,8 @@ namespace OrpheusBelow.EditorTools
                 sheets[name] = BakeSheet(name, library, false);
             sheets["WalkCycle"] = BakeSheet("WalkCycle", library, false);
             sheets["RunCycle"] = BakeSheet("RunCycle", library, false);
-            sheets["BilateralRun"] = OrpheusBilateralRunBaker.Bake(sheets["RunCycle"], library);
+            sheets["AthleticCanonical"] = BakeAthleticSources(library);
+            sheets["AthleticRun"] = OrpheusAthleticRunBaker.Bake(sheets["AthleticCanonical"], library, Folder + "AthleticRunLayout.json");
             var sourceFrames = new List<Sprite>();
             foreach (Sprite[] sheetFrames in sheets.Values) sourceFrames.AddRange(sheetFrames);
             library.sourceFrames = sourceFrames.ToArray();
@@ -47,7 +48,7 @@ namespace OrpheusBelow.EditorTools
             Add(clips, sheets, OrpheusAnimationState.RestlessIdle, "IdleTransitions", 2, true, 6f);
             AddCycle(clips, sheets, OrpheusAnimationState.Start, "WalkCycle", false, 40f, 0, 1, 2, 3);
             AddCycle(clips, sheets, OrpheusAnimationState.Walk, "WalkCycle", true, 8f, 0, 1, 2, 3);
-            AddRun(clips, sheets["BilateralRun"]);
+            AddRun(clips, sheets["AthleticRun"]);
             AddSequence(clips, sheets, OrpheusAnimationState.Stop, "IdleTransitions", false, 45f, 5, 6, 0, 0);
             AddCycle(clips, sheets, OrpheusAnimationState.Turn, "WalkCycle", false, 40f, 1, 3, 1, 3);
 
@@ -167,12 +168,43 @@ namespace OrpheusBelow.EditorTools
 
         private static void AddRun(List<OrpheusAnimationClip> clips, Sprite[] source)
         {
+            const int phases = OrpheusAthleticRunBaker.Phases;
             int[] sourceRows = { 0, 1, 2, 3, 4, 3, 2, 1 };
-            var frames = new Sprite[64];
+            var frames = new Sprite[8 * phases];
             for (int direction = 0; direction < 8; direction++)
-                for (int frame = 0; frame < 8; frame++) frames[direction * 8 + frame] = source[sourceRows[direction] * 8 + frame];
+                for (int frame = 0; frame < phases; frame++) frames[direction * phases + frame] = source[sourceRows[direction] * phases + frame];
             clips.Add(new OrpheusAnimationClip { state = OrpheusAnimationState.Run, frames = frames,
-                directions = 8, framesPerDirection = 8, fps = 16f, loop = true, mirrorWest = true });
+                directions = 8, framesPerDirection = phases, fps = 24f, loop = true, mirrorWest = true });
+        }
+
+        [Serializable] private sealed class AthleticSources { public AthleticSource[] rigs; }
+        [Serializable] private sealed class AthleticSource { public Vector2 hip, ankle; public int sourceWidth, sourceHeight; }
+        private static Sprite[] BakeAthleticSources(OrpheusAnimationLibrary owner)
+        {
+            var layout = JsonUtility.FromJson<AthleticSources>(System.IO.File.ReadAllText(Folder + "AthleticRunLayout.json"));
+            string[] directions = { "South", "SouthEast", "East", "NorthEast", "North" };
+            var sources = new Sprite[5];
+            for (int row = 0; row < directions.Length; row++)
+            {
+                string path = Folder + "Athletic" + directions[row] + ".png";
+                var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+                importer.textureType = TextureImporterType.Default; importer.npotScale = TextureImporterNPOTScale.None;
+                importer.isReadable = true; importer.alphaIsTransparency = true; importer.mipmapEnabled = false;
+                importer.textureCompression = TextureImporterCompression.Uncompressed; importer.maxTextureSize = 512;
+                importer.wrapMode = TextureWrapMode.Clamp; importer.filterMode = FilterMode.Bilinear; importer.SaveAndReimport();
+                Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                Color32[] pixels = texture.GetPixels32(); int low = texture.height, high = 0;
+                for (int y = 0; y < texture.height; y++) for (int x = 0; x < texture.width; x++)
+                    if (pixels[y * texture.width + x].a > 96) { low = Mathf.Min(low, y); high = Mathf.Max(high, y); }
+                float ppu = (high - low + 1) / owner.visibleHeight;
+                AthleticSource rig = layout.rigs[row];
+                // Actor anchoring is defined by the pelvis/ankle rig, independently of the
+                // transparent source gutter. Keep a stable low pivot for all imported views.
+                Vector2 pivot = new Vector2(rig.hip.x / rig.sourceWidth, .025f);
+                Sprite source = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), pivot, ppu, 0, SpriteMeshType.FullRect);
+                source.name = "AthleticSource_" + row.ToString("D2"); AssetDatabase.AddObjectToAsset(source, owner); sources[row] = source;
+            }
+            return sources;
         }
 
         private static void AddVocal(List<OrpheusAnimationClip> clips, Dictionary<string, Sprite[]> sheets,
