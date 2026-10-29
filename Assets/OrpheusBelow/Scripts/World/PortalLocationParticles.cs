@@ -2,16 +2,38 @@ using UnityEngine;
 
 namespace OrpheusBelow
 {
-    /// <summary>Small, clean upward motes make chamber exits legible without obscuring the portal art.</summary>
+    /// <summary>Floor and airborne dust streams into the physical passage.</summary>
     [DisallowMultipleComponent]
     public sealed class PortalLocationParticles : MonoBehaviour
     {
+        private const int Capacity = 48;
+        private const float EmissionInterval = 1f / 20f;
+        private readonly ParticleSystem.Particle[] _buffer = new ParticleSystem.Particle[Capacity];
+        private readonly Mote[] _motes = new Mote[Capacity];
         private ParticleSystem _particles;
-        private bool _isUnlocked = true;
+        private Material _material;
+        private Transform _doorway;
+        private bool _isUnlocked;
+        private float _emissionClock;
+        private uint _sequence;
+        private Color _accent = new Color(.95f, .84f, .58f);
 
-        private void Awake()
+        private struct Mote
         {
-            EnsureInitialized();
+            public Vector3 start, target;
+            public float age, lifetime, size;
+            public uint seed;
+        }
+
+        public Vector3 AttractionPoint => (_doorway != null ? _doorway.position : transform.position) + Vector3.up * 1.1f;
+
+        private void Awake() => EnsureInitialized();
+
+        public void SetDoorway(Transform doorway)
+        {
+            if (_doorway == doorway) return;
+            _doorway = doorway;
+            ClearMotes();
         }
 
         public void EnsureInitialized()
@@ -19,98 +41,146 @@ namespace OrpheusBelow
             if (_particles != null) return;
             _particles = GetComponent<ParticleSystem>();
             if (_particles == null) _particles = gameObject.AddComponent<ParticleSystem>();
+            // Serialized legacy systems may already be playing. Stop before changing duration.
             _particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-
             var main = _particles.main;
-            main.loop = true;
+            main.loop = false;
             main.playOnAwake = false;
-            main.duration = 2f;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(1.1f, 1.7f);
-            main.startSpeed = new ParticleSystem.MinMaxCurve(0.25f, 0.55f);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.065f, 0.13f);
-            main.startColor = new Color(0.5f, 0.95f, 0.8f, 0.72f);
+            main.duration = 3f;
+            main.startSpeed = 0f;
+            main.startLifetime = 3f;
+            main.startSize = .1f;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.maxParticles = 36;
-
-            var emission = _particles.emission;
-            emission.rateOverTime = 12f;
-            emission.enabled = _isUnlocked;
-
-            var shape = _particles.shape;
-            shape.shapeType = ParticleSystemShapeType.Circle;
-            shape.radius = 0.52f;
-            shape.radiusThickness = 0.35f;
-            shape.rotation = new Vector3(-90f, 0f, 0f);
-
-            var velocity = _particles.velocityOverLifetime;
-            velocity.enabled = true;
-            velocity.space = ParticleSystemSimulationSpace.World;
-            velocity.y = new ParticleSystem.MinMaxCurve(0.35f, 0.75f);
-            velocity.x = new ParticleSystem.MinMaxCurve(-0.06f, 0.06f);
-            velocity.z = new ParticleSystem.MinMaxCurve(-0.06f, 0.06f);
-
-            var size = _particles.sizeOverLifetime;
-            size.enabled = true;
-            AnimationCurve sizeCurve = new AnimationCurve();
-            sizeCurve.AddKey(0f, 0.35f);
-            sizeCurve.AddKey(0.2f, 1.0f);
-            sizeCurve.AddKey(0.7f, 0.85f);
-            sizeCurve.AddKey(1f, 0.0f);
-            size.size = new ParticleSystem.MinMaxCurve(1f, sizeCurve);
-
-            var color = _particles.colorOverLifetime;
-            color.enabled = true;
-            var gradient = new Gradient();
-            gradient.SetKeys(
-                new[] { new GradientColorKey(new Color(0.75f, 1f, 0.92f), 0f), new GradientColorKey(new Color(0.25f, 0.85f, 0.72f), 1f) },
-                new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.72f, 0.18f), new GradientAlphaKey(0.55f, 0.65f), new GradientAlphaKey(0f, 1f) });
-            color.color = gradient;
-
+            main.scalingMode = ParticleSystemScalingMode.Shape;
+            main.useUnscaledTime = false;
+            main.maxParticles = Capacity;
+            var emission = _particles.emission; emission.enabled = false;
+            var shape = _particles.shape; shape.enabled = false;
+            var velocity = _particles.velocityOverLifetime; velocity.enabled = false;
+            var force = _particles.forceOverLifetime; force.enabled = false;
+            var noise = _particles.noise; noise.enabled = false;
+            var size = _particles.sizeOverLifetime; size.enabled = false;
+            var color = _particles.colorOverLifetime; color.enabled = false;
+            var trails = _particles.trails; trails.enabled = false;
             var renderer = _particles.GetComponent<ParticleSystemRenderer>();
             renderer.renderMode = ParticleSystemRenderMode.Billboard;
             renderer.sortingOrder = 16;
-
-            Material sprMat = RenderPipeline2DSetup.Get2DSpriteMaterial();
-            if (sprMat != null)
+            renderer.SetActiveVertexStreams(new System.Collections.Generic.List<ParticleSystemVertexStream>
+                { ParticleSystemVertexStream.Position, ParticleSystemVertexStream.Color, ParticleSystemVertexStream.UV });
+            // Sprite shaders require per-SpriteRenderer uniforms that particle renderers do not provide.
+            Shader shader = Resources.Load<Shader>("Art/DoorwayDust");
+            if (shader != null)
             {
-                Material pMat = new Material(sprMat) { name = "PortalParticles_MoteMat" };
+                _material = new Material(shader) { name = "DoorwaySuction_MoteMat" };
                 if (RenderPipeline2DSetup.SoftGlowSprite != null)
-                    pMat.mainTexture = RenderPipeline2DSetup.SoftGlowSprite.texture;
-                renderer.material = pMat;
+                    _material.mainTexture = RenderPipeline2DSetup.SoftGlowSprite.texture;
+                renderer.sharedMaterial = _material;
             }
         }
 
         public void SetUnlocked(bool unlocked)
         {
-            _isUnlocked = unlocked;
             EnsureInitialized();
-            if (_particles == null) return;
-
-            var emission = _particles.emission;
-            emission.enabled = unlocked;
-            if (unlocked)
-            {
-                if (!_particles.isPlaying) _particles.Play();
-            }
-            else
-            {
-                _particles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
-            }
+            if (_isUnlocked == unlocked) { if (!unlocked) ClearMotes(); return; }
+            _isUnlocked = unlocked;
+            ClearMotes();
+            if (unlocked && isActiveAndEnabled) PrepareRenderer();
         }
 
-        public void SetAccent(Color accent)
+        public void SetAccent(Color accent) => _accent = accent;
+
+        private void PrepareRenderer()
         {
             EnsureInitialized();
-            if (_particles == null) return;
-            var main = _particles.main;
-            Color bright = new Color(Mathf.Clamp01(accent.r + 0.28f), Mathf.Clamp01(accent.g + 0.28f), Mathf.Clamp01(accent.b + 0.28f));
-            main.startColor = new Color(bright.r, bright.g, bright.b, 0.78f);
-            var gradient = new Gradient();
-            gradient.SetKeys(
-                new[] { new GradientColorKey(bright, 0f), new GradientColorKey(accent, 1f) },
-                new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.72f, 0.18f), new GradientAlphaKey(0.55f, 0.65f), new GradientAlphaKey(0f, 1f) });
-            var color = _particles.colorOverLifetime;
-            color.color = gradient;
+            // SetParticles supplies every position and lifetime. Keep native simulation paused
+            // so its automatic clock cannot move them twice or continue through a menu/voice.
+            _particles.Play(false);
+            _particles.Pause(false);
+            var map = GetComponentInParent<PaintedChamberMap>();
+            if (map != null && map.definition != null)
+                _particles.GetComponent<ParticleSystemRenderer>().sortingOrder = PaintedChamberMap.DepthOrder(map.ToImage(AttractionPoint).y) + 2;
+        }
+
+        private void OnEnable() { if (_isUnlocked) PrepareRenderer(); }
+        private void OnDisable() => ClearMotes();
+        private void OnDestroy()
+        {
+            if (_material == null) return;
+            if (Application.isPlaying) Destroy(_material);
+            else DestroyImmediate(_material);
+        }
+        private void Update() => Advance(Time.deltaTime);
+
+        private void Advance(float deltaTime)
+        {
+            if (!_isUnlocked || !isActiveAndEnabled || deltaTime <= 0f || Time.timeScale <= 0f ||
+                UnderworldFrontEnd.BlocksGameplay || OrpheusHud.IsTutorialModalActive || VoiceDirector.BlocksGameplay) return;
+            _emissionClock += deltaTime;
+            int count = 0;
+            for (int i = 0; i < Capacity; i++)
+            {
+                Mote mote = _motes[i];
+                mote.age += deltaTime;
+                if (mote.lifetime <= 0f || mote.age >= mote.lifetime)
+                {
+                    if (_emissionClock < EmissionInterval) { _motes[i] = default; continue; }
+                    _emissionClock -= EmissionInterval;
+                    mote = SpawnMote(++_sequence);
+                }
+                _motes[i] = mote;
+                float t = Mathf.Clamp01(mote.age / mote.lifetime);
+                Color tint = _accent;
+                tint.a = Mathf.SmoothStep(0f, .8f, t / .16f)
+                    * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.82f, 1f, t)));
+                _buffer[count++] = new ParticleSystem.Particle
+                {
+                    position = EvaluatePath(mote.start, mote.target, t),
+                    startColor = tint,
+                    startSize = mote.size * Mathf.Lerp(1f, .25f, t * t),
+                    startLifetime = mote.lifetime,
+                    remainingLifetime = Mathf.Max(.01f, mote.lifetime - mote.age),
+                    randomSeed = mote.seed
+                };
+            }
+            _emissionClock = Mathf.Min(_emissionClock, EmissionInterval * 2f);
+            _particles.SetParticles(_buffer, count);
+        }
+
+        private Mote SpawnMote(uint seed)
+        {
+            Transform door = _doorway != null ? _doorway : transform;
+            // A broad volume on the chamber side, with no circular emission shape.
+            Vector3 offset = door.right * Mathf.Lerp(-3.1f, 3.1f, Sample(seed, 1))
+                - door.forward * Mathf.Lerp(1.8f, 5.8f, Sample(seed, 2))
+                + Vector3.up * Mathf.Lerp(.08f, 2.5f, Sample(seed, 3));
+            return new Mote
+            {
+                start = door.position + offset,
+                target = AttractionPoint,
+                lifetime = Mathf.Lerp(1.35f, 2.1f, Sample(seed, 4)),
+                size = Mathf.Lerp(.12f, .20f, Sample(seed, 5)),
+                seed = seed
+            };
+        }
+
+        // Fixed endpoints ignore emitter scale. Increasing speed makes the final approach suction.
+        public static Vector3 EvaluatePath(Vector3 start, Vector3 target, float normalizedAge)
+            => Vector3.LerpUnclamped(start, target, Mathf.Pow(Mathf.Clamp01(normalizedAge), 1.65f));
+
+        private static float Sample(uint seed, uint channel)
+        {
+            uint value = seed * 747796405u + channel * 2891336453u;
+            value = ((value >> (int)((value >> 28) + 4)) ^ value) * 277803737u;
+            value = (value >> 22) ^ value;
+            return (value & 0x00ffffff) / 16777215f;
+        }
+
+        private void ClearMotes()
+        {
+            System.Array.Clear(_motes, 0, _motes.Length);
+            _emissionClock = 0f;
+            _sequence = 0;
+            if (_particles != null) _particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
     }
 }

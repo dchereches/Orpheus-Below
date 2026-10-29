@@ -328,23 +328,10 @@ namespace OrpheusBelow
             trig.size = new Vector3(5.5f, 3.5f, 4.5f);
             trig.center = new Vector3(0f, 1.0f, 0f);
 
-            GameObject portalVis = new GameObject("ArchwayPortalGlow");
-            portalVis.transform.SetParent(doorGo.transform, false);
-            portalVis.transform.localPosition = new Vector3(0f, 1.45f, 0f);
-            portalVis.transform.localScale = new Vector3(2.4f, 3.0f, 1f);
-            SpriteRenderer portalSr = RenderPipeline2DSetup.AttachBillboardSprite(portalVis, RenderPipeline2DSetup.SoftGlowSprite, Color.red, 10);
-            portalVis.AddComponent<PortalLocationParticles>().SetAccent(theme.parallaxFire);
-
-            GameObject floorRing = new GameObject("DoorThresholdRune");
-            floorRing.transform.SetParent(doorGo.transform, false);
-            floorRing.transform.localPosition = new Vector3(0f, 0.03f, 0f);
-            floorRing.transform.localScale = new Vector3(2.6f, 2.6f, 1f);
-            SpriteRenderer beaconSr = RenderPipeline2DSetup.AttachGroundDecal(floorRing, RenderPipeline2DSetup.RingSprite, Color.red, 4);
-
             ChamberExitDoor exitComp = doorGo.AddComponent<ChamberExitDoor>();
             exitComp.targetChamberIndex = 1;
             exitComp.isFinalSunlightExit = false;
-            exitComp.SetupVisuals(portalSr, beaconSr);
+            exitComp.SetupVisuals(null, null);
 
             // 5. Parallax Rig for Cantor of Fury (uses the user's painted Asphodel vista in 2D Boss Duel!)
             GameObject rigGo = new GameObject("Parallax2DRig_Ch00");
@@ -473,23 +460,10 @@ namespace OrpheusBelow
             trig.size = new Vector3(5.5f, 3.5f, 4.5f);
             trig.center = new Vector3(-0.4f, 1.0f, -0.4f);
 
-            GameObject portalVis = new GameObject("ArchwayPortalGlow");
-            portalVis.transform.SetParent(doorGo.transform, false);
-            portalVis.transform.localPosition = new Vector3(-0.3f, 1.45f, -0.3f);
-            portalVis.transform.localScale = new Vector3(2.2f, 2.9f, 1f);
-            SpriteRenderer portalSr = RenderPipeline2DSetup.AttachBillboardSprite(portalVis, RenderPipeline2DSetup.SoftGlowSprite, Color.red, 10);
-            portalVis.AddComponent<PortalLocationParticles>().SetAccent(theme.parallaxFire);
-
-            GameObject floorRing = new GameObject("DoorThresholdRune");
-            floorRing.transform.SetParent(doorGo.transform, false);
-            floorRing.transform.localPosition = new Vector3(-0.8f, 0.03f, -0.8f);
-            floorRing.transform.localScale = new Vector3(2.4f, 2.4f, 1f);
-            SpriteRenderer beaconSr = RenderPipeline2DSetup.AttachGroundDecal(floorRing, RenderPipeline2DSetup.RingSprite, Color.red, 4);
-
             ChamberExitDoor exitComp = doorGo.AddComponent<ChamberExitDoor>();
             exitComp.targetChamberIndex = targetChamber;
             exitComp.isFinalSunlightExit = finalExit;
-            exitComp.SetupVisuals(portalSr, beaconSr);
+            exitComp.SetupVisuals(null, null);
 
             CreateHadesBrazier(room, new Vector3(-hx + 1.8f, 0f, hz - 1.8f));
             CreateHadesBrazier(room, new Vector3(hx - 1.8f, 0f, -hz + 1.8f));

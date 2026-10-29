@@ -75,6 +75,15 @@ namespace OrpheusBelow
             _cadenceUnlockFanfareClip = CreateUnlockFanfareClip("UnlockFanfare", 1.8f);
         }
 
+        private void LateUpdate()
+        {
+            // Source gain also ducks already-playing tails and overlapping one-shots beneath tutorials.
+            float gain = UnderworldSoundscape.Instance != null ? UnderworldSoundscape.Instance.SpeechEffectsGain
+                : (VoiceDirector.IsSpeaking ? SpeechDucking.DuckedGain : 1f);
+            if (_sfxSource != null) _sfxSource.volume = gain;
+            if (_drumSource != null) _drumSource.volume = gain;
+        }
+
         public void PlaySoftAttack(float intensity)
         {
             if (_sfxSource == null || _softPlucks == null) return;

@@ -168,6 +168,7 @@ namespace OrpheusBelow
 
         private void LateUpdate()
         {
+            if (UnderworldFrontEnd.BlocksMenusOrTransitions) return;
             UnderworldCamera2D cam = UnderworldCamera2D.Instance;
             if (cam == null) return;
 

@@ -2,7 +2,8 @@
   "name": "OrpheusBelow.EditModeTests",
   "rootNamespace": "OrpheusBelow.Tests",
   "references": [
-    "OrpheusBelow.Runtime"
+    "OrpheusBelow.Runtime",
+    "Unity.RenderPipelines.Core.Runtime"
   ],
   "includePlatforms": [
     "Editor"

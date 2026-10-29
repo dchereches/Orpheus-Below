@@ -614,6 +614,7 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            if (UnderworldFrontEnd.BlocksMenusOrTransitions) return;
             _life -= Time.unscaledDeltaTime;
             float u = 1f - Mathf.Clamp01(_life / MaxLife);
             float widthFactor = Mathf.Lerp(1.1f, 0.08f, u * u);
@@ -666,6 +667,7 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            if (UnderworldFrontEnd.BlocksMenusOrTransitions) return;
             _elapsed += Time.unscaledDeltaTime;
             float u = Mathf.Clamp01(_elapsed / Duration);
             // Contract inward from outer radius to tight harmonic focal point!

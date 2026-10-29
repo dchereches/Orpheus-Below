@@ -24,12 +24,22 @@ namespace OrpheusBelow.Tests
             var intro = root.AddComponent<IntroCinematicPlayer>();
             Call(intro, "BuildView");
             Assert.That(root.GetComponentsInChildren<Button>(true), Is.Empty);
-            Text caption = root.GetComponentsInChildren<Text>(true).Single(t => t.text == "Backspace to skip");
+            Text caption = root.GetComponentsInChildren<Text>(true).Single(t => t.name == "IntroSkipCaption");
+            Assert.That(caption.text, Is.EqualTo("Hold Enter to skip"));
+            Assert.That(caption.font, Is.SameAs(GameTypography.Font));
             Assert.That(caption.rectTransform.anchorMin, Is.EqualTo(Vector2.right));
             Assert.That(caption.rectTransform.anchorMax, Is.EqualTo(Vector2.right));
             Assert.That(caption.rectTransform.anchoredPosition.x, Is.LessThan(0));
             Assert.That(caption.rectTransform.anchoredPosition.y, Is.GreaterThan(0));
             Assert.That(caption.fontSize, Is.InRange(16, 23));
+            Image progress = root.transform.Find("IntroSkipProgress").GetComponent<Image>();
+            Assert.That(progress.raycastTarget, Is.False);
+            Assert.That(progress.rectTransform.anchorMin, Is.EqualTo(Vector2.right));
+            Assert.That(progress.rectTransform.anchorMax, Is.EqualTo(Vector2.right));
+            Assert.That(progress.rectTransform.anchoredPosition.x, Is.LessThan(0));
+            Assert.That(progress.rectTransform.anchoredPosition.y, Is.GreaterThan(0));
+            Assert.That(progress.rectTransform.sizeDelta.x, Is.Zero, "Progress stays discreet until Enter is held.");
+            Assert.That(progress.rectTransform.sizeDelta.y, Is.InRange(1, 3));
         }
 
         [Test]

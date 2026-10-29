@@ -164,12 +164,98 @@ namespace OrpheusBelow.Tests
         }
 
         [Test]
-        public void PaintedSupportBootCountersOneFrameOfRootTravel()
+        public void SideViewPlantsBothPaintedBootsAtTheSameForwardReach()
         {
             Rig r = Source(2);
-            Vector2 a = PaintedPoints(Library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East, 0), Uv(r, r.ankle))[1];
-            Vector2 b = PaintedPoints(Library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East, 1), Uv(r, r.ankle))[1];
-            Assert.That(Vector2.Distance(b + Vector2.right * (OrpheusRunMotion.CycleDistance / 16f), a), Is.LessThan(.025f));
+            // Compare each leg at its own touchdown. A walking source's spread hips must
+            // not leave one running step half a body-width behind the other.
+            Vector2 near = PaintedPoints(Library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East, 0), Uv(r, r.ankle))[1];
+            Vector2 far = PaintedPoints(Library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East, 8), Uv(r, r.ankle))[0];
+            Assert.That(Mathf.Abs(near.x - far.x), Is.LessThan(.04f),
+                "Side-on hips overlap horizontally; both legs need the same planted stride.");
+        }
+
+        [TestCase(0)] [TestCase(4)] [TestCase(8)] [TestCase(12)]
+        public void EastMovingThighGathersTheWalkingFabricInsteadOfFormingARoundSack(int frame)
+        {
+            Rig rig = Source(2);
+            Vector2 axis = (rig.knee - rig.hip).normalized;
+            Vector2 across = new Vector2(-axis.y, axis.x);
+            Vector2 center = Vector2.Lerp(rig.hip, rig.knee, .75f);
+            Sprite canonical = Library.sourceFrames.Single(x => x.name == "AthleticSource_02");
+            Sprite posed = Library.Frame(OrpheusAnimationState.Run, EurydiceFacing.East, frame);
+            List<Vector2> left = PaintedPoints(posed, Uv(rig, center - across * 8f));
+            List<Vector2> right = PaintedPoints(posed, Uv(rig, center + across * 8f));
+            Assert.That(left.Count, Is.EqualTo(2));
+            Assert.That(right.Count, Is.EqualTo(2));
+            float walkingWidth = 16f * canonical.texture.width / rig.sourceWidth / canonical.pixelsPerUnit;
+            for (int leg = 0; leg < 2; leg++)
+                Assert.That(Vector2.Distance(left[leg], right[leg]), Is.LessThan(walkingWidth * .78f),
+                    "The moving trouser thigh must gather across its bone while retaining the original paint and landmark positions.");
+        }
+
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)]
+        public void BothTrouserRootsStayOnTheRetainedCoatSeam(int row)
+        {
+            Rig rig = Source(row);
+            Vector2 seam = Uv(rig, rig.hip + new Vector2(0f, 6f));
+            foreach (int frame in new[] { 0, 4, 8, 12 })
+            {
+                List<Vector2> overlap = PaintedPoints(Library.Frame(OrpheusAnimationState.Run, (EurydiceFacing)row, frame), seam);
+                Assert.That(overlap.Count, Is.EqualTo(1),
+                    "Pinned trouser paint must overlap the retained coat exactly; a shifted far-leg root opens a horizontal cut.");
+            }
+        }
+
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)]
+        public void ActualPaintedRigRetainsBothBoneLengthsThroughoutTheEntireRun(int row)
+        {
+            Rig rig = Source(row);
+            Sprite canonical = Library.sourceFrames.Single(x => x.name == "AthleticSource_" + row.ToString("D2"));
+            Vector2 scale = new Vector2(canonical.texture.width / (float)rig.sourceWidth,
+                canonical.texture.height / (float)rig.sourceHeight) / canonical.pixelsPerUnit;
+            Vector2 fitted = OrpheusRunMotion.FitLegLengths(Vector2.Scale(rig.knee - rig.hip, scale).magnitude,
+                Vector2.Scale(rig.ankle - rig.knee, scale).magnitude, (rig.ankle.y - rig.hip.y) * scale.y);
+            // Sample between baked frames too: the North painting's asymmetric bones
+            // formerly put the recovering ankle inside its minimum reach near phase .625.
+            for (int i = 0; i < 4096; i++)
+            {
+                var pose = OrpheusRunMotion.Evaluate(i / 4096f, fitted.x, fitted.y);
+                foreach (var leg in new[] { pose.nearLeg, pose.farLeg })
+                {
+                    Assert.That(Vector2.Distance(leg.root, leg.end), Is.InRange(Mathf.Abs(fitted.x - fitted.y), fitted.x + fitted.y));
+                    Assert.That(Vector2.Distance(leg.root, leg.joint), Is.EqualTo(fitted.x).Within(.00001f));
+                    Assert.That(Vector2.Distance(leg.joint, leg.end), Is.EqualTo(fitted.y).Within(.00001f));
+                }
+            }
+        }
+
+        [TestCase(4, 0, 1)] [TestCase(12, 1, 0)]
+        public void FrontViewClearlyLiftsTheRecoveringPaintedBootAboveThePlantedBoot(int frame, int recovering, int planted)
+        {
+            Rig r = Source(0);
+            List<Vector2> boots = PaintedPoints(Library.Frame(OrpheusAnimationState.Run, EurydiceFacing.South, frame), Uv(r, r.ankle));
+            Assert.That(boots.Count, Is.EqualTo(2));
+            Assert.That(boots[recovering].y - boots[planted].y, Is.GreaterThan(.25f),
+                "At passing, recovery must visibly clear the opposite boot instead of projecting both feet to the same height.");
+        }
+
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)]
+        public void BothPaintedSupportBootsCounterRootTravelThroughoutTheirPlants(int row)
+        {
+            Rig r = Source(row);
+            Vector2 travel = new Vector2(Mathf.Sin(row * Mathf.PI * .25f), -Mathf.Cos(row * Mathf.PI * .25f) * Mathf.Sin(36f * Mathf.Deg2Rad));
+            for (int leg = 0; leg < 2; leg++)
+            {
+                int contact = leg == 1 ? 0 : 8;
+                for (int step = 0; step < 5; step++)
+                {
+                    Vector2 a = PaintedPoints(Library.Frame(OrpheusAnimationState.Run, (EurydiceFacing)row, contact + step), Uv(r, r.ankle))[leg];
+                    Vector2 b = PaintedPoints(Library.Frame(OrpheusAnimationState.Run, (EurydiceFacing)row, contact + step + 1), Uv(r, r.ankle))[leg];
+                    Assert.That(Vector2.Distance(b + travel * (OrpheusRunMotion.CycleDistance / 16f), a), Is.LessThan(.025f),
+                        "Both boots must stay planted in world space throughout support, including projected front/back travel.");
+                }
+            }
         }
 
         [Test]

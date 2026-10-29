@@ -63,6 +63,7 @@ namespace OrpheusBelow
     {
         public static VoiceDirector Instance { get; private set; }
         public const float VoiceGain = 1f;
+        public static bool IsSpeaking => Instance != null && Instance._voiceSource != null && Instance._voiceSource.isPlaying;
         public static bool HasPendingSpeech => Instance != null && Instance._queue.IsBlocking;
         public static bool BlocksGameplay => HasPendingSpeech && !Instance._interactiveInstruction;
         public static bool IsVoicePlaying => Instance != null && (Instance.CurrentLine != VoiceLineId.None || HasPendingSpeech || (Instance._voiceSource != null && Instance._voiceSource.isPlaying));
@@ -74,6 +75,7 @@ namespace OrpheusBelow
         private AudioSource _voiceSource;
         private readonly Dictionary<VoiceLineId, VoiceLineData> _lineRegistry = new Dictionary<VoiceLineId, VoiceLineData>();
         private readonly Dictionary<VoiceLineId, AudioClip> _clipCache = new Dictionary<VoiceLineId, AudioClip>();
+        private readonly VoiceAudioClipCache _loudClips = new VoiceAudioClipCache();
 
         private Coroutine _activePlaybackRoutine;
         private readonly VoicePlaybackQueue _queue = new VoicePlaybackQueue();
@@ -236,6 +238,7 @@ namespace OrpheusBelow
             AudioClip clip = Resources.Load<AudioClip>(data.resourcePath);
             if (clip != null)
             {
+                clip = _loudClips.Prepare(clip);
                 _clipCache[data.id] = clip;
                 return clip;
             }
@@ -274,7 +277,7 @@ namespace OrpheusBelow
                     if (clip != null)
                     {
                         clip.name = id.ToString();
-                        _clipCache[id] = clip;
+                        _clipCache[id] = _loudClips.Prepare(clip);
                     }
                 }
             }
@@ -432,7 +435,12 @@ namespace OrpheusBelow
             if (_voiceSource != null) _voiceSource.Stop();
             ReleaseWorldPause();
         }
-        private void OnDestroy() { if (Instance == this) Instance = null; }
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+            _loudClips.Dispose();
+            _clipCache.Clear();
+        }
 
         /// <summary>
         /// Cycles through Eurydice's acoustic ping replies on lyre plucks.

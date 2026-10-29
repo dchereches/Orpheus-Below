@@ -222,6 +222,7 @@ namespace OrpheusBelow
 
         private void LateUpdate()
         {
+            if (UnderworldFrontEnd.BlocksMenusOrTransitions) return;
             UnderworldCamera2D rig = UnderworldCamera2D.Instance;
             if (rig == null || rig.Cam == null) return;
             float visibility = 1f - Mathf.SmoothStep(0f, 1f, rig.SideViewBlend01);

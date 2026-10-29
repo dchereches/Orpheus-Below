@@ -155,9 +155,7 @@ namespace OrpheusBelow
             trigger.center = new Vector3(0f, 1.5f, 0f);
             trigger.size = new Vector3(5.5f, 3.5f, 5.0f);
             var door = go.AddComponent<ChamberExitDoor>(); door.targetChamberIndex = target; door.journeyRole = role;
-            var marker = new GameObject("ExitThreshold"); marker.transform.SetParent(go.transform, false);
-            marker.transform.localPosition = Vector3.up * .035f; marker.transform.localScale = new Vector3(2.8f, 2.8f, 1f);
-            door.SetupVisuals(null, RenderPipeline2DSetup.AttachGroundDecal(marker, RenderPipeline2DSetup.RingSprite, Color.white, 20));
+            door.SetupVisuals(null, null);
             return door;
         }
 
@@ -180,6 +178,7 @@ namespace OrpheusBelow
             RenderPipeline2DSetup.AttachBillboardSprite(_waitingSoul, library.idle[0], new Color(1, 1, 1, .9f), 12);
             _waitingSoul.AddComponent<EurydiceSpriteAnimator>();
             _waitingSoul.AddComponent<PaintedActorDepth>();
+            _waitingSoul.AddComponent<EurydiceGroundShadow>().InitializeWaitingSoul();
         }
 
         private MeshRenderer PaintedShape(string name, Transform parent, Vector2[] polygon, Material material, int order)

@@ -125,7 +125,7 @@ namespace OrpheusBelow.EditorTools
                         break;
                     case 3:
                         if (!OrpheusHud.IsTutorialModalActive) throw new Exception("Opening tutorial did not pause");
-                        if (GameObject.Find("ExposureCanvas") == null) throw new Exception("Exposure canvas hidden during gameplay");
+                        if (GameObject.Find(WorldLightingSettings.VolumeName) == null) throw new Exception("World lighting volume missing during gameplay");
                         Capture("03-dialogue");
                         OrpheusHud.Instance.DismissTutorialModal();
                         // This is a visual tour, not an input-driven completion of the opening tutorial.

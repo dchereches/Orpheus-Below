@@ -63,17 +63,37 @@ namespace OrpheusBelow
             bool support = phase < SupportDuty;
             if (support) ankle = new Vector2(span - CycleDistance * phase, 0f);
             else if (phase < .50f)
-                ankle = Curve(new Vector2(-span, 0f), new Vector2(-1.16f, .55f),
-                    new Vector2(-.85f, 1.24f), (phase - SupportDuty) / (.50f - SupportDuty));
+                ankle = Swing(new Vector2(-span, 0f), new Vector2(-CycleDistance, 0f),
+                    new Vector2(-.65f, 1.16f), new Vector2(5f, 0f), phase, SupportDuty, .50f);
             else if (phase < .73f)
-                ankle = Curve(new Vector2(-.85f, 1.24f), new Vector2(-.12f, 1.45f),
-                    new Vector2(.52f, .64f), (phase - .50f) / .23f);
+                ankle = Swing(new Vector2(-.65f, 1.16f), new Vector2(5f, 0f),
+                    new Vector2(.42f, 1f), new Vector2(5.1f, -4.2f), phase, .50f, .73f);
             else
-                ankle = Curve(new Vector2(.52f, .64f), new Vector2(1.19f, .08f),
-                    new Vector2(span, 0f), (phase - .73f) / .27f);
+            {
+                ankle = Swing(new Vector2(.42f, 1f), new Vector2(5.1f, -4.2f),
+                    new Vector2(span, 0f), new Vector2(-CycleDistance, 0f), phase, .73f, 1f);
+                // The pelvis is airborne while this leg extends. Keep the boot clear until
+                // that rise subsides, without altering endpoint positions or velocities.
+                float t = (phase - .73f) / .27f;
+                ankle.y += 7f * t * t * (1f - t) * (1f - t);
+            }
             // A shorter painted leg folds at a proportionally lower heel height; forcing the
             // same metre-high path can put its ankle inside the knee's minimum reach circle.
-            ankle.y *= Mathf.Min(1f, (upper + lower) / 2.1f);
+            float heightScale = Mathf.Min(1f, (upper + lower) / 2.1f);
+            ankle.y *= heightScale;
+            if (phase > .5f && phase < .73f)
+            {
+                // Unequal thigh/calf lengths cannot fold the ankle all the way to the hip.
+                // Fit the passing heel height to that anatomical space. This smooth relief
+                // leaves the heel-fold/extension endpoints and their velocities unchanged;
+                // the source proportions and both posed bone lengths remain fixed.
+                float length = upper + lower;
+                float baseHeight = Mathf.Sqrt(length * length * .94f * .94f - span * span) - .035f;
+                float foldSpace = baseHeight - .055f * heightScale - Mathf.Abs(upper - lower) - .08f;
+                float foldRelief = Mathf.Max(0f, 1.3f * heightScale - foldSpace);
+                float t = (phase - .5f) / .23f;
+                ankle.y -= foldRelief * 16f * t * t * (1f - t) * (1f - t);
+            }
             Vector2 root = new Vector2(0f, hipHeight);
             return new Limb { root = root, joint = Joint(root, ankle, upper, lower, Vector2.right), end = ankle, support = support };
         }
@@ -89,8 +109,17 @@ namespace OrpheusBelow
             return new Limb { root = Vector2.zero, joint = elbow, end = elbow + forearm };
         }
 
-        private static Vector2 Curve(Vector2 from, Vector2 control, Vector2 to, float t)
-            => (1f - t) * (1f - t) * from + 2f * (1f - t) * t * control + t * t * to;
+        private static Vector2 Swing(Vector2 from, Vector2 fromVelocity, Vector2 to, Vector2 toVelocity,
+            float phase, float start, float finish)
+        {
+            // Keep the recovering boot high through passing, then sweep backward before
+            // touchdown. Matching the support velocity at both boundaries prevents a
+            // visible snag at toe-off or a forward-moving foot that skates as it plants.
+            float duration = finish - start, t = (phase - start) / duration;
+            float t2 = t * t, t3 = t2 * t;
+            return (2f * t3 - 3f * t2 + 1f) * from + (t3 - 2f * t2 + t) * duration * fromVelocity +
+                (-2f * t3 + 3f * t2) * to + (t3 - t2) * duration * toVelocity;
+        }
 
         private static Vector2 Joint(Vector2 root, Vector2 end, float upper, float lower, Vector2 bend)
         {

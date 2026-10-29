@@ -642,6 +642,7 @@ namespace OrpheusBelow
 
         private void Update()
         {
+            if (UnderworldFrontEnd.BlocksMenusOrTransitions) return;
             float dt = Time.unscaledDeltaTime;
             transform.position += _vel * dt;
             _life -= dt;
