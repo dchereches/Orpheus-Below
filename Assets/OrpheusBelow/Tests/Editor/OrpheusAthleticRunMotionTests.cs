@@ -1,200 +1,125 @@
 using NUnit.Framework;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace OrpheusBelow.Tests
 {
-    public class OrpheusAthleticRunMotionTests
+    public class OrpheusAuthoredRunMotionTests
     {
-        [Test]
-        public void SupportFootCancelsActualRootTravel()
+        private GameObject _root;
+        private OrpheusSpriteAnimator _animator;
+        private SpriteRenderer _body;
+
+        [SetUp]
+        public void SetUp()
         {
-            var a = OrpheusRunMotion.Evaluate(.02f);
-            var b = OrpheusRunMotion.Evaluate(.30f);
-            Assert.That(a.nearLeg.support && b.nearLeg.support, Is.True);
-            Assert.That(b.nearLeg.end.x + 5.8f * .28f, Is.EqualTo(a.nearLeg.end.x).Within(.00001f));
-            Assert.That(a.nearLeg.end.y, Is.EqualTo(0f));
-            Assert.That(b.nearLeg.end.y, Is.EqualTo(0f));
+            _root = new GameObject("AuthoredRunMotion");
+            _animator = _root.AddComponent<OrpheusSpriteAnimator>();
+            _body = _root.AddComponent<SpriteRenderer>();
+            _animator.Initialize(_body, null, null, Resources.Load<OrpheusAnimationLibrary>(OrpheusAnimationLibrary.ResourcePath));
         }
 
-        [TestCase(.40f)]
-        [TestCase(.90f)]
-        public void FlightHasBothBootsClearOfGround(float phase)
-        {
-            var p = OrpheusRunMotion.Evaluate(phase);
-            Assert.That(p.nearLeg.support || p.farLeg.support, Is.False);
-            Assert.That(p.nearLeg.end.y, Is.GreaterThan(.02f));
-            Assert.That(p.farLeg.end.y, Is.GreaterThan(.02f));
-            Assert.That(p.hipBob, Is.GreaterThan(.15f));
-        }
+        [TearDown] public void TearDown() => Object.DestroyImmediate(_root);
 
         [Test]
-        public void SwingMeetsPlantAndToeOffAtTheGroundRelativeFootSpeed()
+        public void ActualTravelVisitsEveryAuthoredPoseOncePerCycleAtANaturalCadence()
         {
-            const float sample = .0001f;
-            var beforeContact = OrpheusRunMotion.Evaluate(1f - sample).nearLeg.end;
-            var contact = OrpheusRunMotion.Evaluate(0f).nearLeg.end;
-            var toeOff = OrpheusRunMotion.Evaluate(OrpheusRunMotion.SupportDuty).nearLeg.end;
-            var afterToeOff = OrpheusRunMotion.Evaluate(OrpheusRunMotion.SupportDuty + sample).nearLeg.end;
-            Assert.That((contact.x - beforeContact.x) / sample, Is.EqualTo(-5.8f).Within(.04f),
-                "The descending foot must already travel backward at ground speed when it plants.");
-            Assert.That((afterToeOff.x - toeOff.x) / sample, Is.EqualTo(-5.8f).Within(.04f),
-                "The recovery must continue the planted foot's motion rather than snagging at toe-off.");
-            Assert.That(Mathf.Abs((contact.y - beforeContact.y) / sample), Is.LessThan(.02f));
-            Assert.That(Mathf.Abs((afterToeOff.y - toeOff.y) / sample), Is.LessThan(.02f));
-        }
-
-        [TestCase(.50f)]
-        [TestCase(.73f)]
-        public void RecoveryChangesDirectionWithoutVelocitySnaps(float phase)
-        {
-            const float sample = .0001f;
-            Vector2 before = OrpheusRunMotion.Evaluate(phase - sample).nearLeg.end;
-            Vector2 at = OrpheusRunMotion.Evaluate(phase).nearLeg.end;
-            Vector2 after = OrpheusRunMotion.Evaluate(phase + sample).nearLeg.end;
-            Assert.That(Vector2.Distance((at - before) / sample, (after - at) / sample), Is.LessThan(.08f),
-                "The heel fold and forward extension must share velocity at their boundary.");
-        }
-
-        [Test]
-        public void LegsExchangeIdenticalStridesWithAlternatingSingleSupport()
-        {
-            int nearPlants = 0, farPlants = 0, flights = 0;
-            for (int i = 0; i < 256; i++)
+            const int frames = 4;
+            float distance = OrpheusSpriteAnimator.RunCycleDistance / frames;
+            // At the normal six-unit speed the four contact/passing keys run between
+            // seven and nine keys per second, instead of racing a high-knee 24fps rig.
+            Assert.That(6f * frames / OrpheusSpriteAnimator.RunCycleDistance, Is.InRange(7f, 9f));
+            for (int phase = 1; phase <= frames; phase++)
             {
-                float phase = i / 256f;
-                var pose = OrpheusRunMotion.Evaluate(phase);
-                var opposite = OrpheusRunMotion.Evaluate(phase + .5f);
-                Assert.That(pose.nearLeg.support && pose.farLeg.support, Is.False,
-                    "Running alternates single support with flight, rather than shuffling on both boots.");
-                Assert.That(Vector2.Distance(pose.nearLeg.end, opposite.farLeg.end), Is.LessThan(.00001f));
-                Assert.That(Vector2.Distance(pose.nearLeg.joint, opposite.farLeg.joint), Is.LessThan(.00001f));
-                if (pose.nearLeg.support) nearPlants++;
-                if (pose.farLeg.support) farPlants++;
-                if (!pose.nearLeg.support && !pose.farLeg.support) flights++;
+                _animator.Drive(Motion(distance, distance / 6f));
+                Assert.That(_animator.CurrentFrame, Is.EqualTo(phase % frames));
+                Assert.That(_body.sprite.name, Does.StartWith("NaturalRun_"));
             }
-            Assert.That(nearPlants, Is.EqualTo(farPlants));
-            Assert.That(nearPlants, Is.InRange(80, 95));
-            Assert.That(flights, Is.InRange(70, 90));
+            Assert.That(_animator.CurrentState, Is.EqualTo(OrpheusAnimationState.Run));
         }
 
         [Test]
-        public void RecoveryFoldsHeelThenDrivesFootForward()
+        public void EqualTravelKeepsTheSameFootPhaseAtDifferentFrameRatesAndSpeeds()
         {
-            var kick = OrpheusRunMotion.Evaluate(.50f);
-            var drive = OrpheusRunMotion.Evaluate(.73f);
-            Assert.That(kick.nearLeg.end.y, Is.GreaterThan(1f));
-            Assert.That(kick.nearLeg.end.x, Is.LessThan(-.5f));
-            Assert.That(drive.nearLeg.joint.x, Is.GreaterThan(.25f));
-            Assert.That(drive.nearLeg.end.x, Is.GreaterThan(.25f));
-        }
-
-        [Test]
-        public void ElbowsCounterTheIpsilateralLegAndDriveTheWristForward()
-        {
-            var contact = OrpheusRunMotion.Evaluate(0f);
-            var opposite = OrpheusRunMotion.Evaluate(.5f);
-            Assert.That(contact.nearLeg.end.x, Is.GreaterThan(.8f));
-            Assert.That(contact.nearArm.joint.x, Is.LessThan(-.30f));
-            Assert.That(contact.nearArm.joint.y, Is.LessThan(-.25f), "Back elbow stays below the shoulder instead of forming a horizontal wing.");
-            Assert.That(contact.farArm.joint.x, Is.GreaterThan(.30f));
-            Assert.That(opposite.nearArm.joint.x, Is.GreaterThan(.30f));
-            Assert.That(opposite.nearArm.end.x - contact.nearArm.end.x, Is.GreaterThan(.70f));
-            Assert.That(opposite.nearArm.end.y - contact.nearArm.end.y, Is.GreaterThan(.65f));
-        }
-
-        [Test]
-        public void ElbowsStayAtRightAnglesThroughoutThePump()
-        {
-            for (int i = 0; i < 256; i++)
+            int[] expected = new int[12];
+            for (int i = 0; i < expected.Length; i++)
             {
-                var p = OrpheusRunMotion.Evaluate(i / 256f);
-                foreach (var arm in new[] { p.nearArm, p.farArm })
-                {
-                    Vector2 upper = (arm.joint - arm.root).normalized;
-                    Vector2 lower = (arm.end - arm.joint).normalized;
-                    Assert.That(Vector2.Dot(upper, lower), Is.EqualTo(0f).Within(.00001f));
-                    Assert.That(arm.joint.y, Is.LessThan(-.25f));
-                }
+                _animator.Drive(Motion(.21f, .035f)); expected[i] = _animator.CurrentFrame;
+            }
+            _animator.ResetMotion();
+            for (int i = 0; i < expected.Length; i++)
+            {
+                _animator.Drive(Motion(.21f, .02333333f));
+                Assert.That(_animator.CurrentFrame, Is.EqualTo(expected[i]));
             }
         }
 
         [Test]
-        public void EveryPosePreservesBothBonesOfEveryLimb()
+        public void AdvanceWithoutGroundTravelCannotCycleTheFeetAndReleaseSettlesToIdle()
         {
-            for (int i = 0; i < 256; i++)
-            {
-                var p = OrpheusRunMotion.Evaluate(i / 256f, 1.08f, 1.02f, .52f, .48f);
-                foreach (var leg in new[] { p.nearLeg, p.farLeg })
-                {
-                    Assert.That(Vector2.Distance(leg.root, leg.joint), Is.EqualTo(1.08f).Within(.00001f));
-                    Assert.That(Vector2.Distance(leg.joint, leg.end), Is.EqualTo(1.02f).Within(.00001f));
-                }
-                foreach (var arm in new[] { p.nearArm, p.farArm })
-                {
-                    Assert.That(Vector2.Distance(arm.root, arm.joint), Is.EqualTo(.52f).Within(.00001f));
-                    Assert.That(Vector2.Distance(arm.joint, arm.end), Is.EqualTo(.48f).Within(.00001f));
-                }
-            }
+            _animator.Drive(Motion(.6f, .1f)); _animator.Drive(Motion(.6f, .1f));
+            int frame = _animator.CurrentFrame; Sprite paint = _body.sprite;
+            _animator.Advance(.8f);
+            Assert.That(_animator.CurrentFrame, Is.EqualTo(frame));
+            Assert.That(_body.sprite, Is.SameAs(paint));
+            _animator.Drive(Motion(0f, .016f));
+            Assert.That(_animator.CurrentState, Is.EqualTo(OrpheusAnimationState.Stop));
+            Assert.That(_body.sprite.texture.name, Is.EqualTo("IdleTransitions"));
+            _animator.Drive(Motion(0f, .1f));
+            Assert.That(_animator.CurrentState, Is.EqualTo(OrpheusAnimationState.Idle));
+            Assert.That(_body.sprite.texture.name, Is.EqualTo("IdleTransitions"));
         }
 
         [Test]
-        public void CanonicalUprightPelvisHeightSurvivesLongContactReach()
+        public void BossBillboardScaleCompensatesTravelWithoutStretchingThePaint()
         {
-            // East source: hip (670,675), knee (757,979), ankle (808,1218), ppu 310.
-            float upper = new Vector2(87f, 304f).magnitude / 310f;
-            float lower = new Vector2(51f, 239f).magnitude / 310f;
-            Vector2 fitted = OrpheusRunMotion.FitLegLengths(upper, lower, 543f / 310f);
-            var contact = OrpheusRunMotion.Evaluate(0f, fitted.x, fitted.y);
-            Assert.That(contact.hipHeight, Is.EqualTo(1.691613f).Within(.00001f),
-                "The contact pelvis may settle .06 units from the upright source, not drop into a crouch.");
-            Assert.That(fitted.x / fitted.y, Is.EqualTo(upper / lower).Within(.00001f));
-            for (int i = 0; i < 256; i++)
-            {
-                var pose = OrpheusRunMotion.Evaluate(i / 256f, fitted.x, fitted.y);
-                Assert.That(Vector2.Distance(pose.nearLeg.root, pose.nearLeg.joint), Is.EqualTo(fitted.x).Within(.00001f));
-                Assert.That(Vector2.Distance(pose.nearLeg.joint, pose.nearLeg.end), Is.EqualTo(fitted.y).Within(.00001f));
-            }
+            _animator.Drive(Motion(.6f, .1f)); _animator.Drive(Motion(.6f, .1f));
+            int normalPhase = _animator.CurrentFrame;
+            _animator.ResetMotion(); _body.transform.localScale = Vector3.one * .7f;
+            _animator.Drive(Motion(.42f, .07f)); _animator.Drive(Motion(.42f, .07f));
+            Assert.That(_animator.CurrentFrame, Is.EqualTo(normalPhase));
+            Assert.That(_body.transform.localScale, Is.EqualTo(Vector3.one * .7f));
+        }
+
+        [TestCase(true)] [TestCase(false)]
+        public void FastStartTurnAndStairsKeepTheSameCoherentRunPaint(bool ascending)
+        {
+            _animator.Drive(Motion(.6f, .1f));
+            Assert.That(_animator.CurrentState, Is.EqualTo(OrpheusAnimationState.Start));
+            Assert.That(_body.sprite.name, Does.StartWith("NaturalRun_"));
+            var turn = Motion(-.6f, .1f); _animator.Drive(turn);
+            Assert.That(_body.sprite.name, Does.StartWith("NaturalRun_"));
+            var stairs = Motion(-.6f, .1f); stairs.onStairs = true; stairs.ascending = ascending;
+            _animator.Drive(stairs);
+            Assert.That(_animator.CurrentState, Is.EqualTo(ascending ? OrpheusAnimationState.StairAscent : OrpheusAnimationState.StairDescent));
+            Assert.That(_body.sprite.name, Does.StartWith("NaturalRun_"));
         }
 
         [Test]
-        public void PaintedLegProportionsRemainReachableThroughoutRecovery()
+        public void DashAndIdleReturnToTheirOwnAuthoredSources()
         {
-            foreach (float length in new[] { 1.6f, 1.8f, 2.1f, 2.4f })
-                for (int i = 0; i < 256; i++)
-                {
-                    var p = OrpheusRunMotion.Evaluate(i / 256f, length * .46f, length * .54f);
-                    Assert.That(Vector2.Distance(p.nearLeg.root, p.nearLeg.joint), Is.EqualTo(length * .46f).Within(.00001f));
-                    Assert.That(Vector2.Distance(p.nearLeg.joint, p.nearLeg.end), Is.EqualTo(length * .54f).Within(.00001f));
-                }
+            _animator.Drive(Motion(.6f, .1f));
+            var dash = Motion(.6f, .1f); dash.dashing = true;
+            _animator.Drive(dash);
+            Assert.That(_animator.CurrentState, Is.EqualTo(OrpheusAnimationState.DashTravel));
+            Assert.That(_body.sprite.texture.name, Is.EqualTo("RunCycle"));
+            _animator.ResetMotion();
+            Assert.That(_body.sprite.texture.name, Is.EqualTo("IdleTransitions"));
         }
 
         [Test]
-        public void AsymmetricNorthRigNeverFoldsInsideItsMinimumReach()
+        public void PauseFreezesPoseAndGroundPhase()
         {
-            // Actual upright North painting after fitting. Its .199-unit minimum ankle
-            // reach is much larger than the .06-unit minimum of the default skeleton.
-            const float upper = .9240033f, lower = .7250422f;
-            for (int i = 0; i < 4096; i++)
-            {
-                var pose = OrpheusRunMotion.Evaluate(i / 4096f, upper, lower);
-                foreach (var leg in new[] { pose.nearLeg, pose.farLeg })
-                {
-                    Assert.That(Vector2.Distance(leg.root, leg.end), Is.GreaterThan(Mathf.Abs(upper - lower)));
-                    Assert.That(Vector2.Distance(leg.root, leg.joint), Is.EqualTo(upper).Within(.00001f));
-                    Assert.That(Vector2.Distance(leg.joint, leg.end), Is.EqualTo(lower).Within(.00001f));
-                }
-            }
+            _animator.Drive(Motion(.6f, .1f));
+            Sprite paint = _body.sprite; int frame = _animator.CurrentFrame;
+            var paused = Motion(.6f, .1f); paused.paused = true;
+            _animator.Drive(paused); _animator.Advance(.5f, true);
+            Assert.That(_animator.CurrentFrame, Is.EqualTo(frame));
+            Assert.That(_body.sprite, Is.SameAs(paint));
         }
 
-        [Test]
-        public void CycleClosesWithoutPosePop()
-        {
-            var a = OrpheusRunMotion.Evaluate(0f);
-            var b = OrpheusRunMotion.Evaluate(1f);
-            var approaching = OrpheusRunMotion.Evaluate(.99999f);
-            Assert.That(Vector2.Distance(a.nearLeg.end, b.nearLeg.end), Is.LessThan(.00001f));
-            Assert.That(Vector2.Distance(a.nearLeg.end, approaching.nearLeg.end), Is.LessThan(.001f));
-            Assert.That(Mathf.Abs(a.hipHeight - approaching.hipHeight), Is.LessThan(.001f));
-        }
+        private static OrpheusAnimationInput Motion(float distance, float dt) => new OrpheusAnimationInput
+        { groundDelta = UnderworldCamera2D.IsoRightXZ * distance, aimDirection = UnderworldCamera2D.IsoRightXZ * Mathf.Sign(distance),
+            deltaTime = dt, movementRequested = distance != 0f };
     }
 }

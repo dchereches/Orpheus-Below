@@ -70,15 +70,25 @@ namespace OrpheusBelow
 
             var boundary = new GameObject("NavigationBoundary_Solid_NoAccess").transform;
             boundary.SetParent(transform, false);
+            float signedArea = 0f;
+            for (int i = 0; i < definition.walkableBoundary.Length; i++)
+            {
+                Vector3 a = definition.ImageToGround(definition.walkableBoundary[i]);
+                Vector3 b = definition.ImageToGround(definition.walkableBoundary[(i + 1) % definition.walkableBoundary.Length]);
+                signedArea += a.x * b.z - b.x * a.z;
+            }
             for (int i = 0; i < definition.walkableBoundary.Length; i++)
             {
                 Vector3 a = definition.ImageToGround(definition.walkableBoundary[i]);
                 Vector3 b = definition.ImageToGround(definition.walkableBoundary[(i + 1) % definition.walkableBoundary.Length]);
                 var wall = new GameObject("Boundary_" + i.ToString("D2"));
                 wall.transform.SetParent(boundary, false);
-                wall.transform.localPosition = (a + b) * .5f + Vector3.up * 2.5f;
+                Vector3 edge = (b - a).normalized;
+                Vector3 inward = new Vector3(-edge.z, 0f, edge.x) * Mathf.Sign(signedArea);
+                // Its inner face, rather than its centre, follows the traced ground edge.
+                wall.transform.localPosition = (a + b) * .5f - inward * .15f + Vector3.up * 2.5f;
                 wall.transform.localRotation = Quaternion.LookRotation(b - a);
-                wall.AddComponent<BoxCollider>().size = new Vector3(.3f, 5f, (b - a).magnitude + .2f);
+                wall.AddComponent<BoxCollider>().size = new Vector3(.3f, 5f, (b - a).magnitude);
                 wall.AddComponent<IsoObstacle>();
             }
 
@@ -90,7 +100,9 @@ namespace OrpheusBelow
                 go.transform.SetParent(coverRoot, false);
                 var collider = go.AddComponent<MeshCollider>();
                 collider.sharedMesh = Extrude(obstacle.footprint, obstacle.height);
-                collider.convex = true;
+                // Static concave cover must retain its traced notches. A convex hull fills
+                // passages which the mathematical floor correctly leaves open.
+                collider.convex = false;
                 go.AddComponent<IsoObstacle>();
                 if (obstacle.silhouette == null || obstacle.silhouette.Length < 3) continue;
                 float front = 0f;

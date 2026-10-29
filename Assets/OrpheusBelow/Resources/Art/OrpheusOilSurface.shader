@@ -10,7 +10,6 @@ Shader "OrpheusBelow/OrpheusOilSurface"
         [PerRendererData] _RimDirection ("Screen-space light direction", Vector) = (0.707,0.707,0,0)
         [PerRendererData] _RimColor ("Authored rim colour", Color) = (1,0.62,0.28,1)
         [PerRendererData] _RimIntensity ("Authored rim intensity", Range(0,2)) = 1
-        [PerRendererData] _RunSoftness ("Run paint softness", Range(0,1)) = 0
         _PaintStrength ("Broad oil strength", Range(0,1)) = 0.88
     }
     SubShader
@@ -33,7 +32,6 @@ Shader "OrpheusBelow/OrpheusOilSurface"
             float4 _RimColor;
             float _RimIntensity;
             float _PaintStrength;
-            float _RunSoftness;
 
             float2 FrameUV(float2 uv)
             {
@@ -51,40 +49,11 @@ Shader "OrpheusBelow/OrpheusOilSurface"
                 weight += contribution;
             }
 
-            void SoftTap(float2 uv, float spatialWeight, inout float3 sum, inout float weight)
-            {
-                float4 tap = tex2D(_MainTex, FrameUV(uv));
-                // Alpha-weighted colour prevents the transparent atlas background from
-                // contaminating the face, cape tips and moving boots with a brown fringe.
-                float contribution = spatialWeight * tap.a;
-                sum += tap.rgb * contribution;
-                weight += contribution;
-            }
-
             fixed4 frag(v2f i) : SV_Target
             {
                 float2 uv = i.texcoord;
                 float4 source = tex2D(_MainTex, uv);
                 clip(source.a - 0.1);
-                float run = saturate(_RunSoftness);
-                if (run > 0.001)
-                {
-                    // A connected brush footprint brings the individually cropped
-                    // running paint down to the idle sheet's softer visible detail scale.
-                    // UVs and silhouette coverage stay fixed throughout the gait.
-                    float2 radius = abs(_MainTex_TexelSize.xy) * 2.05;
-                    float3 softSum = source.rgb * source.a * 2.0;
-                    float softWeight = source.a * 2.0;
-                    SoftTap(uv + float2(radius.x, 0), 2.0, softSum, softWeight);
-                    SoftTap(uv - float2(radius.x, 0), 2.0, softSum, softWeight);
-                    SoftTap(uv + float2(0, radius.y), 2.0, softSum, softWeight);
-                    SoftTap(uv - float2(0, radius.y), 2.0, softSum, softWeight);
-                    SoftTap(uv + radius, 1.0, softSum, softWeight);
-                    SoftTap(uv - radius, 1.0, softSum, softWeight);
-                    SoftTap(uv + float2(radius.x, -radius.y), 1.0, softSum, softWeight);
-                    SoftTap(uv + float2(-radius.x, radius.y), 1.0, softSum, softWeight);
-                    source.rgb = lerp(source.rgb, softSum / max(softWeight, 0.0001), run);
-                }
                 float2 local = saturate((uv - _FrameRect.xy) / max(_FrameRect.zw, float2(0.000001, 0.000001)));
                 float3 sum = source.rgb * 2.2;
                 float weight = 2.2;
@@ -106,15 +75,8 @@ Shader "OrpheusBelow/OrpheusOilSurface"
                 float3 paint = (sum / weight) * (1.0 + bristle);
                 float3 rgb = lerp(source.rgb, paint, finish);
 
-                // Slightly quieter highlights/colour and gentler painted edge coverage,
-                // matching the faded idle finish while keeping opaque cloth at 98% alpha.
-                float luminance = dot(rgb, float3(0.2126, 0.7152, 0.0722));
-                float3 faded = (lerp(rgb, luminance.xxx, 0.04) - 0.3) * 0.96 + 0.3;
-                rgb = lerp(rgb, faded, run);
-                float alpha = lerp(source.a, pow(source.a, 1.18) * 0.98, run);
-
                 // Rim highlights disabled per user direction (eliminates purple/blue outlines)
-                return float4(rgb * i.color.rgb, alpha * i.color.a);
+                return float4(rgb * i.color.rgb, source.a * i.color.a);
             }
             ENDCG
         }

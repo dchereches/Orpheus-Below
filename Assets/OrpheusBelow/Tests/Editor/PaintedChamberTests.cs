@@ -160,26 +160,18 @@ namespace OrpheusBelow.Tests
                 var d = Resources.Load<PaintedChamberDefinition>("ChamberLayouts/Chamber_" + index.ToString("D2"));
                 Assert.That(d.IsWalkable(d.ImageToGround(d.entrance), .55f), Is.True, "Entrance " + index);
                 Assert.That(d.IsWalkable(d.ImageToGround(d.exit), .55f), Is.True, "Exit " + index);
-                const int width = 96, height = 64;
-                var open = new bool[width * height];
-                for (int y = 0; y < height; y++) for (int x = 0; x < width; x++)
-                    open[y * width + x] = d.IsWalkable(d.ImageToGround(new Vector2(x * 16 + 8, y * 16 + 8)), .5f);
-                int start = Mathf.FloorToInt(d.entrance.y / 16) * width + Mathf.FloorToInt(d.entrance.x / 16);
-                int end = Mathf.FloorToInt(d.exit.y / 16) * width + Mathf.FloorToInt(d.exit.x / 16);
-                var queue = new Queue<int>(); var visited = new HashSet<int>();
-                queue.Enqueue(start); visited.Add(start);
-                while (queue.Count > 0)
+                // Exercise the production route at the .38 player radius plus .04 margin.
+                // Independent native verification reopens all eight saved scenes and sweeps
+                // the actual controller; a coarse point-only test lattice cannot prove a wall.
+                var routeObject = new GameObject("EntranceExitRouteFixture");
+                var routeMap = routeObject.AddComponent<PaintedChamberMap>();
+                routeMap.definition = d;
+                try
                 {
-                    int at = queue.Dequeue();
-                    foreach (var step in new[] { new Vector2Int(1, 0), new Vector2Int(-1, 0), new Vector2Int(0, 1), new Vector2Int(0, -1) })
-                    {
-                        int x = at % width + step.x, y = at / width + step.y;
-                        if (x < 0 || y < 0 || x >= width || y >= height) continue;
-                        int next = y * width + x;
-                        if (open[next] && visited.Add(next)) queue.Enqueue(next);
-                    }
+                    Assert.That(PaintedEnemyNavigation.CanReach(routeMap, routeMap.ToWorld(d.entrance),
+                        routeMap.ToWorld(d.exit), .42f), Is.True, "No swept-clear route through chamber " + index);
                 }
-                Assert.That(visited.Contains(end), Is.True, "No clear route through chamber " + index);
+                finally { Object.DestroyImmediate(routeObject); }
             }
         }
 

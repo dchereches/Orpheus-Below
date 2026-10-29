@@ -1,0 +1,530 @@
+{
+  "schemaVersion": 1,
+  "recordedDateLocal": "2026-10-29",
+  "timezone": "Europe/Bucharest",
+  "generationDateBasis": "Selected outputs were made during the2026-10-29 session; exact individual wall-clock generation times were not retained.",
+  "generator": "Built-in image_gen.imagegen only, transparent_background=true; no API/CLI fallback.",
+  "scope": "Nine selected native source PNGs in ManualSourceMapping.json. Selected means mapped for native review, not accepted gait or identity.",
+  "integrity": "All nine recorded SHA256 values were recomputed and matched both original built-in source outputs and ManualSourceMapping.json when this document was written. Sources copied byte-for-byte; no final-art resizing, alpha editing, tinting, filtering, matting, drawing, warping or compositing.",
+  "references": {
+    "originalIdlePath": "Assets/OrpheusBelow/Resources/Characters/Orpheus/BroadOil/IdleTransitions.png",
+    "originalIdleSha256": "89ae79f9c14afff748fa44ecae3ba01e34f5438a1abe12f4d9e69fbf2cf9e4f5",
+    "originalIdleGrid": "8x8 cells,192x128pixels each",
+    "poseGuideAvailability": "Guide identifiers are relative to Logs/NaturalRunV2 and may refer to ignored QA-only files; hashes identify actual inputs. Code-drawn guides and QA crops were never final sprite artwork.",
+    "inputOrder": "Exact image numbering is retained in each generationPrompt. Single PassB and sheet source inputs have different reference priorities."
+  },
+  "nativeUse": "ManualSourceMapping.json defines selected four-key cycles. Role labels describe intent, not proof of anatomical correctness. Standard Unity texture import can reduce display detail; source PNG bytes remain native.",
+  "globalLimitations": [
+    "EXACT original appearance in prompts expresses an instruction, not a verified outcome. Original identity, proportions, cloth silhouette, paint grain and opacity still differ.",
+    "Coat occlusion makes diagonal contact-leg anatomy uncertain; visible ankle coordinates establish screen positions, not full running mechanics.",
+    "Passing singles repaint upperbody and vary in aspect, scale and posture. Registration and native playback must establish continuity, low-jog cadence and acceptance."
+  ],
+  "assets": [
+    {
+      "file": "East.png",
+      "generationDateLocal": "2026-10-29",
+      "generatorOutputId": "exec-974b81de-424a-4d2d-a128-1bfb3a91c63b.png",
+      "sha256": "2ddfdd07979b6da97dda479844bedd8cb8a4b41c031c615e5894b1a9a31d6054",
+      "nativeSize": [
+        1536,
+        1024
+      ],
+      "alphaRange": [
+        0,
+        254
+      ],
+      "originalIdleReference": {
+        "path": "Assets/OrpheusBelow/Resources/Characters/Orpheus/BroadOil/IdleTransitions.png",
+        "cellZeroBased": [
+          0,
+          2
+        ],
+        "cellConvention": "[column,row],192x128pixels"
+      },
+      "poseGuide": {
+        "qaIdentifier": "East/qa-anatomical-pose-guide.png",
+        "sha256": "d49525c821445f40ff702ae4ed5f2ae4d8e5802ecaf143cab76da09ea5ec1389"
+      },
+      "selectedUse": [
+        {
+          "facing": "East",
+          "cycleFrame": 0,
+          "sourceCell": 0,
+          "intendedRole": "contactA"
+        },
+        {
+          "facing": "East",
+          "cycleFrame": 1,
+          "sourceCell": 2,
+          "intendedRole": "passingA"
+        },
+        {
+          "facing": "East",
+          "cycleFrame": 2,
+          "sourceCell": 4,
+          "intendedRole": "contactB"
+        },
+        {
+          "facing": "East",
+          "cycleFrame": 3,
+          "sourceCell": 6,
+          "intendedRole": "passingB"
+        }
+      ],
+      "generationPrompt": "Use case: stylized-concept.\nMake a production game sprite sheet by painting the original character from images 2 and 3 OVER THE EXACT EIGHT ANATOMICAL POSES IN IMAGE 1.\nIMAGE 1 = STRICT POSE AND OCCLUSION GUIDE ONLY. Four columns by two rows. Read row-major. Its ochre leg is NEAR the camera, its blue leg is FAR, so the ochre leg overlaps the blue leg. These are the TWO SAME ANATOMICAL LEGS throughout: their leading/trailing roles reverse at frame4. Follow the foot, ankle, knee positions of each guide frame precisely. Frame0 near contact forward/right. Frame4 far contact forward/right with near thigh in foreground going backward/left. Frame2 has near support behind hip, far foot passing forward. Frame6 has far support behind hip, near foot passing forward. It is essential to reproduce these distinct passing positions and reverse thigh occlusion. Do not average the poses or repeat one foreground-forward leg.\nIMAGE 2 = exact Orpheus identity and style authority, an original small quiet oil-painted game sprite. IMAGE 3 = the same character on alpha, a supplementary clothing view. Preserve this original identity: small low-detail face with small nose, shaggy dark brown hair, slim body, draped dark charcoal brown soft long coat ending at upper shins, ragged broad smoky brush edges, dark SLIM trousers and modest boots, rusty brown scarf at waist, softly painted white cuffs, small gold lyre strapped flat to back with top at shoulder. Do not give muscular or bulky legs, giant boots, crisp ornamental details or a prettified face.\nCreate exactly eight newly painted full body Orpheus sprites facing screen RIGHT in slightly overhead side view, one for each guide pose. Natural restrained jogging with five degree lean, low recovery, slender calves, knees always below hips. Quiet coherent torso with modest counter-swing arms opposite near leg, not high knees. Cloth drapes and gently trails back, not theatrical fan.\nKeep original muted grey-brown oil paint, broad subtle strokes, low-detail tiny original idle face/hair marks. No hard cartoon outline or sharp illustration. Eight consistent proportions/face/lyre/costume silhouettes. Same head size and pelvis height. Ground baseline consistent in all equal cells.\nRegular 4 by 2 grid, canvas 1536 by 1024, cells 384 by 512. Full bodies about 82% cell height with 5-8% safe padding. Empty space with GENUINE TRANSPARENT ALPHA ZERO. Absolutely no background, brown vignette, ground shadow, guide lines, labels, text, colored limb markers or skeleton in final art. Paint normal original dark trouser material on BOTH legs, with far leg slightly darker and near leg foreground overlap retaining anatomical leg identity. One actor per cell, no floating props, no clones, no extra instruments. Use the guide only for poses; it is not the final visual style.",
+      "generationReviewStatus": "candidate_for_root_visual_review",
+      "generationLimitations": [
+        "Fine character detail remains greater than tiny original idle; coat has repeated narrow streaks rather than original's broadest softened strokes.",
+        "Phase2 and6 have visibly opposite foreground passing overlap, strongest evidence of alternating legs.",
+        "Phase0 and4 share a similar silhouette by gait design; coat hides upper thigh junction, so near/far assignment there remains inferred, not anatomically proven.",
+        "Some recovery frames heel elevated more than reference guide; no high knee, but restrained-jog cadence requires in-engine review.",
+        "Subtle head height, baseline and scale variation across cells remains. Root to review candidate before other facings or integration."
+      ],
+      "additionalReference": {
+        "path": "Assets/OrpheusBelow/Resources/Characters/Orpheus/BroadOil/Walk.png",
+        "role": "Original East clothing crop; pose guide was primary."
+      }
+    },
+    {
+      "file": "SouthFour.png",
+      "generationDateLocal": "2026-10-29",
+      "generatorOutputId": "exec-974593d6-e274-47f8-b973-f398b64899a0.png",
+      "sha256": "5c1a28335cdd652ebadce188f52a1ff434dcd3d65b5a5746fe1273df1727c60a",
+      "nativeSize": [
+        1254,
+        1254
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "originalIdleReference": {
+        "path": "Assets/OrpheusBelow/Resources/Characters/Orpheus/BroadOil/IdleTransitions.png",
+        "cellZeroBased": [
+          0,
+          0
+        ],
+        "cellConvention": "[column,row],192x128pixels"
+      },
+      "poseGuide": {
+        "qaIdentifier": "South/qa-four-key-silhouette-guide.png",
+        "sha256": "7f75518f0874e63ad9a51a7ae39b562679d3757e7388c65d35f7cc9ee8dddb47"
+      },
+      "selectedUse": [
+        {
+          "facing": "South",
+          "cycleFrame": 0,
+          "sourceCell": 0,
+          "intendedRole": "contactA"
+        },
+        {
+          "facing": "South",
+          "cycleFrame": 1,
+          "sourceCell": 1,
+          "intendedRole": "passingA"
+        },
+        {
+          "facing": "South",
+          "cycleFrame": 2,
+          "sourceCell": 2,
+          "intendedRole": "contactB"
+        }
+      ],
+      "generationPrompt": "Use case: stylized-concept.\nMake four hand-painted Orpheus game animation KEY POSES in EXACT 2columns by2rows square1024x1024 transparent sprite sheet, reading0,1/top then2,3/bottom. All four face SOUTH, straight TOWARD CAMERA, with slight overhead camera of original.\nIMAGE1 is PRIMARY STRICT POSE guide, filled body silhouettes with anatomically colorcoded legs. IMAGE2 is the ORIGINAL IDLE character style/identity authority. Paint IMAGE2's exact character/clothing OVER EACH OF IMAGE1's exact four anatomical poses. Do not retain guide colors, labels or black shape style. Use original dark cloth material on both legs.\nThe guide OCHRE leg is wearer's RIGHT, viewer LEFT, same leg in every pose. BLUE is wearer's LEFT, viewer RIGHT. Keep attachment at correct hip throughout. Four authored key poses:\n0 TOP LEFT: wearerRIGHT/viewerLEFT foot reaches low forward and touches ground, its boot is LOWEST in image; wearerLEFT/viewerRIGHT leg is trailing, its boot higher/back. Modest opposite arms.\n1 TOP RIGHT: wearerRIGHT/viewerLEFT leg vertical supporting UNDER pelvis; wearerLEFT leg swings LOW past support, ankles very CLOSE, narrow silhouette. Low bent knee remains below pelvis. This is a true PASSING pose, different from full contact.\n2 BOTTOM LEFT: OPPOSITE contact. wearerLEFT/viewerRIGHT boot is LOWEST/front; wearerRIGHT/viewerLEFT boot HIGHER/back. Anatomically reverse forward and back legs compared with0. Opposite arm counter-swing.\n3 BOTTOM RIGHT: wearerLEFT/viewerRIGHT leg vertical support UNDER pelvis; wearerRIGHT leg passes LOW beside it. Both ankles CLOSE in narrow stance. Anatomically opposite passing to1. Not same foot leading across all four. Do not copy any earlier run sprite sheet; only guide+original idle.\nNatural restrained low jog, just5degree lean, knees WELL BELOW HIP, low heel recovery, slender natural trousers/boots, modest arm swings, quiet cape lag. No high-knee marching, football sprint, giant thigh or boot, lunges, flying cape or raised elbows.\nPreserve EXACT original idle: small softly painted face, shaggy curly brown hair, original head/body proportion; charcoal brown grey long coat with torn CALF LENGTH hem and broad muted soft oil brush marks, white loose cuffs, rust lining/scarf tails, dark SLIM trousers and boots, small gold lyre strapped flat on BACK with shoulder top peeking. Original quiet opaque painted masses and soft edges. Original coarse broad brush treatment, no crisp new illustration, fancy face, hair-strand detail, armor, ornaments or floating props. Same character in every pose, same size/head/pelvis anchor and common baseline with all full bodies safely padded inside equal512x512cells. Bodies about82%cellheight.\nActual transparent alpha0 surrounds bodies. NO background, brown matte, vignette, floor, shadows, text, numbers, colored leg markers, diagram, cell borders or grid lines. Only four fullbody original-style painted sprites.",
+      "generationReviewStatus": "candidate_partial_contact_alternation_passing3_incorrect_root_review",
+      "generationLimitations": [
+        "Passing3 is not opposite of1; do not call this a fully validated alternating4phase cycle.",
+        "Contacts0and2 do alternate actual visible front/support sides.",
+        "Native output1254x1254 differs from1024 request, requiring2x2 slicing627cells.",
+        "Root to judge native playback; no claim of final acceptance."
+      ],
+      "styleReview": "Broad coarse soft oil paint and dark muted brown-grey/rust/white costume closer to original than earlier8frame attempts. Original hair/cuffs/strap/lyre read, but face is friendlier and slightly younger, coat shorter, trousers broader, not exact original identity match. Native1254 can be imported at original low logical detail; no downsampling applied to source.",
+      "unusedCellNote": "Source cell3 is not selected; a separate PassB source replaces it. Its generation limitations are retained below."
+    },
+    {
+      "file": "SouthPassBFinal.png",
+      "generationDateLocal": "2026-10-29",
+      "generatorOutputId": "exec-eedac67b-1657-4c90-a2bd-a14966c1e292.png",
+      "sha256": "3d5c9c4edd093de4a5347f588b2b56bd434e691cb3f7afc6f666f9feebc83647",
+      "nativeSize": [
+        1254,
+        1254
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "originalIdleReference": {
+        "path": "Assets/OrpheusBelow/Resources/Characters/Orpheus/BroadOil/IdleTransitions.png",
+        "cellZeroBased": [
+          0,
+          0
+        ],
+        "cellConvention": "[column,row],192x128pixels",
+        "role": "Inherited style authority through SouthFour reference; original idle was not a direct input to this targeted edit."
+      },
+      "selectedUse": [
+        {
+          "facing": "South",
+          "cycleFrame": 3,
+          "sourceCell": 0,
+          "intendedRole": "passingB"
+        }
+      ],
+      "generationPrompt": "Use case: precise-object-edit.\nAsset type: one transparent SOUTH-facing Orpheus passing-B game sprite, matching the existing four-key cycle.\n\nEDIT TARGET = IMAGE 1, the exact passing-A cell cropped from SouthFour. IMAGE 2 is the full SouthFour sheet and is the ONLY style, identity, scale and body-proportion authority. IMAGE 3 is a rejected taller/slimmer character variant: use it ONLY for the required SCREEN-SIDE LOWER-LEG ROLES, never its head, body, face, costume, arms, proportions or rendering.\n\nPrimary request: make ONE minimal lower-leg edit to IMAGE 1. Preserve its entire head and upper body, and preserve its large-head/body ratio, broad shoulder and torso width, short original leg proportions, exact curly hair mass and small face, eye position, coat shape and brush marks, white cuffs, gold strapped lyre, brown crossing straps, rusty sash, hands and arm pose. The output must be recognizably the SAME painted sprite as image 1 from head through coat/upper thighs. No taller/slimmer body or smaller head. Do not improve or beautify the face.\n\nChange ONLY the lower-leg gait to the opposite support:\n- The boot on the SCREEN RIGHT is now LOWEST, grounded, on a nearly VERTICAL supporting leg below the screen-right hip.\n- The boot on the SCREEN LEFT is RAISED a little and recovering/passing close beside the support leg, knee bent LOW below the hips.\n- Thus screen-left boot is visibly HIGHER than screen-right boot, reversing image 1's support side.\n- Keep the two boots close in a narrow natural passing stance. Both knees stay well below hips, no high-knee march, no large heel kick. Keep original modest boot size and trouser bulk.\nRetain the source coat hem and upper-thigh overlap; edit just the leg shapes needed to achieve these opposite roles. Keep original arms and hands, no counter-swing redesign.\n\nComposition/framing: ONE single full-body sprite, straight toward camera / SOUTH with the SAME slight overhead angle and same framing as IMAGE 1. Square canvas, same head location and relative size, same ground baseline, same actor height relative to canvas. Do not make a sheet or multiple figures. All hair, cloak, fingers, lyre and soles remain inside transparent padding.\n\nStyle/material invariants: preserve image 1's existing muted broad coarse oil paint, opaque dark grey-brown/rust garment masses, softly painted edges and identical local contrast. No new fine hair strands, sharp face rendering, brighter highlights, transparency effects or filters.\n\nBackground: genuine transparent alpha-zero empty space. No ground, shadow, brown backdrop, matte, vignette, text, labels, grid, guide colors, skeleton or extra props. Final check: image-1 upper-body identity and proportions; screen-RIGHT boot LOWEST/support; screen-LEFT boot HIGHER/low recovery.\n",
+      "generationReviewStatus": "root_provisionally_accepted_targeted_edit_for_native_rebake",
+      "generationLimitations": [
+        "Upper body, head/body ratio and shoulder width now match Four much more closely; generated edit still repaints face and cloth details slightly.",
+        "Screen-right support and screen-left low recovery are clearly visible. Knees remain below hips.",
+        "Corrected source requires fresh native playback review before final acceptance."
+      ],
+      "styleReview": "Muted dark charcoal/rust oil-painted clothes, white cuffs, shaggy curly hair and gold back lyre retained approximately. Omission ofFourtarget and use of original idle changed face, body proportion and markmaking: taller/slimmer long-legged figure, face more detailed and less likeFourbase, coat longer, hands/arms almost straight rather than modest running counter-swing. Upperbody not exactFouridentity; no pixel preservation promised.",
+      "editTarget": {
+        "selectedFile": "SouthFour.png",
+        "sourceCell": 1,
+        "qaIdentifier": "SouthFix/reference-passA-four.png",
+        "sha256": "fc9df1de30b1ea89999c6f1cb50d6d2e6db107114a6902ec68e75a3a81d15b05",
+        "role": "Primary appearance, head/body proportion and upper-body edit target."
+      },
+      "additionalReferences": [
+        {
+          "selectedFile": "SouthFour.png",
+          "role": "Full-cycle identity, proportions and paint authority."
+        },
+        {
+          "qaIdentifier": "SouthFix/rejected-previous-runtime-SouthPassBFinal.png",
+          "sha256": "f8180e710bc6aeaacabe698322f27423ce6520dda474ca7e553dc874d885668d",
+          "role": "Lower-leg screen-side support roles only; its head/upper-body proportions were explicitly rejected."
+        }
+      ],
+      "supersededGeneratorOutputId": "exec-a48b5e2d-4e42-471f-a731-6e4297ec7618.png",
+      "observedAnkleLandmarksNativePixels": {
+        "screenRightSupport": [
+          695,
+          1070
+        ],
+        "screenLeftRecovery": [
+          595,
+          945
+        ]
+      }
+    },
+    {
+      "file": "SouthEastFour.png",
+      "generationDateLocal": "2026-10-29",
+      "generatorOutputId": "exec-061578ba-10bb-402b-bd08-0a95d222b450.png",
+      "sha256": "93ac779bf0597954b4229bc0a1ca55a0ed71a3728557a1ec8b50df3f1de7a1a8",
+      "nativeSize": [
+        1254,
+        1254
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "originalIdleReference": {
+        "path": "Assets/OrpheusBelow/Resources/Characters/Orpheus/BroadOil/IdleTransitions.png",
+        "cellZeroBased": [
+          0,
+          1
+        ],
+        "cellConvention": "[column,row],192x128pixels"
+      },
+      "poseGuide": {
+        "qaIdentifier": "SouthEast/qa-four-key-silhouette-guide.png",
+        "sha256": "f8c8b09903336bf6c0db612f789cf012bcf1535a0117b4fec0fb365c7727f1ab"
+      },
+      "selectedUse": [
+        {
+          "facing": "SouthEast",
+          "cycleFrame": 0,
+          "sourceCell": 0,
+          "intendedRole": "contactA"
+        },
+        {
+          "facing": "SouthEast",
+          "cycleFrame": 1,
+          "sourceCell": 1,
+          "intendedRole": "passingA"
+        },
+        {
+          "facing": "SouthEast",
+          "cycleFrame": 2,
+          "sourceCell": 2,
+          "intendedRole": "contactB"
+        }
+      ],
+      "generationPrompt": "Use case: stylized-concept.\nFour painted Orpheus game animation KEYPOSES, exactly2columns x2rows square1024x1024, row-major0,1/top then2,3/bottom. SAME original character faces SOUTHEAST diagonally BOTTOM RIGHT45degrees toward camera, slight overhead camera, every cell.\nIMAGE1 PRIMARY is filled anatomical FOURPOSE GUIDE ONLY. Image2 is EXACT ORIGINAL small IDLE character identity/style authority. Paint that exact Orpheus wearing his precise original clothes over each guide pose. OCHRE guide leg means wearer's RIGHT/cameraNEAR FOREGROUND; BLUE means wearer's LEFT/cameraFAR behind it. Keep anatomical hip attachment and reverse the leg that leads in lower row. Paint final both legs in original dark trousers, never colored.\n0 TOP LEFT: NEAR/RIGHT leg reaches low to front LOWER RIGHT contact. FAR/LEFT boot trails back UPPERLEFT. Foreground thigh goes down-right. Modest opposite arms.\n1 TOP RIGHT: NEAR/RIGHT support leg almost VERTICAL under pelvis, FAR/LEFT leg passes low with boot CLOSE beside support ankle, narrow pose, low knee below hip. Low heel recovery, different from split contact0.\n2 BOTTOM LEFT: OPPOSITE CONTACT. NEAR/RIGHT foreground leg goes BACK UPPERLEFT; FAR/LEFT leg goes FORWARD LOWERRIGHT contact. Foreground thigh goes down-LEFT toward BACK boot, farther thigh goes down-RIGHT toward FRONT boot BEHIND foreground thigh. Reverse anatomical leading leg from0; not same near leg forward with changed arms.\n3 BOTTOM RIGHT: FAR/LEFT VERTICAL support leg under pelvis; NEAR/RIGHT low passing leg bends just in FRONT across far support, ankle CLOSE beside support. Opposite support/pass from1. Follow guide occlusion, do not average all4 into same lead leg. These are four clearly authored distinct alternating run keys.\nNatural restrained low jog,5degree lean, modest arms and quiet cloth lag. Knees ALWAYS BELOW HIP, low recovery heels, slim naturally shaped legs/boots. No football/highknee march, bulky thigh, giant boots, full lunge, flying cape or hard sprint.\nPreserve exact ORIGINAL appearance from image2: quiet small soft face, shaggy curly brown hair, original head/body proportions, charcoal muted brown-grey soft long coat with tattered CALF LENGTH hem, broad subdued coarse oil brush masses and softly painted edge; white cuffs, rust-brown lining and tails, dark slim trousers and boots, little gold lyre STRAPPED FLAT ON BACK top at shoulder. Original opaque painted body masses; no new details/ornaments/armor/floating props. Broad oil paint scale matches original tiny idle, no hard line/crisp polished illustration or detailed hair strands.\nIdentical scale, head size and pelvis anchor, common sole baseline, full bodies occupy82%equal512x512cellheight with all body/lyre/soles inside safe margins. Actual TRANSPARENT alpha0 empty space surrounds each sprite. No brown backdrop/matte, vignette, shadow, ground, labels, numbers, guide colors, diagram or grid borders. Only four normal original-style painted character sprites.",
+      "generationReviewStatus": "candidate_failed_or_ambiguous_contact_anatomy_root_review",
+      "generationLimitations": [
+        "0and2 foreground-leading leg appears the same; genuine opposite anatomical contact not established.",
+        "1and3 have narrow passing silhouettes but opposite support identity remains unproven.",
+        "Native output1254x1254 differs from requested1024,2x2slice627cells.",
+        "Root requested provisionally reviewable candidate; saved underFour name, no runtime wiring or acceptance claim."
+      ],
+      "styleReview": "Broad muted coarse oil paint, curls, white cuffs, charcoal/rust coat and strapped gold lyre retained approximately. Face/costume not exact: lyre bulk and coil detail larger, coat shorter/spreadier, trousers broad. Native source intended for low-detail import but not itself modified.",
+      "unusedCellNote": "Source cell3 is not selected; a separate PassB source replaces it. Its generation limitations are retained below."
+    },
+    {
+      "file": "SouthEastPassB.png",
+      "generationDateLocal": "2026-10-29",
+      "generatorOutputId": "exec-2c75ba8e-b803-4fc8-8208-b5e4d3ae02d2.png",
+      "sha256": "6f9d422b13fef8804ffb20e2d4a4ee67822d2ad7a5eaafc7381f8ff7e97d519d",
+      "nativeSize": [
+        1097,
+        1434
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "originalIdleReference": {
+        "path": "Assets/OrpheusBelow/Resources/Characters/Orpheus/BroadOil/IdleTransitions.png",
+        "cellZeroBased": [
+          0,
+          1
+        ],
+        "cellConvention": "[column,row],192x128pixels"
+      },
+      "poseGuide": {
+        "qaIdentifier": "SouthEast/qa-single-passB-guide.png",
+        "sha256": "a53ad5c3ca4390955ea942030e2fb5d4ee57bcd80e6ca0d508658c20e4aa824f"
+      },
+      "selectedUse": [
+        {
+          "facing": "SouthEast",
+          "cycleFrame": 3,
+          "sourceCell": 0,
+          "intendedRole": "passingB"
+        }
+      ],
+      "generationPrompt": "Use case: precise-object-edit.\nONE SINGLE SOUTHEAST fullbody game sprite, transparent background. Do NOT make a multipose sheet.\nIMAGE1 is PRIMARY SINGLE ANATOMICAL POSE guide. Paint the character in IMAGE2 over this pose, keeping his exact upperbody identity/costume and muted soft oil brush style. IMAGE2 is the current passingA sprite; only its LOWERBODY must switch anatomical support to passingB, and arms can counter-swing slightly. Keep identical face, shaggy curls, charcoal/rust coat, white cuffs, strapped gold lyre, proportions/materials/opacity. IMAGE3 original tiny idle is supplementary identity/style only.\nGuide BLUE FAR leg is the new SUPPORT LEG, nearly VERTICAL under pelvis, boot LOWEST on ground. Guide OCHRE NEAR leg is the new LOW PASSING/RECOVERY leg in FRONT of far support: near hip attaches at foreground left of pelvis, near thigh crosses diagonally downRIGHT in FOREGROUND OVER far thigh, knee below hip, boot raised just above and screenRIGHT of support ankle. Follow exact guide lowerbody anatomy: far support goes straight down behind; near passing goes diagonally across in front. DO NOT repeat the reference2 foreground supporting leg. Both calves low, ankles close, a narrow passing stance, no split contact.\nThe screenRIGHT recovery boot must be HIGHER than the nearly central support boot and belong to the NEAR foreground leg. Trace the foreground near leg continuously from near hip across FRONT of far supporting leg, to the raised lower-right passing boot. The support leg belongs to FAR hip and is partially hidden behind near passing thigh/knee. Far support straight, near passing bent. This opposite near/far occlusion is essential.\nThe exact same original character from image2, facing BOTTOMRIGHT45degrees toward camera with same slight overhead angle. No body turn. Small5degree forward lean, knees well BELOWHIP, LOW heel recovery, modest arm swing, soft longcoat quiet lag. No high-knee, no football sprint, no bulky limbs/boots, no lunges. Keep soft broad muted greybrown oil marks and solid painted body masses with same white cuffs/rust tail, no new crisp illustration, ornament or floating prop. All hair, hands, coat, lyre, boots fully contained with generous alpha padding.\nPaint final both legs in original dark cloth; far leg a little shadowed behind near leg. Remove guide colors/labels/diagram. NO backdrop, brown matte, floor, shadow, text, grid, duplicate sprite or floating object. GENUINE transparent alpha0 background. One complete fullbody sprite only, FAR support under hip + NEAR low passing foreground.",
+      "generationReviewStatus": "provisional_opposite_passing_candidate_root_native_playback_review",
+      "generationLimitations": [
+        "Provisional candidate; root native playback final judge.",
+        "Hip junction partly hidden by coat, so near/far identity not proven as rigorously as uncovered skeleton.",
+        "Soles differ only~25px; toe shape/angle can influence contact impression.",
+        "Needs native geometric registration/scale if selected. No such processing applied here.",
+        "Onecall budget respected; no retry."
+      ],
+      "styleReview": "Same approximate phase1 character, shaggy curls, white cuffs, charcoal/rust coat, gold back lyre; face/costume repainted in greater detail and lyre larger. Fullbody aspect differs fromSquareFourcell. Upperbody exact pixels not preserved. No postgeneration adjustment.",
+      "additionalReference": {
+        "selectedFile": "SouthEastFour.png",
+        "cell": 1,
+        "role": "Cropped appearance/edit-target reference."
+      }
+    },
+    {
+      "file": "NorthFour.png",
+      "generationDateLocal": "2026-10-29",
+      "generatorOutputId": "exec-95a8be32-05e2-4168-bf1e-5786598f06a0.png",
+      "sha256": "d84b4e10767831e9ddd871b779bf17c0830e1cbb88634290ffb652e4162daead",
+      "nativeSize": [
+        1254,
+        1254
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "originalIdleReference": {
+        "path": "Assets/OrpheusBelow/Resources/Characters/Orpheus/BroadOil/IdleTransitions.png",
+        "cellZeroBased": [
+          0,
+          4
+        ],
+        "cellConvention": "[column,row],192x128pixels"
+      },
+      "poseGuide": {
+        "qaIdentifier": "NorthFour/qa-filled-four-pose-guide.png",
+        "sha256": "83618bd14620254ea770c09c5f7c6000e8cd08774fc32127d44372b493ade781"
+      },
+      "selectedUse": [
+        {
+          "facing": "North",
+          "cycleFrame": 0,
+          "sourceCell": 0,
+          "intendedRole": "contactA"
+        },
+        {
+          "facing": "North",
+          "cycleFrame": 1,
+          "sourceCell": 1,
+          "intendedRole": "passingA"
+        },
+        {
+          "facing": "North",
+          "cycleFrame": 2,
+          "sourceCell": 2,
+          "intendedRole": "contactB"
+        }
+      ],
+      "generationPrompt": "Game sprite sheet: FOUR clear authored natural jogging keyposes of the EXACT Orpheus in image2. Image1 is a filled anatomical pose reference only; image2 is the original idle sprite and SOLE style/identity authority. Create NEW art in image2's broad soft muted brown-grey smoky oil brushmarks. Retain its exact shaggy brown hair, small head/body proportions, long charcoal tattered coat to midcalves, white cuffs, rust-brown lining, slim dark trousers, normal modest boots, and small gold lyre strapped flat on BACK. Preserve opacity of original figure, opaque dark cloth with softly painted edges. Broad paint shapes, very little detail appropriate for character later displayed about100pixels tall. Do not sharpen or add haircurls, ornaments or costume detail.\nSquare1024x1024 sheet, regular TWO columns by TWO rows, FOUR full bodies row-major, one per512x512cell. Same scale, hipheight, headsize and groundbaseline throughout, 5-8percent padding, full boots/hair/lyre visible. GENUINE TRANSPARENT alpha0 around each figure. No backdrop, vignette, shadow, text, labels, gridlines, skeleton or coloredlegmarkers. Final legs are both original dark trousers.\nFacing NORTH directly away from camera, back of head and lyre facing camera, slight overhead view identical to original idle. Only5degree lean, modest counter-swing arms, natural short low jog; knees well below hips, no high-knee march or sprint. Follow4guideposes:\nTOPLEFT pose0: viewerLEFT leg extends down weightbearing, viewerRIGHT heel slightly recovered and higher/foreshortened.\nTOPRIGHT pose1: viewerLEFT leg remains vertical underhip support, viewerRIGHT boot passes low forward IN DEPTH, close toground. Less heel-up than pose0.\nBOTTOMLEFT pose2: OPPOSITE pose0, viewerRIGHT leg extends down weightbearing, viewerLEFT heel slightly recovered higher/foreshortened.\nBOTTOMRIGHT pose3: OPPOSITE pose1, viewerRIGHT leg verticalunderhip support, viewerLEFT boot passes low forward indepth closeground. This passing pair1/3 MUST visibly switch left/right supportfoot. Anatomicalleg attachments stay same, no crossing midline.\nDo not repeat same leadingleg in4poses. Coatmay obscurehips but bothboots stayreadable. Lyre must stay strapped flat toback. Match original idle look exactly.",
+      "generationReviewStatus": "four_pose_review_candidate_with_motion_failures",
+      "generationLimitations": [
+        "Poses0/2 visibly switch viewer-left versus viewer-right support.",
+        "Passing pair1/3 incorrectly repeats viewer-left support.",
+        "Coat obscures hip attachments; lowerboots/legs stillreadable.",
+        "Onlyone built-ingeneration for thisdirection; no additionalretry.",
+        "Actualoutput1254x1254, 2x2cell627x627 despite1024x1024 prompt. Finalart copiedbyteidentical withoutresizing.",
+        "Broadsoftidle-like markmaking improved substantiallyversus eightframesheets; final opacityoriginal-match stillneeds nativeplayback review.",
+        "Headbodyheight about540-570px in627cell; rendererimport256wouldgive body~110px, close originalgrain.",
+        "Nativeplayback acceptance belongs toroot."
+      ],
+      "unusedCellNote": "Source cell3 is not selected; a separate PassB source replaces it. Its generation limitations are retained below."
+    },
+    {
+      "file": "NorthPassB.png",
+      "generationDateLocal": "2026-10-29",
+      "generatorOutputId": "exec-b28a8453-c7b2-4586-b2b7-d4de9b32657a.png",
+      "sha256": "efd059a543fae113e4881a16b248f5dd4f8ee8b2c0f70303b472a5c3acfa4f00",
+      "nativeSize": [
+        1254,
+        1254
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "originalIdleReference": {
+        "path": "Assets/OrpheusBelow/Resources/Characters/Orpheus/BroadOil/IdleTransitions.png",
+        "cellZeroBased": [
+          0,
+          4
+        ],
+        "cellConvention": "[column,row],192x128pixels"
+      },
+      "poseGuide": {
+        "qaIdentifier": "NorthPassB/qa-single-filled-pose-guide.png",
+        "sha256": "59fa675c6d3232a78b7d797747b9a9de5ac02f8b349dba6e9caa1a8471ecb340"
+      },
+      "selectedUse": [
+        {
+          "facing": "North",
+          "cycleFrame": 3,
+          "sourceCell": 0,
+          "intendedRole": "passingB"
+        }
+      ],
+      "generationPrompt": "EDIT IMAGE1 only. It is a SINGLE full-body North-facing Orpheus painted game sprite on transparentalpha. Image2 is STRICT filledposeguide ONLY, not style; image3 originalidle supplementaryidentity.\nPreserve exact SAME upperbody, backview, headshaggyhair, originalbroadsoftoilmarks, coatcolor/length/rags, whitecuffs andbackstrappedgoldlyre fromimage1. KEEP character silhouette proportions, scale, framing, safe transparentpadding. Do not beautify/repaint detail. Only REPOSE TWO LEGS belowcoat and makeverysmallcounterarmswing.\nCURRENT image1 shows viewerLEFTsupport leg andviewerRIGHTraisedboot. CHANGE to the OPPOSITE: viewerRIGHT leg supports weight, extends nearlyverticallydown fromright hip withRIGHTboot planted belowpelvis. ViewerLEFT leg has gentle lowheelrecovery/pass, LEFTboot visiblyhigher/shorterindepth. It MUST be RIGHT boot on theground and LEFTboot higher. Follow image2 blue viewerRIGHT support andochre viewerLEFT recoveredleg; both finallegs painted original DARKTROUSERSandDARKBOOTS, NO guidecolors. No mirroring entirefigure: lyre stays exactsameside, only legroleschange.\nUse low naturaljog, no highknees/march, kneeswellbelowhip. Low recoveredheel, nottoobuttocks, bothlegs normal/slender. Slightoverheadcamera directlyNORTHaway, facehidden, backlyrevisible. ONE ACTOR ONLY, ONE POSE ONLY, no sheets/repeatedfigures.\nTransparentbackground with genuinealpha0; no blackmatte/background/no groundshadow/no labels/no grid/no diagrammarks. Preserve originalopaquecloth andpaintededges. Fullbodyunclipped, squarecanvas.",
+      "generationReviewStatus": "single_opposite_pass_candidate_for_native_playback",
+      "generationLimitations": [
+        "Upperbody verysimilar but generatededit is not pixelidentical toinput upperbody.",
+        "Singleposeoutput has double spatialresolution versus Fourcell; runtime mustnormalize scale/groundanchor appropriately.",
+        "Recoveredfoot solevisible; lowjogcadence andkneelevel require nativeplayback judgment.",
+        "No extra retries; one built-incallthisdirection."
+      ],
+      "additionalReference": {
+        "selectedFile": "NorthFour.png",
+        "cell": 1,
+        "role": "Cropped appearance/edit-target reference."
+      }
+    },
+    {
+      "file": "NorthEastFour.png",
+      "generationDateLocal": "2026-10-29",
+      "generatorOutputId": "exec-0b527ae5-a9ad-4da6-ae53-a73a299b9ff9.png",
+      "sha256": "382752c8da92654e788d40f0ae37cb646edecd5cee440348b333c56c97231ec8",
+      "nativeSize": [
+        1254,
+        1254
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "originalIdleReference": {
+        "path": "Assets/OrpheusBelow/Resources/Characters/Orpheus/BroadOil/IdleTransitions.png",
+        "cellZeroBased": [
+          0,
+          3
+        ],
+        "cellConvention": "[column,row],192x128pixels"
+      },
+      "poseGuide": {
+        "qaIdentifier": "NorthEastFour/qa-filled-four-pose-guide.png",
+        "sha256": "2738eb658cb8fc35b763b6ffcb217cd07aa1cf429390f84034c07b1dea8e5e57"
+      },
+      "selectedUse": [
+        {
+          "facing": "NorthEast",
+          "cycleFrame": 0,
+          "sourceCell": 0,
+          "intendedRole": "contactA"
+        },
+        {
+          "facing": "NorthEast",
+          "cycleFrame": 1,
+          "sourceCell": 1,
+          "intendedRole": "passingA"
+        },
+        {
+          "facing": "NorthEast",
+          "cycleFrame": 2,
+          "sourceCell": 2,
+          "intendedRole": "contactB"
+        }
+      ],
+      "generationPrompt": "Game sprite sheet: FOUR clear authored natural jogging keyposes of EXACT Orpheus in image2. Image1 is the strict filled anatomical pose reference only; image2 original idle is SOLE style/identity authority. Paint a NEW sheet in exact image2 broad soft muted brown-grey smoky oil brushmarks, low detail appropriate when rendered100pixels tall. Shaggy brownhair (not tight fancycurls), original smallhead/body proportion, long charcoal tattered coat reaching midcalves, soft white cuffs, rustbrown lining, slim dark trousers, normal modest boots, small GOLD LYRE STRAPPED FLAT on BACK. Keep original opacity, broad dark paintedcloth masses and softly paintededges. No added costumedetail or crisp lines.\nSquare1024x1024, exactly TWO columns and TWO rows FOUR fullbodyfigures, chronological rowmajor. Equal512x512cells, matchedheadscale/hipheight/baseline, allbody andlyre safely5-8percent insidecell. GENUINE TRANSPARENT alpha0 empty space; no brownbackground/vignette/shadows/ground/grid/labels/text/coloredlegs/skeleton. Bothfinallegs paintednormaloriginaldarktrousers.\nFacing NORTHEAST exactly likeidle image2: BACKTHREEQUARTER towardupperright45degree, lyrevisibleonback, only narrowrightfaceedge, slightoverheadcamera. Do NOT drift toEast broadside. Gentle5degreelean, kneesbelowhips, restrainedshort lowjog, modestarms. The4guideposes MUST reverse actualanatomical leg roles:\nTOPLEFT pose0 NEAR RIGHTleg reacheslow towardUPPERRIGHT frontcontact, FAR LEFTleg trailsLOWERLEFT. NEARthighoverlapsfar.\nTOPRIGHT pose1 NEAR RIGHTleg standsverticalunderhip weightbearing at(251,462), FARLEFTboot passesLOWforward at(294,432) BEHINDnearsupportcalf. Narrowpassing ankles.\nBOTTOMLEFT pose2 OPPOSITEcontact: FARLEFTleg forwardcontactUPPERRIGHT at(333,452); NEARRIGHTleg goesBACKLOWERLEFTforeground at(165,461). NEARrearthigh visiblycrosses IN FRONT OF FARfrontthigh. Do not repeatTOPLEFTnearforwardleg. Guideochreleg goesback and blueleggoesfront.\nBOTTOMRIGHT pose3 OPPOSITEpassing: FARLEFTsupportleg underhip at(251,462), NEARRIGHTboot passesLOWforward at(294,432) IN FRONT OF farsupportleg. Guideochrepassingcalf crossesinfrontofblueverticalsupport. This foreground/background reversal distinguishespose3 frompose1.\nBoth legs attached tostablehips, no extralegs/deformation, no march/highknees/sprint. Coat can obscurehips but calvesandboot action clearlyreadable. Fourcoherentposes. Match originalidle EXACT quiet soft oilstyle.",
+      "generationReviewStatus": "four_pose_review_candidate_with_motion_failures",
+      "generationLimitations": [
+        "Contact0/2 have similar silhouettes; thighattachment undercoat prevents proving anatomicalleg reversal.",
+        "Passing1/3 does not clearly switch foreground/background support and likely repeats samelead.",
+        "Pose3 raisedboot has warmochre contamination, likely leakfromposeguide.",
+        "Onlyone built-ingeneration for thisdirection; no additionalretry.",
+        "Actualoutput1254x1254, 2x2cell627x627 despite1024x1024 prompt. Finalart copiedbyteidentical withoutresizing.",
+        "Broadsoftidle-like markmaking improved substantiallyversus eightframesheets; final opacityoriginal-match stillneeds nativeplayback review.",
+        "Headbodyheight about540-570px in627cell; rendererimport256wouldgive body~110px, close originalgrain.",
+        "Nativeplayback acceptance belongs toroot."
+      ],
+      "unusedCellNote": "Source cell3 is not selected; a separate PassB source replaces it. Its generation limitations are retained below."
+    },
+    {
+      "file": "NorthEastPassB.png",
+      "generationDateLocal": "2026-10-29",
+      "generatorOutputId": "exec-b6967341-25a0-4498-b2d0-dc18c4552c93.png",
+      "sha256": "3a29f8a8fdffb1894526649021207847384b15c2541a554f821e5f7ceec56030",
+      "nativeSize": [
+        1254,
+        1254
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "originalIdleReference": {
+        "path": "Assets/OrpheusBelow/Resources/Characters/Orpheus/BroadOil/IdleTransitions.png",
+        "cellZeroBased": [
+          0,
+          3
+        ],
+        "cellConvention": "[column,row],192x128pixels"
+      },
+      "poseGuide": {
+        "qaIdentifier": "NorthEastPassB/qa-single-filled-pose-guide.png",
+        "sha256": "00c7e510687f96cc20d4c1b3a32945e70d5b6068565c75148139623f0a343edb"
+      },
+      "selectedUse": [
+        {
+          "facing": "NorthEast",
+          "cycleFrame": 3,
+          "sourceCell": 0,
+          "intendedRole": "passingB"
+        }
+      ],
+      "generationPrompt": "EDIT IMAGE1 into a SINGLE opposite passing run pose of same Orpheus. Image1 is edit target and exactupperbody/style authority. Image2 strict FILLEDPOSEGUIDE ONLY; image3 original idle supplementaryidentity. Keep EXACT same backthreequarter NORTHEAST facingupperright45degreecamera, bodyproportions, shaggybrownhair, smallgoldlyrestrappedflatback, charcoal longtatteredcoat, rustlining, whitecuffs, broadsoftmutedgrey-brown oilpaint fromimage1. Keep upperbody nearlyunchanged exceptverysmallcounterarmswing. Change TWO LEGS onlytooppositeanatomicalpassing roles.\nThe FAR anatomicalLEFT leg SUPPORTS WEIGHT, nearlyvertical beneathpelvis, plantedboot atguide(350,548), screenRIGHTofotherankle. The NEAR anatomicalRIGHT leg bendslow in gentle recovery/pass IN FOREGROUND, thigh/calf crossesIN FRONT of farsupportleg, recoveredbootatguide(302,492), screenLEFTandHIGHERthanplantedboot. This MUST visiblyreverse currentimage1's screenLEFTsupport/screenRIGHThigherboot silhouette. Actual boot rolesmustswitch; do notcopycurrentlowerbody unchanged. Followbluefarverticalsupport andochrenearforegroundrecoverguide, but BOTH finaltrousersandboots SAME ORIGINAL DARKCHARCOALBROWN material. No blue or ochre colorsfromguide, NO goldenboots; goldONLYonbacklyre.\nNaturalrestrainedlowjog, kneesalwaysbelowhips, lowheelrecover notmarch/highknee/sprint, slendernormallimbsandmodestboots. Coat remainslongtomidcalves butlowerlegs readable. FigurefacesAWAYupperright, noEastbroadside/camerafrontturn.\nONE FULLBODY ACTOR, ONE POSE ONLY, squarecanvas, sameframingandpadding, unclippedhair/cape/lyre/soles. TRUE transparentalpha0 outsidepaintedfigure, preserveoriginalopaqueclothmasses andsoftpaintedges. No background/matte/shadow/grid/text/labels/skeleton/coloredmarkers.",
+      "generationReviewStatus": "single_opposite_pass_candidate_for_native_playback",
+      "generationLimitations": [
+        "Upperbody verysimilar but generatededit is not pixelidentical toinput upperbody.",
+        "Singleposeoutput has double spatialresolution versus Fourcell; runtime mustnormalize scale/groundanchor appropriately.",
+        "Recoveredfoot solevisible; lowjogcadence andkneelevel require nativeplayback judgment.",
+        "No extra retries; one built-incallthisdirection."
+      ],
+      "additionalReference": {
+        "selectedFile": "NorthEastFour.png",
+        "cell": 1,
+        "role": "Cropped appearance/edit-target reference."
+      }
+    }
+  ]
+}

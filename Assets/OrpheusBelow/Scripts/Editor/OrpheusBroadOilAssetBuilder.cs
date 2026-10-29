@@ -16,7 +16,6 @@ namespace OrpheusBelow.EditorTools
         public static void Build()
         {
             AssetDatabase.Refresh();
-            ExtractAthleticPaint();
             string libraryPath = Folder + "Library.asset";
             var library = AssetDatabase.LoadAssetAtPath<OrpheusAnimationLibrary>(libraryPath);
             if (library == null)
@@ -37,8 +36,7 @@ namespace OrpheusBelow.EditorTools
                 sheets[name] = BakeSheet(name, library, false);
             sheets["WalkCycle"] = BakeSheet("WalkCycle", library, false);
             sheets["RunCycle"] = BakeSheet("RunCycle", library, false);
-            sheets["AthleticCanonical"] = BakeAthleticSources(library);
-            sheets["AthleticRun"] = OrpheusAthleticRunBaker.Bake(sheets["AthleticCanonical"], library, Folder + "AthleticRunLayout.json");
+            sheets["NaturalRun"] = BakeNaturalRun(library);
             var sourceFrames = new List<Sprite>();
             foreach (Sprite[] sheetFrames in sheets.Values) sourceFrames.AddRange(sheetFrames);
             library.sourceFrames = sourceFrames.ToArray();
@@ -49,7 +47,7 @@ namespace OrpheusBelow.EditorTools
             Add(clips, sheets, OrpheusAnimationState.RestlessIdle, "IdleTransitions", 2, true, 6f);
             AddCycle(clips, sheets, OrpheusAnimationState.Start, "WalkCycle", false, 40f, 0, 1, 2, 3);
             AddCycle(clips, sheets, OrpheusAnimationState.Walk, "WalkCycle", true, 8f, 0, 1, 2, 3);
-            AddRun(clips, sheets["AthleticRun"]);
+            AddNaturalRun(clips, sheets["NaturalRun"]);
             AddSequence(clips, sheets, OrpheusAnimationState.Stop, "IdleTransitions", false, 45f, 5, 6, 0, 0);
             AddCycle(clips, sheets, OrpheusAnimationState.Turn, "WalkCycle", false, 40f, 1, 3, 1, 3);
 
@@ -167,76 +165,6 @@ namespace OrpheusBelow.EditorTools
                 framesPerDirection = columns.Length, fps = fps, loop = loop, mirrorWest = true });
         }
 
-        private static void AddRun(List<OrpheusAnimationClip> clips, Sprite[] source)
-        {
-            const int phases = OrpheusAthleticRunBaker.Phases;
-            int[] sourceRows = { 0, 1, 2, 3, 4, 3, 2, 1 };
-            var frames = new Sprite[8 * phases];
-            for (int direction = 0; direction < 8; direction++)
-                for (int frame = 0; frame < phases; frame++) frames[direction * phases + frame] = source[sourceRows[direction] * phases + frame];
-            clips.Add(new OrpheusAnimationClip { state = OrpheusAnimationState.Run, frames = frames,
-                directions = 8, framesPerDirection = phases, fps = 24f, loop = true, mirrorWest = true });
-        }
-
-        [Serializable] private sealed class AthleticSources { public AthleticSource[] rigs; }
-        [Serializable] private sealed class AthleticSource { public Vector2 hip, ankle; public int sourceWidth, sourceHeight, sourceX, sourceY; }
-
-        // These are lossless atlas extracts, not separately generated character designs. Keeping
-        // the canonical paints derived from WalkCycle makes future costume changes reproducible.
-        private static void ExtractAthleticPaint()
-        {
-            var layout = JsonUtility.FromJson<AthleticSources>(System.IO.File.ReadAllText(Folder + "AthleticRunLayout.json"));
-            string[] directions = { "South", "SouthEast", "East", "NorthEast", "North" };
-            string sourcePath = Folder + "WalkCycle.png";
-            var importer = (TextureImporter)AssetImporter.GetAtPath(sourcePath);
-            importer.isReadable = true; importer.npotScale = TextureImporterNPOTScale.None;
-            importer.textureCompression = TextureImporterCompression.Uncompressed; importer.maxTextureSize = 4096;
-            importer.SaveAndReimport();
-            Texture2D atlas = AssetDatabase.LoadAssetAtPath<Texture2D>(sourcePath);
-            for (int row = 0; row < directions.Length; row++)
-            {
-                AthleticSource rig = layout.rigs[row];
-                var crop = new Texture2D(rig.sourceWidth, rig.sourceHeight, TextureFormat.RGBA32, false);
-                crop.SetPixels(atlas.GetPixels(rig.sourceX, atlas.height - rig.sourceY - rig.sourceHeight,
-                    rig.sourceWidth, rig.sourceHeight));
-                crop.Apply();
-                string target = Folder + "Athletic" + directions[row] + ".png";
-                byte[] png = crop.EncodeToPNG();
-                // Avoid needless source churn and reimports on an unchanged bake.
-                if (!System.IO.File.Exists(target) || !System.Linq.Enumerable.SequenceEqual(System.IO.File.ReadAllBytes(target), png))
-                    System.IO.File.WriteAllBytes(target, png);
-                Object.DestroyImmediate(crop);
-                AssetDatabase.ImportAsset(target, ImportAssetOptions.ForceUpdate);
-            }
-        }
-        private static Sprite[] BakeAthleticSources(OrpheusAnimationLibrary owner)
-        {
-            var layout = JsonUtility.FromJson<AthleticSources>(System.IO.File.ReadAllText(Folder + "AthleticRunLayout.json"));
-            string[] directions = { "South", "SouthEast", "East", "NorthEast", "North" };
-            var sources = new Sprite[5];
-            for (int row = 0; row < directions.Length; row++)
-            {
-                string path = Folder + "Athletic" + directions[row] + ".png";
-                var importer = (TextureImporter)AssetImporter.GetAtPath(path);
-                importer.textureType = TextureImporterType.Default; importer.npotScale = TextureImporterNPOTScale.None;
-                importer.isReadable = true; importer.alphaIsTransparency = true; importer.mipmapEnabled = false;
-                importer.textureCompression = TextureImporterCompression.Uncompressed; importer.maxTextureSize = 512;
-                importer.wrapMode = TextureWrapMode.Clamp; importer.filterMode = FilterMode.Bilinear; importer.SaveAndReimport();
-                Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-                Color32[] pixels = texture.GetPixels32(); int low = texture.height, high = 0;
-                for (int y = 0; y < texture.height; y++) for (int x = 0; x < texture.width; x++)
-                    if (pixels[y * texture.width + x].a > 96) { low = Mathf.Min(low, y); high = Mathf.Max(high, y); }
-                float ppu = (high - low + 1) / owner.visibleHeight;
-                AthleticSource rig = layout.rigs[row];
-                // Actor anchoring is defined by the pelvis/ankle rig, independently of the
-                // transparent source gutter. Keep a stable low pivot for all imported views.
-                Vector2 pivot = new Vector2(rig.hip.x / rig.sourceWidth, .025f);
-                Sprite source = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), pivot, ppu, 0, SpriteMeshType.FullRect);
-                source.name = "AthleticSource_" + row.ToString("D2"); AssetDatabase.AddObjectToAsset(source, owner); sources[row] = source;
-            }
-            return sources;
-        }
-
         private static void AddVocal(List<OrpheusAnimationClip> clips, Dictionary<string, Sprite[]> sheets,
             OrpheusAnimationState state, bool loop, float fps, params int[] columns)
         {
@@ -246,6 +174,92 @@ namespace OrpheusBelow.EditorTools
                 frames[d * columns.Length + f] = sheets["LyreSinging"][sourceRows[d] * 8 + columns[f]];
             clips.Add(new OrpheusAnimationClip { state = state, frames = frames, directions = 8,
                 framesPerDirection = columns.Length, fps = fps, loop = loop, mirrorWest = true });
+        }
+
+        [Serializable] private sealed class NaturalRunManifest
+        {
+            public int framesPerDirection;
+            public NaturalRunSource[] sources;
+            public NaturalRunView[] views;
+        }
+        [Serializable] private sealed class NaturalRunSource
+        {
+            public string file, sha256;
+            public int width, height, columns, rows, maxTextureSize;
+        }
+        [Serializable] private sealed class NaturalRunView
+        {
+            public string facing;
+            public NaturalRunFrame[] frames;
+        }
+        [Serializable] private sealed class NaturalRunFrame { public string source; public int cell; }
+
+        private static Sprite[] BakeNaturalRun(OrpheusAnimationLibrary owner)
+        {
+            const string naturalFolder = Folder + "NaturalRunV2/";
+            var manifest = JsonUtility.FromJson<NaturalRunManifest>(System.IO.File.ReadAllText(naturalFolder + "ManualSourceMapping.json"));
+            if (manifest.framesPerDirection != 4 || manifest.views.Length != 5 || manifest.sources.Length != 9)
+                throw new InvalidOperationException("Natural run requires four reviewed keys, five canonical views and nine approved sources.");
+            var sources = new Dictionary<string, Sprite[]>();
+            foreach (NaturalRunSource source in manifest.sources)
+            {
+                string path = naturalFolder + source.file;
+                using (var sha = System.Security.Cryptography.SHA256.Create())
+                {
+                    string actual = BitConverter.ToString(sha.ComputeHash(System.IO.File.ReadAllBytes(path))).Replace("-", "").ToLowerInvariant();
+                    if (actual != source.sha256) throw new InvalidOperationException("Natural run source changed since visual review: " + source.file);
+                }
+                var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+                importer.GetSourceTextureWidthAndHeight(out int width, out int height);
+                if (width != source.width || height != source.height)
+                    throw new InvalidOperationException("Natural run source dimensions differ from reviewed mapping: " + source.file);
+                importer.textureType = TextureImporterType.Default;
+                importer.npotScale = TextureImporterNPOTScale.None;
+                importer.isReadable = true;
+                importer.alphaIsTransparency = true;
+                importer.mipmapEnabled = false;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                // Normal import resampling matches the original idle's painted pixel height.
+                // The PNG, material, tint and source alpha are never edited to fake a match.
+                importer.maxTextureSize = source.maxTextureSize;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.filterMode = FilterMode.Bilinear;
+                importer.SaveAndReimport();
+                Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                sources[source.file] = OrpheusAtlasSlicer.Bake(texture, "NaturalRunSource_" + source.file.Replace(".png", ""),
+                    owner, source.columns, source.rows, false);
+            }
+            string[] facings = { "South", "SouthEast", "East", "NorthEast", "North" };
+            var selected = new Sprite[20];
+            var retained = new HashSet<Sprite>();
+            for (int view = 0; view < facings.Length; view++)
+            {
+                NaturalRunView mapping = manifest.views[view];
+                if (mapping.facing != facings[view] || mapping.frames.Length != 4)
+                    throw new InvalidOperationException("Natural run canonical view order or key count changed.");
+                for (int phase = 0; phase < 4; phase++)
+                {
+                    NaturalRunFrame key = mapping.frames[phase];
+                    Sprite paint = sources[key.source][key.cell];
+                    if (!retained.Add(paint)) throw new InvalidOperationException("Natural run must use separately authored contact/passing keys.");
+                    paint.name = "NaturalRun_" + view.ToString("D2") + "_" + phase.ToString("D2");
+                    selected[view * 4 + phase] = paint;
+                }
+            }
+            // Exclude unselected draft poses, including each Four sheet's incorrect passing B.
+            foreach (Sprite[] sheet in sources.Values)
+                foreach (Sprite paint in sheet) if (!retained.Contains(paint)) Object.DestroyImmediate(paint, true);
+            return selected;
+        }
+
+        private static void AddNaturalRun(List<OrpheusAnimationClip> clips, Sprite[] source)
+        {
+            int[] rows = { 0, 1, 2, 3, 4, 3, 2, 1 };
+            var frames = new Sprite[32];
+            for (int direction = 0; direction < 8; direction++)
+                for (int phase = 0; phase < 4; phase++) frames[direction * 4 + phase] = source[rows[direction] * 4 + phase];
+            clips.Add(new OrpheusAnimationClip { state = OrpheusAnimationState.Run, frames = frames,
+                directions = 8, framesPerDirection = 4, fps = 7.5f, loop = true, mirrorWest = true });
         }
 
         private static Sprite[] BakeSheet(string name, OrpheusAnimationLibrary owner, bool effects)
