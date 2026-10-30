@@ -193,13 +193,55 @@ namespace OrpheusBelow.EditorTools
             public NaturalRunFrame[] frames;
         }
         [Serializable] private sealed class NaturalRunFrame { public string source; public int cell; }
+        [Serializable] private sealed class NaturalRunRegistration { public NaturalRunRoot[] records; }
+        [Serializable] private sealed class NaturalRunRoot
+        {
+            public string view, source, sha256;
+            public int phase, cell, sourceWidth, sourceHeight;
+            public Vector2 pelvis;
+        }
 
         private static Sprite[] BakeNaturalRun(OrpheusAnimationLibrary owner)
         {
             const string naturalFolder = Folder + "NaturalRunV2/";
             var manifest = JsonUtility.FromJson<NaturalRunManifest>(System.IO.File.ReadAllText(naturalFolder + "ManualSourceMapping.json"));
-            if (manifest.framesPerDirection != 4 || manifest.views.Length != 5 || manifest.sources.Length != 9)
-                throw new InvalidOperationException("Natural run requires four reviewed keys, five canonical views and nine approved sources.");
+            if (manifest == null || manifest.framesPerDirection != 4 || manifest.views == null || manifest.views.Length != 5 ||
+                manifest.sources == null || manifest.sources.Length == 0)
+                throw new InvalidOperationException("Natural run requires four reviewed keys, five canonical views and approved source paintings.");
+            string[] facings = { "South", "SouthEast", "East", "NorthEast", "North" };
+            var registration = JsonUtility.FromJson<NaturalRunRegistration>(System.IO.File.ReadAllText(naturalFolder + "RunRegistration.json"));
+            if (registration?.records == null || registration.records.Length != 20)
+                throw new InvalidOperationException("Every one of the twenty selected run paintings needs an independently reviewed body root.");
+            var sourceDefinitions = new Dictionary<string, NaturalRunSource>();
+            foreach (NaturalRunSource source in manifest.sources)
+            {
+                if (source == null || string.IsNullOrEmpty(source.file) || sourceDefinitions.ContainsKey(source.file) ||
+                    source.width <= 0 || source.height <= 0 || source.columns <= 0 || source.rows <= 0)
+                    throw new InvalidOperationException("Natural run source names and dimensions must be unique and valid.");
+                sourceDefinitions.Add(source.file, source);
+            }
+            var reviewedKeys = new HashSet<string>();
+            foreach (NaturalRunRoot root in registration.records)
+            {
+                int view = root == null ? -1 : Array.IndexOf(facings, root.view);
+                if (view < 0 || root.phase < 0 || root.phase >= 4 || !reviewedKeys.Add(root.view + ":" + root.phase))
+                    throw new InvalidOperationException("Run registration needs unique canonical facing/phase keys.");
+                NaturalRunView mapping = manifest.views[view];
+                if (mapping == null || mapping.facing != facings[view] || mapping.frames == null || mapping.frames.Length != 4)
+                    throw new InvalidOperationException("Natural run canonical view order or key count changed.");
+                NaturalRunFrame key = mapping.frames[root.phase];
+                if (key == null || key.source != root.source || key.cell != root.cell ||
+                    !sourceDefinitions.TryGetValue(root.source, out NaturalRunSource source) ||
+                    root.sourceWidth != source.width || root.sourceHeight != source.height ||
+                    !string.Equals(root.sha256, source.sha256, StringComparison.OrdinalIgnoreCase) ||
+                    root.cell < 0 || root.cell >= source.columns * source.rows ||
+                    float.IsNaN(root.pelvis.x) || float.IsInfinity(root.pelvis.x))
+                    throw new InvalidOperationException("Run body registration does not match its reviewed source painting: " + root.view + "/" + root.phase);
+                float left = source.width * (root.cell % source.columns) / (float)source.columns;
+                float right = source.width * (root.cell % source.columns + 1) / (float)source.columns;
+                if (root.pelvis.x < left || root.pelvis.x > right)
+                    throw new InvalidOperationException("Run body root lies outside its reviewed source cell: " + root.view + "/" + root.phase);
+            }
             var sources = new Dictionary<string, Sprite[]>();
             foreach (NaturalRunSource source in manifest.sources)
             {
@@ -226,10 +268,17 @@ namespace OrpheusBelow.EditorTools
                 importer.filterMode = FilterMode.Bilinear;
                 importer.SaveAndReimport();
                 Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                var anchors = new Dictionary<int, float>();
+                foreach (NaturalRunRoot root in registration.records)
+                    if (root.source == source.file)
+                    {
+                        if (anchors.ContainsKey(root.cell))
+                            throw new InvalidOperationException("A run source cell cannot stand in for two separately reviewed poses.");
+                        anchors.Add(root.cell, root.pelvis.x * texture.width / source.width);
+                    }
                 sources[source.file] = OrpheusAtlasSlicer.Bake(texture, "NaturalRunSource_" + source.file.Replace(".png", ""),
-                    owner, source.columns, source.rows, false);
+                    owner, source.columns, source.rows, false, anchors);
             }
-            string[] facings = { "South", "SouthEast", "East", "NorthEast", "North" };
             var selected = new Sprite[20];
             var retained = new HashSet<Sprite>();
             for (int view = 0; view < facings.Length; view++)

@@ -74,6 +74,13 @@ namespace OrpheusBelow.EditorTools
             public float actualRunDistance;
             public string[] captures;
         }
+        [Serializable] private sealed class RunPoseCapture
+        {
+            public string facing, source;
+            public int frame;
+            public Vector3 anchorViewport;
+            public float keysPerRealSecond;
+        }
         private static readonly Evidence Proof = new Evidence();
 
         static PaintedCombatArtVerification()
@@ -469,6 +476,18 @@ namespace OrpheusBelow.EditorTools
                 .Invoke(null, new object[] { temporary, 1920, 1080, hud, null });
             string source = Path.GetFullPath(Path.Combine(Application.dataPath, "../Logs/PaintedChambers/" + temporary + ".png"));
             File.Copy(source, Path.Combine(Output, name + ".png"), true); File.Delete(source); Captures.Add(name + ".png");
+            if (name.StartsWith("orpheus-run-") && _animator?.BodyRenderer != null && Camera.main != null)
+            {
+                Camera camera = Camera.main; float aspect = camera.aspect;
+                camera.aspect = 1920f / 1080f;
+                var pose = new RunPoseCapture { facing = _animator.Facing.ToString(), frame = _animator.CurrentFrame,
+                    source = AssetDatabase.GetAssetPath(_animator.BodyRenderer.sprite.texture),
+                    anchorViewport = camera.WorldToViewportPoint(_animator.BodyRenderer.transform.position),
+                    keysPerRealSecond = _player.moveSpeed * GameplayClock.NormalScale * RunFrameCount /
+                        (OrpheusSpriteAnimator.RunCycleDistance * _animator.BodyRenderer.transform.TransformVector(Vector3.right).magnitude) };
+                camera.aspect = aspect;
+                File.WriteAllText(Path.Combine(Output, name + ".pose.json"), JsonUtility.ToJson(pose, true));
+            }
         }
 
         private static int CheckActorShadow(Transform actor, string name, string baseline = "three-actors-grounded-shadows")

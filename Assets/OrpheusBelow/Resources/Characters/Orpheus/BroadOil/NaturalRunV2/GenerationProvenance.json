@@ -4,7 +4,7 @@
   "timezone": "Europe/Bucharest",
   "generationDateBasis": "Selected outputs were made during the2026-10-29 session; exact individual wall-clock generation times were not retained.",
   "generator": "Built-in image_gen.imagegen only, transparent_background=true; no API/CLI fallback.",
-  "scope": "Nine selected native source PNGs in ManualSourceMapping.json. Selected means mapped for native review, not accepted gait or identity.",
+  "scope": "Historical provenance of the nine base NaturalRunV2 PNGs from 2026-10-29. Current selected source/phase bindings are authoritative in ManualSourceMapping.json; four opposite-half replacements from 2026-10-30 are documented in GroundedStrideProvenance.json.",
   "integrity": "All nine recorded SHA256 values were recomputed and matched both original built-in source outputs and ManualSourceMapping.json when this document was written. Sources copied byte-for-byte; no final-art resizing, alpha editing, tinting, filtering, matting, drawing, warping or compositing.",
   "references": {
     "originalIdlePath": "Assets/OrpheusBelow/Resources/Characters/Orpheus/BroadOil/IdleTransitions.png",
