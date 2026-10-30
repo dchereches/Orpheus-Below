@@ -19,7 +19,7 @@ namespace OrpheusBelow.EditorTools
         }
 
         public static Sprite[] Bake(Texture2D texture, string name, OrpheusAnimationLibrary owner,
-            int columns, int rows, bool effects)
+            int columns, int rows, bool effects, IReadOnlyDictionary<int, float> horizontalAnchors = null)
         {
             Color32[] pixels = texture.GetPixels32();
             int width = texture.width, height = texture.height;
@@ -63,6 +63,14 @@ namespace OrpheusBelow.EditorTools
                 var rect = new RectInt(Mathf.Max(0, b.xMin - 2), Mathf.Max(0, b.yMin - 2), 0, 0);
                 rect.xMax = Mathf.Min(width, b.xMax + 2); rect.yMax = Mathf.Min(height, b.yMax + 2);
                 Vector2 pivot = effects ? Vector2.one * .5f : GroundPivot(figure, pixels, width, rect);
+                if (!effects && horizontalAnchors != null && horizontalAnchors.TryGetValue(i, out float anchorX))
+                {
+                    if (float.IsNaN(anchorX) || float.IsInfinity(anchorX) || anchorX < rect.xMin || anchorX > rect.xMax)
+                        throw new InvalidOperationException($"Reviewed body anchor lies outside {name} cell {i}.");
+                    // Register the intact painting around its anatomical body root, not
+                    // whichever support boot happens to occupy the bottom of this pose.
+                    pivot.x = (anchorX - rect.x) / rect.width;
+                }
                 Sprite sprite = Sprite.Create(texture, new Rect(rect.x, rect.y, rect.width, rect.height), pivot, ppu, 0, SpriteMeshType.FullRect);
                 sprite.name = name + "_" + (i / columns).ToString("D2") + "_" + (i % columns).ToString("D2");
                 if (!effects) IsolateMesh(sprite, figure, rect, width);

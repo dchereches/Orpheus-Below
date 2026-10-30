@@ -1,11 +1,11 @@
 {
-  "version": 1,
+  "version": 2,
   "framesPerDirection": 4,
   "cycleDistance": 3.2,
   "mirrorWest": true,
   "nativeAcceptanceRequired": true,
   "coordinateSpace": "Ankle positions are approximate manually observed native source-cell pixels, X right/Y down; no source art is edited.",
-  "sourceProcessing": "Original generated PNG bytes preserved. Standard Unity texture import resampling only, shared original idle shader/material/tint/alpha policy.",
+  "sourceProcessing": "Original generated PNG bytes preserved. Standard Unity texture import resampling only, shared original idle shader/material/tint/alpha policy. Whole paintings register horizontally to manually reviewed pelvis axes; no vertical or scale compensation.",
   "sources": [
     {
       "file": "SouthFour.png",
@@ -87,6 +87,42 @@
       "rows": 1,
       "maxTextureSize": 128,
       "sha256": "efd059a543fae113e4881a16b248f5dd4f8ee8b2c0f70303b472a5c3acfa4f00"
+    },
+    {
+      "file": "EastContactB.png",
+      "width": 1387,
+      "height": 1134,
+      "columns": 1,
+      "rows": 1,
+      "maxTextureSize": 128,
+      "sha256": "99fa132765290dbc454f8c2b40db73150bf9f0829788459022e9a344d2ef7c3c"
+    },
+    {
+      "file": "EastPassingB.png",
+      "width": 1086,
+      "height": 1448,
+      "columns": 1,
+      "rows": 1,
+      "maxTextureSize": 128,
+      "sha256": "e2a48d846f7565b2980e005fef9efcc3c8865880965f89be25de92335d87c546"
+    },
+    {
+      "file": "SouthEastContactB.png",
+      "width": 1097,
+      "height": 1434,
+      "columns": 1,
+      "rows": 1,
+      "maxTextureSize": 128,
+      "sha256": "c9c72edc942c54dda47501a34d350fc9c6e2f7f07e80fbf8ad6d63d0780e9397"
+    },
+    {
+      "file": "NorthEastContactB.png",
+      "width": 1254,
+      "height": 1254,
+      "columns": 1,
+      "rows": 1,
+      "maxTextureSize": 128,
+      "sha256": "43f5ee3043e2fbab02ed84598c9e85d8da90318959d10f79166f81e311eb73cd"
     }
   ],
   "views": [
@@ -129,8 +165,8 @@
           "role": "passingA"
         },
         {
-          "source": "SouthEastFour.png",
-          "cell": 2,
+          "source": "SouthEastContactB.png",
+          "cell": 0,
           "role": "contactB"
         },
         {
@@ -154,13 +190,13 @@
           "role": "passingA"
         },
         {
-          "source": "East.png",
-          "cell": 4,
+          "source": "EastContactB.png",
+          "cell": 0,
           "role": "contactB"
         },
         {
-          "source": "East.png",
-          "cell": 6,
+          "source": "EastPassingB.png",
+          "cell": 0,
           "role": "passingB"
         }
       ]
@@ -179,8 +215,8 @@
           "role": "passingA"
         },
         {
-          "source": "NorthEastFour.png",
-          "cell": 2,
+          "source": "NorthEastContactB.png",
+          "cell": 0,
           "role": "contactB"
         },
         {
@@ -272,24 +308,6 @@
       "note": "Foreground support overlaps far passing leg in original source cell2."
     },
     {
-      "view": "East",
-      "phase": 3,
-      "legA": "near",
-      "legB": "far",
-      "ankleA": {
-        "x": 206,
-        "y": 419
-      },
-      "ankleB": {
-        "x": 143,
-        "y": 436
-      },
-      "axis": "x",
-      "expectedSign": 1,
-      "confidence": "high",
-      "note": "Near passing leg crosses foreground, opposite original cell2; source cell6."
-    },
-    {
       "view": "North",
       "phase": 0,
       "legA": "viewerLeft",
@@ -360,6 +378,22 @@
       "expectedSign": -1,
       "confidence": "high",
       "note": "Targeted PassB edit preserves Four head/torso proportions; visible screen-right support is below screen-left low recovery."
+    },
+    {
+      "view": "East",
+      "phase": 3,
+      "axis": "x",
+      "expectedSign": 1,
+      "confidence": "high",
+      "ankleA": {
+        "x": 850,
+        "y": 1100
+      },
+      "ankleB": {
+        "x": 535,
+        "y": 1270
+      },
+      "meaning": "A is visibly raised large foreground/right boot; B is the planted small far/left boot. Full-texture pixels in the single source."
     }
   ],
   "limitations": [
@@ -368,5 +402,6 @@
     "Passing B singles repaint the upper body and proportions. Native playback must assess frame continuity and identity against original idle.",
     "East retains about143 painted pixels after512import, versus original idle120-124. Other views target about110 after256Four/128single import.",
     "South passingB was retargeted to Four appearance after native review found a proportion mismatch; corrected source requires a fresh native bake and playback review."
-  ]
+  ],
+  "registration": "RunRegistration.json"
 }

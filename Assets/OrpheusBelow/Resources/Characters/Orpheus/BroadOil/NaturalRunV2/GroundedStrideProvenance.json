@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-30",
+  "tool": "Built-in imagegen only",
+  "problem": "East and diagonal contactB sources repeated the same foreground leg; boot-centroid pivots also moved the upper body sideways.",
+  "processing": "Generated PNG bytes copied unchanged. Ordinary Unity texture import, original shared surface and alpha. Only whole-sprite horizontal pelvis registration; no limb warping, repainting, Y bob or PPU compensation.",
+  "selected": [
+    {
+      "file": "EastContactB.png",
+      "nativeWidth": 1387,
+      "nativeHeight": 1134,
+      "sha256": "99fa132765290dbc454f8c2b40db73150bf9f0829788459022e9a344d2ef7c3c",
+      "facing": "East",
+      "phase": 2,
+      "prompt": "Create ONE full-body EAST-facing Orpheus running CONTACT-B sprite. IMAGE1 is the EXACT leg-pose guide and is primary. IMAGE2 is upper-body appearance ONLY with NO leg pose: match that exact boy's shaggyhair, profileface facingRIGHT, charcoal longraggedcoat/redlining, whitecuffs, goldbacklyre, darktrousers/boots and soft muted broad oil paint. DO NOT invent another costume or shiny detail. Follow image1's leg depth and hip crossing exactly: the thicker/lighter NEAR FOREGROUND leg begins at the RIGHT hip under his visible hand, crosses IN FRONT of the other upper thigh toward screenLEFT, and extends BEHIND him to a LARGE BACK-LEFT boot with heel lifting. The FAR BACKGROUND leg begins at LEFT hip, crosses BEHIND the near thigh toward screenRIGHT, extends forward and carries weight on the SMALLER DARKER FRONT-RIGHT boot. The left/back thigh and calf must visibly OVERLAP and hide the upper part of the far/right front thigh at their junction. Left/back boot belongs to the close leg and must be clearly larger/moredefined than the far front boot. This is a depth-reversed opposite contact, not the usual large foreground-right supporting leg. GuideBLUE is foreground-trailingLEFT; guideOCHRE is far-supportingRIGHT. Final legs both original darkgray-brown cloth/boots, no colors or guide shapes. Normal practical running: thighs and shins originalproportions, lowknees belowhip, no jump/highknee or stiltlegs. Preserve image2's upperbody, shoulderwidth, face/headratio, coatlength, proportions and paint opacity. Full body with both boots unclipped, transparent alpha0 background, no ground/shadow/glow/text/diagrams/labels/extraobjects/duplicates. ONE pose.\n",
+      "referenceIdentifiers": [
+        "Logs/GroundedRun/East/contact-B-primary-guide.png",
+        "Logs/GroundedRun/East/upper-body-appearance.png"
+      ],
+      "visualAcceptance": "Approved source support-role review and fresh native Unity pose comparison. Source PNG bytes preserved."
+    },
+    {
+      "file": "EastPassingB.png",
+      "nativeWidth": 1086,
+      "nativeHeight": 1448,
+      "sha256": "e2a48d846f7565b2980e005fef9efcc3c8865880965f89be25de92335d87c546",
+      "facing": "East",
+      "phase": 3,
+      "prompt": "Create ONE full-body EAST/right-facing Orpheus animation pose. IMAGE1 is PRIMARY POSE, IMAGE2 is ONLY upper-body appearance reference; image2 intentionally contains NO feet or leg-pose reference. Copy image2's exact side-view head/hair/face, leaning torso, ragged charcoal-red longcoat, whitecuffs, goldlyre, broad softoilbrushwork and subdued palette. Paint the missing legs according to image1: this is the SECOND HALF PASSING step. The thinner/darker FAR leg is almost vertical under the pelvis with its SMALL boot at screenLEFT, LOWEST, sole on the ground. The THICKER FOREGROUND leg emerges from the near/right hip, bends modestly FORWARD toward screenRIGHT; its LARGE boot is visibly RAISED to screenRIGHT, well above the far supporting sole, swinging forward. Foreground bent thigh and shin overlap the far leg in front. This MUST look like the large close boot is being lifted and passed forward while the small far boot carries his weight. Inverse of a pose with large front boot planted. Low practical running pass, knee stays below coat/hip, no high-knee march or jump. Final both legs and boots original dark brown-gray cloth/leather, no diagram colors. Keep image2 body/head proportions and costume identity, do not make a new style or redesign. Full body and boots with safe transparent padding, genuine alpha0 background. NO ground, shadows, glow, text, grid, diagrams, colored limbs, other characters, extra objects. Output ONE pose, not a sheet.\n",
+      "referenceIdentifiers": [
+        "Logs/GroundedRun/East/passing-B-primary-guide.png",
+        "Logs/GroundedRun/East/upper-body-appearance.png"
+      ],
+      "visualAcceptance": "Approved source support-role review and fresh native Unity pose comparison. Source PNG bytes preserved."
+    },
+    {
+      "file": "SouthEastContactB.png",
+      "nativeWidth": 1097,
+      "nativeHeight": 1434,
+      "sha256": "c9c72edc942c54dda47501a34d350fc9c6e2f7f07e80fbf8ad6d63d0780e9397",
+      "facing": "SouthEast",
+      "phase": 2,
+      "prompt": "EDIT IMAGE 1 with one precise proportion correction. Image1 already has the CORRECT opposite-support running pose: viewer-LEFT boot lowest and planted, viewer-RIGHT boot higher and recovering. PRESERVE THIS SUPPORT-FOOT ARRANGEMENT EXACTLY. Image2 is the original Orpheus UPPER BODY ONLY for identity/proportions/style reference; it contains no legs. Keep exact image1 southeast/down-right facing, head, face, hair, shoulders, torso, arms, dark ragged coat, lyre, cloth colors and broad soft oil brushwork. Do NOT mirror the character or exchange the feet.\nCorrection: image1's legs below the waist are too long and slender for the original character. SHORTEN BOTH THIGHS AND BOTH SHINS by approximately ONE THIRD, below the hidden belt/hips only. Keep the head/torso/arms their current actual pixel size; do not shrink them. Keep the trouser width, boot width and painted detail scale, so the shorter legs read as the original stockier/baggier proportions, not thin stretched stilts. Bring knees and ankles upward toward the pelvis accordingly; the supporting LEFT boot will move upward substantially because the whole leg is shorter. The RIGHT boot remains raised, visibly about a boot-height higher than the LEFT sole. Keep its low recovery rather than a high knee.\nThe finished full character must have more of its overall height occupied by the head and upper body, matching image2's sturdy large-head proportions. Only the below-waist leg LENGTH changes. Preserve the actual LEFT-support / RIGHT-recovery leg shapes and which boot is lowest. Do NOT restore the old RIGHT-support pose. No crouching to fake shortness, no stretching torso, no scaling the whole figure, no extra limbs. Retain original shoulder and head widths. Same transparent canvas, one unclipped full-body oil-painted sprite, no floor/shadow/backdrop/text/guides/extra objects. Transparent alpha padding can increase below the shortened boots; do not stretch the legs back down to fill the canvas.",
+      "referenceIdentifiers": [
+        "Logs\\GroundedRun\\SouthEast\\provenance-attempt4.json"
+      ],
+      "visualAcceptance": "Approved source support-role review and fresh native Unity pose comparison. Source PNG bytes preserved."
+    },
+    {
+      "file": "NorthEastContactB.png",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sha256": "43f5ee3043e2fbab02ed84598c9e85d8da90318959d10f79166f81e311eb73cd",
+      "facing": "NorthEast",
+      "phase": 2,
+      "prompt": "Use case: precise-object-edit. ONE corrected opposite-contact Orpheus run frame, with transparent background.\nImage1 is the REQUIRED LOWER-BODY POSE GUIDE ONLY. Image2 is the actual painted sprite to EDIT and preserve for appearance.\nPreserve image2's whole upperbody above the coat hem: same head and hair, 3/4 BACK NORTH-EAST view, tiny visible face, shoulder width, torso lean, white cuff and hand, ragged charcoal cloak/redlining/goldbacklyre, broadsoftoil brushwork, paint colors/opacity, and original proportions. Do not redesign or sharpen.\nChange only the legs below the coat into the RIGHT-FOOT CONTACT step shown in image1:\nThe screen-RIGHT leg EXTENDS down and forward-right, its RIGHT boot is the LOWEST boot, clearly PLANTED and bearing weight. The boot extends forward from the ankle and is lower than the other boot. This is a contact pose with a longer right leg and boot reaching forward compared with image2's more vertical right support.\nThe screen-LEFT knee is gently bent below the coat; LEFT boot is clearly RAISED, shorter/higher, recovering behind at the left, as blue in image1. Keep the knee below the hip. No jumping, high-knee march, same-left-foot contact, or two extended planted legs.\nMake the RIGHT-support/LEFT-recovery silhouette instantly obvious even at small game scale, OPPOSITE to a long-left-support pose. The guide's orange right leg contacts LOWEST; guide's blue left leg recovers HIGHER. Paint BOTH in image2's existing darktrousers and brown/dark boots; NO guidecolors in final.\nSlightly overhead NE view, direction upper-right/away. The upperbody stays identical to image2; do not mirror the whole character or move the lyre. One complete unclipped actor centered with transparent safety margins, samebodyheight/scale. Genuine transparentalpha0 background. No groundshadow, background, text, diagrams or extraobjects.",
+      "referenceIdentifiers": [
+        "Logs\\GroundedRun\\NorthEast\\provenance-contactB.json"
+      ],
+      "visualAcceptance": "Approved source support-role review and fresh native Unity pose comparison. Source PNG bytes preserved."
+    }
+  ],
+  "limitations": [
+    "Leg roles and costume continuity are manually reviewed visual evidence; unique images or different filenames alone do not prove an alternating gait.",
+    "Concealed pelvis X is an estimated anatomical body axis, not a visible coat hem or boot centroid. Native playback is required."
+  ],
+  "nativeAcceptance": {
+    "result": "pass",
+    "runtimeErrors": 0,
+    "canonicalViews": 5,
+    "authoredKeysPerView": 4,
+    "legRoleReview": "Root and independent reviewers inspected the actual Unity East/SE/NE contact/passing captures for opposite support. Front/back paintings unchanged.",
+    "styleReview": "No blocking native-camera proportion or paint mismatch confirmed. The SE opposite-contact cloak flares farther left as cloth motion."
+  }
+}
