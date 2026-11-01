@@ -242,7 +242,6 @@ namespace OrpheusBelow
             // Instant MAX HARD BOOM shortcut: Right Click / K / Gamepad Right Trigger
             bool instantBoom = (mouse != null && mouse.rightButton.wasPressedThisFrame)
                             || (kb != null && kb.kKey.wasPressedThisFrame)
-                            || (pad != null && pad.buttonNorth.wasPressedThisFrame)
                             || Xbox360Input.HardBoomPressed;
 
             if (instantBoom)
@@ -258,17 +257,14 @@ namespace OrpheusBelow
             //   Hold & release     = scaled 0.25..1.00 (crosses 0.60 BOOM line!)
             bool attackPressed = (mouse != null && mouse.leftButton.wasPressedThisFrame)
                               || (kb != null && kb.jKey.wasPressedThisFrame)
-                              || (pad != null && pad.buttonWest.wasPressedThisFrame)
                               || Xbox360Input.SoftAttackPressed;
 
             bool attackHeld = (mouse != null && mouse.leftButton.isPressed)
                            || (kb != null && kb.jKey.isPressed)
-                           || (pad != null && pad.buttonWest.isPressed)
                            || Xbox360Input.SoftAttackHeld;
 
             bool attackReleased = (mouse != null && mouse.leftButton.wasReleasedThisFrame)
                                || (kb != null && kb.jKey.wasReleasedThisFrame)
-                               || (pad != null && pad.buttonWest.wasReleasedThisFrame)
                                || Xbox360Input.SoftAttackReleased;
 
             if (attackPressed)

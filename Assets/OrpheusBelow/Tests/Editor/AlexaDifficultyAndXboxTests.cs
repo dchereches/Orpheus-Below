@@ -117,6 +117,10 @@ namespace OrpheusBelow.Tests
         [Test]
         public void Xbox360InputPropertiesSafeWithoutGamepad()
         {
+            // Verify trigger threshold constants
+            Assert.That(Xbox360Input.TriggerPressThreshold, Is.EqualTo(0.20f));
+            Assert.That(Xbox360Input.TriggerReleaseThreshold, Is.EqualTo(0.12f));
+
             // Null safety checks when running headlessly or without physical controllers plugged in
             Assert.DoesNotThrow(() =>
             {

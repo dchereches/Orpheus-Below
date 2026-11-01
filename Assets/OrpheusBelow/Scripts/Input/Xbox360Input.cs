@@ -7,12 +7,32 @@ namespace OrpheusBelow
 {
     /// <summary>
     /// Comprehensive Xbox 360 & XInput Gamepad controller provider.
-    /// Provides unified stick movement, twin-stick 360-degree aiming, dodge-dash,
-    /// soft lyre attack, instant hard booms, aulos flute stance, look-back blend,
-    /// and full menu navigation support across all connected gamepads.
+    /// Layout:
+    ///   - Movement: Left Stick / D-Pad (WASD)
+    ///   - Aiming: Right Stick (360° twin-stick isometric aiming)
+    ///   - J (Soft Lyre Attack): Left Trigger (LT) - tap vs charge & release
+    ///   - K (Instant Hard Orphic Boom): Right Trigger (RT) - edge triggered
+    ///   - F (Aulos Flute Stance): Y button (North)
+    ///   - Dash: A button (South), B button (East), or RB (Right Shoulder)
+    ///   - Look-Back [Hold Q]: LB (Left Shoulder)
+    ///   - X button: NOTHING (unbound per user request)
+    ///   - Pause / Back: Start / Select buttons
     /// </summary>
     public static class Xbox360Input
     {
+        private static int _lastUpdateFrame = -1;
+        private static bool _ltPressedThisFrame;
+        private static bool _ltHeldThisFrame;
+        private static bool _ltReleasedThisFrame;
+        private static bool _rtPressedThisFrame;
+        private static bool _rtHeldThisFrame;
+        private static bool _rtReleasedThisFrame;
+        private static bool _wasLtDown;
+        private static bool _wasRtDown;
+
+        public const float TriggerPressThreshold = 0.20f;
+        public const float TriggerReleaseThreshold = 0.12f;
+
         /// <summary>
         /// Finds the active Xbox 360 / XInput controller, searching Gamepad.current
         /// and scanning Gamepad.all for any connected controller with input activity.
@@ -49,6 +69,37 @@ namespace OrpheusBelow
             if (pad.leftTrigger.ReadValue() > 0.15f || pad.rightTrigger.ReadValue() > 0.15f) return true;
             if (pad.startButton.isPressed || pad.selectButton.isPressed) return true;
             return false;
+        }
+
+        private static void UpdateTriggerStates()
+        {
+            if (Application.isPlaying && Time.frameCount == _lastUpdateFrame) return;
+            _lastUpdateFrame = Time.frameCount;
+
+            var pad = GetActiveGamepad();
+            float lt = 0f;
+            float rt = 0f;
+
+            if (pad != null)
+            {
+                lt = pad.leftTrigger.ReadValue();
+                rt = pad.rightTrigger.ReadValue();
+            }
+
+            // Stateful hysteresis to guarantee crisp press & release detection on analog triggers
+            bool isLtDown = _wasLtDown ? (lt >= TriggerReleaseThreshold) : (lt >= TriggerPressThreshold);
+            bool isRtDown = _wasRtDown ? (rt >= TriggerReleaseThreshold) : (rt >= TriggerPressThreshold);
+
+            _ltPressedThisFrame = isLtDown && !_wasLtDown;
+            _ltHeldThisFrame = isLtDown;
+            _ltReleasedThisFrame = !isLtDown && _wasLtDown;
+
+            _rtPressedThisFrame = isRtDown && !_wasRtDown;
+            _rtHeldThisFrame = isRtDown;
+            _rtReleasedThisFrame = !isRtDown && _wasRtDown;
+
+            _wasLtDown = isLtDown;
+            _wasRtDown = isRtDown;
         }
 
         /// <summary>
@@ -101,55 +152,59 @@ namespace OrpheusBelow
         }
 
         /// <summary>
-        /// Soft Lyre Attack: X button (West) or Right Bumper.
+        /// J (Soft Lyre Attack): Left Trigger (LT) pressed this frame.
+        /// Starts lyre tap or charge. (X button does nothing).
         /// </summary>
         public static bool SoftAttackPressed
         {
             get
             {
-                var pad = GetActiveGamepad();
-                if (pad == null) return false;
-                return pad.buttonWest.wasPressedThisFrame || pad.rightShoulder.wasPressedThisFrame;
-            }
-        }
-
-        public static bool SoftAttackHeld
-        {
-            get
-            {
-                var pad = GetActiveGamepad();
-                if (pad == null) return false;
-                return pad.buttonWest.isPressed || pad.rightShoulder.isPressed;
-            }
-        }
-
-        public static bool SoftAttackReleased
-        {
-            get
-            {
-                var pad = GetActiveGamepad();
-                if (pad == null) return false;
-                return pad.buttonWest.wasReleasedThisFrame || pad.rightShoulder.wasReleasedThisFrame;
+                UpdateTriggerStates();
+                return _ltPressedThisFrame;
             }
         }
 
         /// <summary>
-        /// Instant Hard Boom: Y button (North) or Right Trigger (RT).
+        /// J (Soft Lyre Attack): Left Trigger (LT) held down.
+        /// Builds charge while pulled.
+        /// </summary>
+        public static bool SoftAttackHeld
+        {
+            get
+            {
+                UpdateTriggerStates();
+                return _ltHeldThisFrame;
+            }
+        }
+
+        /// <summary>
+        /// J (Soft Lyre Attack): Left Trigger (LT) released this frame.
+        /// Releases lyre note pulse.
+        /// </summary>
+        public static bool SoftAttackReleased
+        {
+            get
+            {
+                UpdateTriggerStates();
+                return _ltReleasedThisFrame;
+            }
+        }
+
+        /// <summary>
+        /// K (Instant Hard Orphic Boom): Right Trigger (RT) pressed this frame.
+        /// Edge-triggered: fires once per pull. (Y button mapped to F).
         /// </summary>
         public static bool HardBoomPressed
         {
             get
             {
-                var pad = GetActiveGamepad();
-                if (pad == null) return false;
-                return pad.buttonNorth.wasPressedThisFrame
-                    || pad.rightTrigger.wasPressedThisFrame
-                    || pad.rightTrigger.ReadValue() > 0.55f;
+                UpdateTriggerStates();
+                return _rtPressedThisFrame;
             }
         }
 
         /// <summary>
-        /// Flute / Aulos Stance Toggle: Left Trigger (LT) or Y button.
+        /// F (Aulos Flute Stance Toggle): Y button (North).
         /// </summary>
         public static bool FluteTogglePressed
         {
@@ -157,7 +212,7 @@ namespace OrpheusBelow
             {
                 var pad = GetActiveGamepad();
                 if (pad == null) return false;
-                return pad.leftTrigger.wasPressedThisFrame || pad.leftTrigger.ReadValue() > 0.55f;
+                return pad.buttonNorth.wasPressedThisFrame;
             }
         }
 
@@ -227,7 +282,8 @@ namespace OrpheusBelow
         }
 
         /// <summary>
-        /// Interaction (e.g. Ambrosia Well): A button, X button, or Y button.
+        /// Interaction (e.g. Ambrosia Well): A button (South).
+        /// X button is unbound.
         /// </summary>
         public static bool InteractPressed
         {
@@ -235,10 +291,7 @@ namespace OrpheusBelow
             {
                 var pad = GetActiveGamepad();
                 if (pad == null) return false;
-                return pad.buttonSouth.wasPressedThisFrame
-                    || pad.buttonWest.wasPressedThisFrame
-                    || pad.buttonNorth.wasPressedThisFrame
-                    || pad.rightTrigger.wasPressedThisFrame;
+                return pad.buttonSouth.wasPressedThisFrame;
             }
         }
 

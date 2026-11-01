@@ -642,9 +642,9 @@ namespace OrpheusBelow
             cardTxt.text =
                 "WASD       Move · A / D during guardian duels\n" +
                 "Space / Shift       Dash · two charges\n" +
-                "LMB / J       Small Quaver (Soft)\n" +
-                "RMB / K       Boom Fermata (Boom)\n" +
-                "F       Draw the flute\n\n" +
+                "LMB / J / LT       Small Quaver (Soft)\n" +
+                "RMB / K / RT       Boom Fermata (Boom)\n" +
+                "F / Y       Draw the flute\n\n" +
                 "Soft – Soft – Boom       Hymn of Dawn\n" +
                 "Boom – Soft           Sanctuary of Eurydice\n" +
                 "Soft – Boom – Soft       Siren's Convergence\n\n" +

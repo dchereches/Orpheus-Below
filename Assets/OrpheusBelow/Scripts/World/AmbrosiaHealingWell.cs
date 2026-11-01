@@ -132,7 +132,7 @@ namespace OrpheusBelow
                 Keyboard kb = Keyboard.current;
                 Gamepad pad = Gamepad.current;
                 bool interact = (kb != null && (kb.eKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame))
-                             || (pad != null && (pad.buttonSouth.wasPressedThisFrame || pad.buttonWest.wasPressedThisFrame))
+                             || (pad != null && pad.buttonSouth.wasPressedThisFrame)
                              || Xbox360Input.InteractPressed;
 
                 if (interact)
