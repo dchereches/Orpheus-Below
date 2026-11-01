@@ -77,6 +77,8 @@ namespace OrpheusBelow
         // 3. Difficulty
         private Button _diffBtn;
         private Text _diffLabel, _diffDesc;
+        private Text _alexaHpLabel, _alexaSpeedLabel;
+        private Slider _alexaHpSlider, _alexaSpeedSlider;
 
         // 4. Audio
         private Slider _volume;
@@ -387,8 +389,24 @@ namespace OrpheusBelow
 
             // 3. Difficulty Setting
             Label(body, "Difficulty", 660, 442, 500, 28, 20, Ivory);
-            _diffBtn = MakeGreekButton(body, "DiffBtn", DifficultySettings.GetName(DifficultySettings.CurrentDifficulty), 660, 480, 500, 44, CycleDifficulty, out _diffLabel);
-            _diffDesc = Label(body, DifficultySettings.GetDescription(DifficultySettings.CurrentDifficulty), 660, 532, 500, 54, 14, Muted, false);
+            _diffBtn = MakeGreekButton(body, "DiffBtn", DifficultySettings.GetName(DifficultySettings.CurrentDifficulty), 660, 474, 500, 38, CycleDifficulty, out _diffLabel);
+            _diffDesc = Label(body, DifficultySettings.GetDescription(DifficultySettings.CurrentDifficulty), 660, 516, 500, 36, 13, Muted, false);
+
+            _alexaHpLabel = Label(body, $"Alexa Max HP   {Mathf.RoundToInt(DifficultySettings.AlexaHp)}", 660, 554, 240, 20, 13, Ivory, false);
+            _alexaHpSlider = MakeGenericSlider(body, 660, 574, 240, 25f, 500f, true, val =>
+            {
+                DifficultySettings.SetAlexaHp(val);
+                UpdateDifficultyLabels();
+            });
+            _alexaHpSlider.gameObject.name = "AlexaHpSlider";
+
+            _alexaSpeedLabel = Label(body, $"Alexa Game Speed   {DifficultySettings.AlexaGameSpeed:0.00}x", 920, 554, 240, 20, 13, Ivory, false);
+            _alexaSpeedSlider = MakeGenericSlider(body, 920, 574, 240, 0.30f, 2.00f, false, val =>
+            {
+                DifficultySettings.SetAlexaGameSpeed(val);
+                UpdateDifficultyLabels();
+            });
+            _alexaSpeedSlider.gameObject.name = "AlexaSpeedSlider";
 
             // 4. Audio Controls
             Label(body, "Audio", 72, 528, 500, 28, 20, Ivory);
@@ -405,7 +423,7 @@ namespace OrpheusBelow
             _settingsBack = MakeGreekButton(body, "SettingsBack", "Back to menu", 72, 654, 260, 48, HideSettings, out _, true);
             Label(body, "Esc to go back", 960, 666, 200, 24, 13, Muted, false).alignment = TextAnchor.MiddleRight;
             LinkVertical(_sensitivitySlider, _softThresholdSlider, _boomThresholdSlider, _inputModeBtn,
-                _volume, _mute, _brightnessSlider, _contrastSlider, _bloomSlider, _grainSlider, _resetLighting, _diffBtn, _settingsBack);
+                _volume, _mute, _brightnessSlider, _contrastSlider, _bloomSlider, _grainSlider, _resetLighting, _diffBtn, _alexaHpSlider, _alexaSpeedSlider, _settingsBack);
 
             SyncLightingControls();
 
@@ -450,6 +468,28 @@ namespace OrpheusBelow
                 _diffLabel.text = DifficultySettings.GetName(DifficultySettings.CurrentDifficulty);
             if (_diffDesc != null)
                 _diffDesc.text = DifficultySettings.GetDescription(DifficultySettings.CurrentDifficulty);
+
+            bool isAlexa = DifficultySettings.CurrentDifficulty == UnderworldDifficulty.Alexa;
+            if (_alexaHpSlider != null)
+            {
+                _alexaHpSlider.gameObject.SetActive(isAlexa);
+                _alexaHpSlider.SetValueWithoutNotify(DifficultySettings.AlexaHp);
+            }
+            if (_alexaHpLabel != null)
+            {
+                _alexaHpLabel.gameObject.SetActive(isAlexa);
+                _alexaHpLabel.text = $"Alexa Max HP   {Mathf.RoundToInt(DifficultySettings.AlexaHp)}";
+            }
+            if (_alexaSpeedSlider != null)
+            {
+                _alexaSpeedSlider.gameObject.SetActive(isAlexa);
+                _alexaSpeedSlider.SetValueWithoutNotify(DifficultySettings.AlexaGameSpeed);
+            }
+            if (_alexaSpeedLabel != null)
+            {
+                _alexaSpeedLabel.gameObject.SetActive(isAlexa);
+                _alexaSpeedLabel.text = $"Alexa Game Speed   {DifficultySettings.AlexaGameSpeed:0.00}x";
+            }
         }
 
         private void SyncLightingControls()
@@ -543,8 +583,10 @@ namespace OrpheusBelow
             var keyboard = Keyboard.current;
             var pad = Gamepad.current;
             bool pause = (keyboard != null && (keyboard.escapeKey.wasPressedThisFrame || keyboard.pKey.wasPressedThisFrame))
-                      || (pad != null && pad.startButton.wasPressedThisFrame);
-            bool back = pad != null && pad.buttonEast.wasPressedThisFrame;
+                      || (pad != null && pad.startButton.wasPressedThisFrame)
+                      || Xbox360Input.PausePressed;
+            bool back = (pad != null && pad.buttonEast.wasPressedThisFrame)
+                     || Xbox360Input.BackPressed;
 
             if (_reloading) return;
 

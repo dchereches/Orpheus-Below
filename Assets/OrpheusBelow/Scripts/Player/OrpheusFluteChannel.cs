@@ -156,7 +156,8 @@ namespace OrpheusBelow
             Gamepad pad = Gamepad.current;
 
             bool fluteToggle = (kb != null && kb.fKey.wasPressedThisFrame)
-                            || (pad != null && pad.leftTrigger.wasPressedThisFrame);
+                            || (pad != null && pad.leftTrigger.wasPressedThisFrame)
+                            || Xbox360Input.FluteTogglePressed;
 
             if (fluteToggle)
             {

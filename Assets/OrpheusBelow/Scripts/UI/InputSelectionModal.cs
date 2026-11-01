@@ -267,17 +267,18 @@ namespace OrpheusBelow
                 }
             }
 
-            if (pad != null)
+            var activePad = Xbox360Input.GetActiveGamepad() ?? pad;
+            if (activePad != null)
             {
-                if (pad.dpad.left.wasPressedThisFrame || pad.leftStick.left.wasPressedThisFrame)
+                if (activePad.dpad.left.wasPressedThisFrame || activePad.leftStick.left.wasPressedThisFrame)
                 {
                     SelectMode(SensorSourceMode.KeyboardAndMouseOnly);
                 }
-                else if (pad.dpad.right.wasPressedThisFrame || pad.leftStick.right.wasPressedThisFrame)
+                else if (activePad.dpad.right.wasPressedThisFrame || activePad.leftStick.right.wasPressedThisFrame)
                 {
                     SelectMode(SensorSourceMode.KeyboardPlusPCMicrophone);
                 }
-                else if (pad.buttonSouth.wasPressedThisFrame || pad.startButton.wasPressedThisFrame)
+                else if (activePad.buttonSouth.wasPressedThisFrame || activePad.startButton.wasPressedThisFrame)
                 {
                     Confirm();
                 }

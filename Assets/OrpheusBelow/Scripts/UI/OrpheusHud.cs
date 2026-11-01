@@ -798,7 +798,8 @@ namespace OrpheusBelow
 
             // Explicit Esc / Pause key handler directly in HUD so pause toggle is guaranteed
             if ((kb != null && (kb.escapeKey.wasPressedThisFrame || kb.pKey.wasPressedThisFrame))
-                || (pad != null && pad.startButton.wasPressedThisFrame))
+                || (pad != null && pad.startButton.wasPressedThisFrame)
+                || Xbox360Input.PausePressed)
             {
                 if (UnderworldFrontEnd.Instance != null)
                 {
@@ -809,7 +810,7 @@ namespace OrpheusBelow
             UpdateSpeechAndTransitionUi(Time.unscaledDeltaTime);
             if (UnderworldFrontEnd.BlocksGameplay) return;
 
-            if (kb != null && kb.hKey.wasPressedThisFrame)
+            if ((kb != null && kb.hKey.wasPressedThisFrame) || Xbox360Input.HelpPressed)
             {
                 showControlsHelp = !showControlsHelp;
                 if (_controlsCard != null) _controlsCard.SetActive(showControlsHelp);
@@ -1019,11 +1020,12 @@ namespace OrpheusBelow
 
             if (_tutorialContinuePrompt != null)
             {
-                _tutorialContinuePrompt.text = pad != null ? "A / Enter to continue" : "Enter to continue";
+                _tutorialContinuePrompt.text = (pad != null || Xbox360Input.GetActiveGamepad() != null) ? "A / Enter to continue" : "Enter to continue";
             }
 
             bool enterPressed = (kb != null && (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame))
-                             || (pad != null && pad.buttonSouth.wasPressedThisFrame);
+                             || (pad != null && pad.buttonSouth.wasPressedThisFrame)
+                             || Xbox360Input.ConfirmPressed;
 
             if (enterPressed)
             {

@@ -86,6 +86,7 @@ namespace OrpheusBelow
         private void Awake()
         {
             Instance = this;
+            maxHealth = DifficultySettings.EffectiveMaxHealth(maxHealth);
             CurrentHealth = maxHealth;
             CurrentDashCharges = maxDashCharges;
 
@@ -107,6 +108,20 @@ namespace OrpheusBelow
             if (depth == null) depth = gameObject.AddComponent<PaintedActorDepth>();
             depth.Exclude(_spriteAnimator.BodyRenderer);
             depth.Exclude(_spriteAnimator.EffectsRenderer);
+        }
+
+        public void ApplyDifficultyHealth()
+        {
+            float oldMax = maxHealth;
+            maxHealth = DifficultySettings.EffectiveMaxHealth(100f);
+            if (CurrentHealth > maxHealth || Mathf.Approximately(CurrentHealth, oldMax))
+            {
+                CurrentHealth = maxHealth;
+            }
+            else
+            {
+                CurrentHealth = Mathf.Clamp(CurrentHealth, 1f, maxHealth);
+            }
         }
 
         private void Start()
@@ -229,7 +244,8 @@ namespace OrpheusBelow
             // --- Optional Forbidden [Hold Q] Look-Back at Blurred Eurydice ---
             if (_eurydice == null) _eurydice = Object.FindFirstObjectByType<BlurredEurydice>();
             bool holdingLookBack = (kb != null && kb.qKey.isPressed)
-                                || (pad != null && pad.leftShoulder.isPressed);
+                                || (pad != null && pad.leftShoulder.isPressed)
+                                || Xbox360Input.LookBackHeld;
 
             if (holdingLookBack && _eurydice != null && !_eurydice.IsVanished)
             {
@@ -266,10 +282,17 @@ namespace OrpheusBelow
                 rawMove = pad.leftStick.ReadValue();
                 _useMouseAim = false;
             }
+            Vector2 xboxMove = Xbox360Input.Move;
+            if (xboxMove.sqrMagnitude > 0.04f)
+            {
+                rawMove = xboxMove;
+                _useMouseAim = false;
+            }
 
             // Dash Recharge & Input Buffer
             bool dashPressed = (kb != null && (kb.spaceKey.wasPressedThisFrame || kb.leftShiftKey.wasPressedThisFrame))
-                            || (pad != null && pad.buttonSouth.wasPressedThisFrame);
+                            || (pad != null && pad.buttonSouth.wasPressedThisFrame)
+                            || Xbox360Input.DashPressed;
             if (dashPressed) _dashBufferTimer = 0.11f;
 
             if (!_isDashing && CurrentDashCharges < maxDashCharges)
@@ -348,6 +371,14 @@ namespace OrpheusBelow
         {
             MoveInputXZ = UnderworldCamera2D.InputToIsoWorldDir(rawMove);
 
+            Vector2 xboxAim = Xbox360Input.Aim;
+            if (xboxAim.sqrMagnitude > 0.08f)
+            {
+                _useMouseAim = false;
+                AimDirectionXZ = UnderworldCamera2D.InputToIsoWorldDir(xboxAim).normalized;
+            }
+            else
+
             if (mouse != null && (mouse.delta.ReadValue().sqrMagnitude > 0.5f || mouse.leftButton.isPressed || mouse.rightButton.isPressed))
             {
                 _useMouseAim = true;
@@ -363,7 +394,7 @@ namespace OrpheusBelow
                 toCursor.y = 0f;
                 if (toCursor.sqrMagnitude > 0.02f) AimDirectionXZ = toCursor.normalized;
             }
-            else if (MoveInputXZ.sqrMagnitude > 0.01f)
+            else if (xboxAim.sqrMagnitude <= 0.08f && MoveInputXZ.sqrMagnitude > 0.01f)
             {
                 AimDirectionXZ = MoveInputXZ.normalized;
             }

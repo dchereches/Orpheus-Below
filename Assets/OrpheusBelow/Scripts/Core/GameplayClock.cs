@@ -5,7 +5,7 @@ namespace OrpheusBelow
     /// <summary>Shared gameplay speed and the modifiers to restore after a pause.</summary>
     public static class GameplayClock
     {
-        public static float NormalScale => DifficultySettings.CurrentDifficulty == UnderworldDifficulty.Mortal ? .7f : 1f;
+        public static float NormalScale => DifficultySettings.EffectiveGameSpeed;
 
         public static float ResumeScale
         {

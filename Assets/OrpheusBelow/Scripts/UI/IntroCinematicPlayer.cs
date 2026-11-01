@@ -212,7 +212,7 @@ namespace OrpheusBelow
         {
             if (!IsPlaying) return;
             var keyboard=Keyboard.current; var pad=Gamepad.current;
-            if ((keyboard!=null && (keyboard.escapeKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame)) || (pad!=null && pad.startButton.wasPressedThisFrame)) TogglePaused();
+            if ((keyboard!=null && (keyboard.escapeKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame)) || (pad!=null && pad.startButton.wasPressedThisFrame) || Xbox360Input.PausePressed) TogglePaused();
             UpdateSkipHold();
         }
         private static ButtonControl HeldSkipButton()
@@ -224,7 +224,10 @@ namespace OrpheusBelow
                 if (keyboard.numpadEnterKey.isPressed) return keyboard.numpadEnterKey;
             }
             var pad=Gamepad.current;
-            return pad!=null && pad.buttonEast.isPressed ? pad.buttonEast : null;
+            if (pad!=null && pad.buttonEast.isPressed) return pad.buttonEast;
+            var xboxButton = Xbox360Input.GetSkipHoldButton();
+            if (xboxButton != null) return xboxButton;
+            return null;
         }
         private void ResetSkipHold()
         {
